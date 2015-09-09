@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<form class="form-horizontal" method="POST" action="/unsubscribe">
+    <input id="campaignId" name="campaignId" type="hidden" value="{{.campaignId}}">
+    <input id="recipientId" name="recipientId" type="hidden" value="{{.recipientId}}">
+    <button id="unsubscribe" name="unsubscribe" class="btn btn-success">Unsubscribe</button>
+</form>
+</body>
+</html>

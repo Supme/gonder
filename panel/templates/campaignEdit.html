@@ -1,0 +1,101 @@
+{{template "header".}}
+
+<div class="page-header">
+    Edit campaign
+    |
+    <a href="/mailer/recipients/{{.campaign.Id}}">Manage recipients</a>
+</div>
+
+<form class="form-horizontal" method="POST">
+    <fieldset>
+
+        <!-- Select Basic -->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="ifaceId">Interface</label>
+            <div class="col-md-4">
+                <select id="ifaceId" name="ifaceId" class="form-control">
+                    {{$iface := .campaign.IfaceId}}
+                    {{range $k, $c := .ifaces}}
+                    <option value="{{$k}}" {{if eq $c.Id $iface}}selected{{end}}>{{$c.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="name">Name</label>
+            <div class="col-md-8">
+                <input id="name" name="name" type="text" value="{{.campaign.Name}}" placeholder="" class="form-control input-md">
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="subject">Subject</label>
+            <div class="col-md-8">
+                <input id="subject" name="subject" type="text" value="{{.campaign.Subject}}" placeholder="" class="form-control input-md">
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="from">From email</label>
+            <div class="col-md-4">
+                <input id="from" name="from" type="text" value="{{.campaign.From}}" placeholder="mail@domain.com" class="form-control input-md">
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="fromName">From name</label>
+            <div class="col-md-4">
+                <input id="fromName" name="fromName" type="text" value="{{.campaign.FromName}}" placeholder="My company" class="form-control input-md">
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="startTime">Star time</label>
+            <div class="col-md-2">
+                <input id="startTime" name="startTime" type="text" value="{{.campaign.StartTime}}" readonly class="form-control input-md">
+            </div>
+        </div>
+
+        <!-- Text input-->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="endTime">End time</label>
+            <div class="col-md-2">
+                <input  id="endTime" name="endTime" type="text"  value="{{.campaign.EndTime}}" readonly class="form-control input-md">
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(function () {
+                $('#startTime').datetimepicker({format: 'yyyy-mm-dd hh:ii:ss', autoclose: true, pickerPosition: "top-right"});
+                $('#endTime').datetimepicker({format: 'yyyy-mm-dd hh:ii:ss', autoclose: true, pickerPosition: "top-right"});
+            });
+        </script>
+
+        <!-- Textarea -->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="message">Message body</label>
+            <div class="col-md-10">
+                <textarea class="form-control" id="message" name="message">{{.campaign.Message}}</textarea>
+            </div>
+        </div>
+        <!--script>CKEDITOR.replace('message', {extraPlugins:''});</script-->
+
+        <!-- Button (Double) -->
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="save"></label>
+            <div class="col-md-8">
+                <button id="save" name="save" class="btn btn-success">Save</button>
+                <!--button id="cancel" name="cancel" class="btn btn-warning">Cancel</button-->
+            </div>
+        </div>
+
+    </fieldset>
+</form>
+
+{{template "footer".}}

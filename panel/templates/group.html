@@ -1,0 +1,11 @@
+{{template "header".}}
+
+<div class="page-header">Groups</div>
+
+<ul>
+{{range $k, $c := .groups}}
+    <li><a href="campaign/{{$k}}">{{$c}}</a></li>
+{{end}}
+</ul>
+
+{{template "footer".}}

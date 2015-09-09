@@ -1,0 +1,62 @@
+{{template "header".}}
+
+<div class="page-header">
+    <a href="/mailer/campaign/edit/{{.campaignId}}">Edit campaign</a>
+    |
+    Manage recipients
+</div>
+
+<form  class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <fieldset>
+
+            <div class="col-md-4">
+                <label for="file">Filename:</label>
+                <input type="file" name="file" id="file"  data-filename-placement="inside">
+                <input type="submit" name="submit" class="btn btn-success" value="Submit">
+            </div>
+
+            <div class="form-group">
+                <fieldset>
+                    <div class="col-md-4">
+                        <input type="submit" name="delete" class="btn btn-danger" value="Clear all">
+                    </div>
+                </fieldset>
+            </div>
+
+        </fieldset>
+    </div>
+</form>
+
+<div class="table">
+    <table id="table" class="table table-striped table-bordered table-hover">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Email</th>
+            <th>Name</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+<form  class="form-horizontal" action="" method="post" enctype="multipart/form-data">
+
+</form>
+
+<script type="text/javascript">
+    var t;
+    $(document).ready( function () {
+        t = $('#table').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": "/api/mailer/recipients/{{.campaignId}}",
+            "ordering": false,
+            "searching": false,
+            });
+    });
+
+    $('input[type=file]').bootstrapFileInput();
+</script>
+
+{{template "footer".}}

@@ -1,0 +1,11 @@
+{{template "header".}}
+
+<div class="page-header">Campaigns</div>
+
+<ul>
+{{range $k, $c := .campaigns}}
+    <li><a href="edit/{{$k}}">{{$c.Name}} <<{{$c.Subject}})>></a></li>
+{{end}}
+</ul>
+
+{{template "footer".}}
