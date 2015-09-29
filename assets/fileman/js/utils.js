@@ -194,7 +194,7 @@ RoxyUtils.SelectText = function(field_id, start, end) {
 function RoxyFilemanConf(){}
 RoxyUtils.LoadConfig = function(){
   $.ajax({
-      url: 'fm/conf.json',
+      url: 'fileman/conf.json',
       dataType: 'json',
       async:false,
       success: function(data){

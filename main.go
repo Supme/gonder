@@ -8,9 +8,12 @@ import (
 	"github.com/supme/gonder/mailer"
 	"github.com/supme/gonder/panel"
 	"log"
+	"runtime"
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	log.Println("Read config file")
 	config, err := configparser.Read("./config.ini")

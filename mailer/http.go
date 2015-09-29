@@ -18,7 +18,7 @@ func Stat(hostPort string) {
 		c.String(http.StatusOK, "Welcome to San Tropez!")
 	})
 
-	router.Static("/static", "../static")
+	router.Static("/static/", "static")
 
 	router.GET("/data/:params", func(c *gin.Context) {
 

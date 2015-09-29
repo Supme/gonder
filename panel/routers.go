@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"github.com/supme/gonder/roxyFileman"
 )
 
 func Run() {
@@ -19,9 +18,7 @@ func Run() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "main.html", gin.H{})
 	})
-
-
-
+/*
 	router.GET("campaign/add/:id", func(c *gin.Context) {
 
 	})
@@ -41,9 +38,7 @@ func Run() {
 		}
 		c.HTML(http.StatusOK, "recipientParam.html", data)
 	})
-
-	roxyFileman.FileMan(router.Group("fileman"))
-
+*/
 	mailer := router.Group("mailer")
 	{
 		mailer.GET("group", func(c *gin.Context) {
@@ -60,23 +55,27 @@ func Run() {
 			c.HTML(http.StatusOK, "campaign.html", data)
 		})
 
-		mailer.GET("campaign/edit/:id", func(c *gin.Context) {
+		mailer.GET("campaign/:id/edit/{{.StatPng}}", func(c *gin.Context) {
+			// blank 16x16 png
+			c.Header("Content-Type", "image/png")
+			output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
+			c.String(http.StatusOK, string(output))
+		})
+
+		mailer.GET("campaign/:id/edit/", func(c *gin.Context) {
 			camp, err := getCampaignInfo(c.Param("id"))
-			if err != nil {
-				// blank 16x16 png
-				c.Header("Content-Type", "image/png")
-				output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
-				c.String(http.StatusOK, string(output))
-			} else {
+			if err == nil {
 				data := gin.H{
 					"ifaces":   getIfaces(),
 					"campaign": camp,
 				}
 				c.HTML(http.StatusOK, "campaignEdit.html", data)
+			} else {
+				c.String(http.StatusNotFound, "Campaign not found")
 			}
 		})
 
-		mailer.POST("campaign/edit/:id", func(c *gin.Context) {
+		mailer.POST("campaign/:id/edit/", func(c *gin.Context) {
 			data := gin.H{
 				"ifaces": getIfaces(),
 				"campaign": postCampaignInfo(
@@ -101,6 +100,34 @@ func Run() {
 		mailer.POST("recipients/:id", uploadRecipients)
 
 	}
+
+	router.GET("filemanager", func(c *gin.Context) {
+		if c.Query("mode") == "download" {
+			var n string
+			var d []byte
+
+			if c.Query("width") != "" && c.Query("height") != "" {
+				// Download resized
+				d = FilemanagerResize(c.Query("path"), c.Query("width"), c.Query("height"))
+			} else {
+				// Download file
+				n, d = FilemanagerDownload(c.Query("path"))
+				c.Header("Content-Disposition", "attachment; filename='" + n + "'")
+			}
+			c.Data(http.StatusOK,http.DetectContentType(d),d)
+
+		} else {
+			c.JSON(http.StatusOK, Filemanager(c.Query("mode"), c.Query("path"), c.Query("name"), c.Query("old"), c.Query("new")))
+		}
+	})
+
+	router.POST("filemanager", func(c *gin.Context){
+		if c.PostForm("mode") == "add" {
+			file, head, err := c.Request.FormFile("newfile")
+			checkErr(err)
+			c.JSON(http.StatusOK, FilemanagerAdd(c.PostForm("currentpath"), head.Filename, file))
+		}
+	})
 
 	api := router.Group("api")
 	{

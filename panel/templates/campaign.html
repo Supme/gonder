@@ -4,7 +4,7 @@
 
 <ul>
 {{range $k, $c := .campaigns}}
-    <li><a href="edit/{{$k}}">{{$c.Name}} <<{{$c.Subject}})>></a></li>
+    <li><a href="{{$k}}/edit/">{{$c.Name}} <<{{$c.Subject}})>></a></li>
 {{end}}
 </ul>
 

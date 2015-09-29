@@ -96,8 +96,6 @@ func getMessage(campaignId string, recipientId string) (message, error) {
 	var subject, body string
 
 	err := Db.QueryRow("SELECT `subject`, `message` FROM campaign WHERE `id`=?", campaignId).Scan(&subject, &body)
-	people := getRecipientParam(recipientId)
-	people["StatPng"] = getStatPngUrl(campaignId, recipientId)
 	if err != nil {
 		return message{Subject: "Error", Body: "Message not found"}, nil
 	} else {
@@ -121,6 +119,8 @@ func getMessage(campaignId string, recipientId string) (message, error) {
 		if err != nil {
 			return message{Subject: "Error", Body: "Error parse template"}, nil
 		}
+		people := getRecipientParam(recipientId)
+		people["StatPng"] = getStatPngUrl(campaignId, recipientId)
 		t := bytes.NewBufferString("")
 		tmpl.Execute(t, people)
 		return message{Subject: subject, Body: t.String()}, nil
