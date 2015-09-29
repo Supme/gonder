@@ -13,6 +13,7 @@ import (
     "io"
     "mime/multipart"
     "log"
+    "time"
 )
 
 var filemanagerRootPath string
@@ -48,6 +49,9 @@ func Filemanager(mode string, path string, name string, old string, new string) 
     switch mode{
         case "getinfo": return filemanagerGetInfo(path)
         case "getfolder": return filemanagerGetFolder(path)
+        case "delete": return filemanagerDelete(path)
+        case "addfolder": return filemanagerMkDir(path, name)
+        case "rename": return filemanagerRename(old, new)
     }
 
     return info{Error: "Mode not defined", Code: 1,}
@@ -79,7 +83,7 @@ func FilemanagerResize(path string, width string, height string) []byte {
 
     resized := "cache/preview/" + width + "_" + height + strings.Replace(path, "/", "_", -1)
 
-    if _, err := os.Stat(resized); err != nil {
+    if stat, err := os.Stat(resized); err != nil || time.Since(stat.ModTime()) > time.Minute * 10 {
         w, _ := strconv.ParseInt(width, 10, 0)
         h, _ := strconv.ParseInt(height, 10, 0)
 
@@ -133,7 +137,13 @@ func filemanagerGetInfo(path string) info {
         if ext == "jpg" || ext == "png" || ext == "gif" {
             r.Preview = "../../filemanager?mode=download&path=" + path + "&width=150&height=0"
         } else {
-            r.Preview = "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
+            ico := "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
+            if _, err := os.Stat(ico); err != nil {
+                r.Preview = "images/fileicons/default.png"
+            } else {
+                r.Preview = ico
+            }
+
         }
     }
 
@@ -167,7 +177,12 @@ func filemanagerGetFolder(path string) interface{}{
                 if ext == "jpg" || ext == "png" || ext == "gif" {
                     t.Preview = "../../filemanager?mode=download&path=" + path + f.Name() + "&width=150&height=0"
                 } else {
-                    t.Preview = "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
+                    ico := "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
+                    if _, err := os.Stat(ico); err != nil {
+                        t.Preview = "images/fileicons/default.png"
+                    } else {
+                        t.Preview = ico
+                    }
                 }
             }
 
@@ -178,4 +193,26 @@ func filemanagerGetFolder(path string) interface{}{
     return r
 
 
+}
+
+func filemanagerDelete(path string) info {
+
+    if err := os.RemoveAll(filemanagerRootPath + path); err != nil {
+        return info {Error: "Error delete", Code: 1, }
+    }
+    return info {Error: "Ok", Code: 0, }
+}
+
+func filemanagerMkDir(path, name string) info {
+    if err := os.MkdirAll(filemanagerRootPath + path + name, 0755); err != nil {
+        return info {Error: "Error make directory", Code: 1, }
+    }
+    return info {Error: "Ok", Code: 0, }
+}
+
+func filemanagerRename(old, new string) info {
+    if err := os.Rename(filemanagerRootPath + old, filemanagerRootPath + filepath.Dir(old) + "/" + new); err != nil {
+        return info {Error: "Error rename", Code: 1, }
+    }
+    return info {Error: "Ok", Code: 0, }
 }
