@@ -1,7 +1,7 @@
 package panel
 
 import (
-	"encoding/base64"
+//	"encoding/base64"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -9,6 +9,7 @@ import (
 func Run() {
 
 	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
@@ -19,26 +20,12 @@ func Run() {
 		c.HTML(http.StatusOK, "main.html", gin.H{})
 	})
 /*
-	router.GET("campaign/add/:id", func(c *gin.Context) {
+	router.GET("campaign/add", func(c *gin.Context) {
 
-	})
-
-	router.GET("/campaign/recipient/:id", func(c *gin.Context) {
-		data := gin.H{
-			"campaignId": c.Param("id"),
-			"recipients": getRecipients(c.Param("id"), "0", "10"),
-		}
-		c.HTML(http.StatusOK, "recipient.html", data)
-	})
-
-	router.GET("/campaign/recipient/param/:id", func(c *gin.Context) {
-		data := gin.H{
-			"recipient": getRecipient(c.Param("id")),
-			"params":    getRecipientParam(c.Param("id")),
-		}
-		c.HTML(http.StatusOK, "recipientParam.html", data)
 	})
 */
+
+
 	mailer := router.Group("mailer")
 	{
 		mailer.GET("group", func(c *gin.Context) {
@@ -48,22 +35,23 @@ func Run() {
 			c.HTML(http.StatusOK, "group.html", data)
 		})
 
-		mailer.GET("campaign/:id", func(c *gin.Context) {
+		mailer.GET("group/:id", func(c *gin.Context) {
 			data := gin.H{
 				"campaigns": getCampaigns(c.Param("id")),
 			}
 			c.HTML(http.StatusOK, "campaign.html", data)
 		})
-
-		mailer.GET("campaign/:id/edit/{{.StatPng}}", func(c *gin.Context) {
+/*
+		mailer.GET("campaign/edit/:id/{{.StatPng}}", func(c *gin.Context) {
 			// blank 16x16 png
 			c.Header("Content-Type", "image/png")
 			output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 			c.String(http.StatusOK, string(output))
 		})
-
-		mailer.GET("campaign/:id/edit/", func(c *gin.Context) {
+*/
+		mailer.GET("campaign/edit/:id", func(c *gin.Context) {
 			camp, err := getCampaignInfo(c.Param("id"))
+
 			if err == nil {
 				data := gin.H{
 					"ifaces":   getIfaces(),
@@ -75,10 +63,10 @@ func Run() {
 			}
 		})
 
-		mailer.POST("campaign/:id/edit/", func(c *gin.Context) {
+		mailer.POST("campaign/edit/:id", func(c *gin.Context) {
 			data := gin.H{
 				"ifaces": getIfaces(),
-				"campaign": postCampaignInfo(
+				"campaign": updateCampaignInfo(
 					campaign{
 						Id:        c.Param("id"),
 						IfaceId:   c.PostForm("ifaceId"),
@@ -94,6 +82,22 @@ func Run() {
 			}
 
 			c.HTML(http.StatusOK, "campaignEdit.html", data)
+		})
+
+		mailer.GET("campaign/recipient/get/:id", func(c *gin.Context) {
+			data := gin.H{
+				"campaignId": c.Param("id"),
+				"recipients": getRecipients(c.Param("id"), "0", "10"),
+			}
+			c.HTML(http.StatusOK, "recipient.html", data)
+		})
+
+		mailer.GET("campaign/recipient/param/:id", func(c *gin.Context) {
+			data := gin.H{
+				"recipient": getRecipient(c.Param("id")),
+				"params":    getRecipientParam(c.Param("id")),
+			}
+			c.HTML(http.StatusOK, "recipientParam.html", data)
 		})
 
 		mailer.GET("recipients/:id", hRecipients)

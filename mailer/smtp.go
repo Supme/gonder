@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"golang.org/x/net/idna"
 )
 
 func Sender() {
@@ -102,9 +103,10 @@ func Sender() {
 
 func setIface(iface string) error {
 	if iface == "" {
+		// default interface
 		n = net.Dialer{}
 	} else {
-		_, _, err := net.SplitHostPort(iface)
+/*		_, _, err := net.SplitHostPort(iface)
 		if err == nil {
 			err = socksConnect(iface)
 		} else {
@@ -113,6 +115,13 @@ func setIface(iface string) error {
 		if err != nil {
 			return err
 		}
+*/
+// ToDo socks proxy connect
+		connectAddr := net.ParseIP(iface)
+		tcpAddr := &net.TCPAddr{
+			IP: connectAddr,
+		}
+		n = net.Dialer{LocalAddr: tcpAddr}
 	}
 	return nil
 }
@@ -148,9 +157,12 @@ func sendMail(m mailData) error {
 	var mx []*net.MX
 	var conn net.Conn
 
-	//ToDo cache MX servers
-	domain := strings.Split(m.To, "@")[1]
-	mx, err := net.LookupMX(domain)
+	//ToDo cache MX servers and punycode
+	domain, err := idna.ToASCII(strings.Split(m.To, "@")[1])
+	if err != nil {
+		return errors.New(fmt.Sprintf("Domain name failed: %v\r\n", err))
+	}
+	mx, err = net.LookupMX(domain)
 	if err != nil {
 		return errors.New(fmt.Sprintf("LookupMX failed: %v\r\n", err))
 	} else {
@@ -229,7 +241,7 @@ func makeMail(m mailData) (msg string) {
 	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
 	msg += "MIME-Version: 1.0\r\n"
 	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"
-	msg += "X-Mailer: Supmailer 0.1\r\n"
+	msg += "X-Mailer: Gonder 0.2\r\n"
 	msg += m.Extra_header + "\r\n"
 	// ------------- /head ---------------------------------------------------------
 

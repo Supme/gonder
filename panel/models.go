@@ -65,7 +65,8 @@ func getIfaces() map[string]iFace {
 	return ifaces
 }
 
-func postCampaignInfo(camp campaign) campaign {
+func updateCampaignInfo(camp campaign) campaign {
+
 	_, err := Db.Query("UPDATE campaign SET `interface_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `message`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
@@ -78,6 +79,7 @@ func postCampaignInfo(camp campaign) campaign {
 		camp.Id,
 	)
 	checkErr(err)
+
 	res, _ := getCampaignInfo(camp.Id)
 	return res
 }

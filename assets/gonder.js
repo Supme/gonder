@@ -1,5 +1,9 @@
 tinymce.init({
     selector:'textarea#message',
+    force_br_newlines : false,
+    force_p_newlines : false,
+    forced_root_block : '',
+    removed_menuitems: 'newdocument',
     toolbar:
             " core |" +
             " insertfile undo redo |" +
@@ -16,8 +20,13 @@ tinymce.init({
         "searchreplace code fullscreen",
         'codemirror',
         "insertdatetime table contextmenu paste",
-        "autoresize", "autolink"
+        "autoresize", "autolink",
+        "legacyoutput", "fullpage",
     ],
+
+    fullpage_default_doctype: "<!DOCTYPE html>",
+    fullpage_default_encoding: "UTF-8",
+
     codemirror: {
          indentOnInit: true, // Whether or not to indent code on init.
          path: 'codemirror-4.8', // Path to CodeMirror distribution
@@ -71,7 +80,7 @@ tinymce.init({
 });
 
 
-
+/*
 
 Dropzone.options.dropzone = {
     init: function() {

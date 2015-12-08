@@ -9,9 +9,13 @@ import (
 	"github.com/supme/gonder/panel"
 	"log"
 	"runtime"
+	"net"
 )
 
 func main() {
+
+	i, _ :=net.InterfaceAddrs()
+	fmt.Println(i)
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -47,12 +51,13 @@ func main() {
 	log.Println("Start statistics http server")
 	go mailer.Stat(hostConfig.ValueOf("port"))
 
-	log.Println("Start personal http server")
+	log.Println("Start panel http server")
 	go panel.Run()
 
-	log.Println("Press Enter for stop")
-	var input string
-	fmt.Scanln(&input)
+	//log.Println("Press Enter for stop")
+	//var input string
+	//fmt.Scanln(&input)
+	for {}
 }
 
 func checkErr(err error) {
