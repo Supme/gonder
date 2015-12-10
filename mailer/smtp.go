@@ -88,8 +88,8 @@ func Sender() {
 					} else {
 						r = res.Error()
 					}
-					log.Printf("Send mail for recipient id %s is %s", id, r)
-					rows, err := Db.Query("UPDATE recipient SET status=? WHERE id=?", r, id)
+					log.Printf("Send mail for recipient id %s email %s is %s", id, data.To, r)
+					rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", r, id)
 					checkErr(err)
 					defer rows.Close()
 					defer wg.Done()
@@ -106,22 +106,19 @@ func setIface(iface string) error {
 		// default interface
 		n = net.Dialer{}
 	} else {
-/*		_, _, err := net.SplitHostPort(iface)
-		if err == nil {
-			err = socksConnect(iface)
+		if iface[0:8] == "socks://" {
+			iface = iface[8:]
+			err := socksConnect(iface)
+			if err != nil {
+				return err
+			}
 		} else {
-			err = netConnect(iface)
+			connectAddr := net.ParseIP(iface)
+			tcpAddr := &net.TCPAddr{
+				IP: connectAddr,
+			}
+			n = net.Dialer{LocalAddr: tcpAddr}
 		}
-		if err != nil {
-			return err
-		}
-*/
-// ToDo socks proxy connect
-		connectAddr := net.ParseIP(iface)
-		tcpAddr := &net.TCPAddr{
-			IP: connectAddr,
-		}
-		n = net.Dialer{LocalAddr: tcpAddr}
 	}
 	return nil
 }
@@ -135,33 +132,19 @@ func socksConnect(socks string) error {
 	return nil
 }
 
-func netConnect(iface string) error {
-	var err error
-	ief, err := net.InterfaceByName(iface)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Set interface failed: %v\r\n", err))
-	}
-	addrs, err := ief.Addrs()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Get interface address failed: %v\r\n", err))
-	}
-	tcpAddr := &net.TCPAddr{
-		IP: addrs[0].(*net.IPNet).IP,
-	}
-	n = net.Dialer{LocalAddr: tcpAddr}
-	return nil
-}
-
 func sendMail(m mailData) error {
 	var smx string
 	var mx []*net.MX
 	var conn net.Conn
 
-	//ToDo cache MX servers and punycode
+	//ToDo cache MX servers
+	// punycode convert
 	domain, err := idna.ToASCII(strings.Split(m.To, "@")[1])
 	if err != nil {
 		return errors.New(fmt.Sprintf("Domain name failed: %v\r\n", err))
 	}
+	m.To = strings.Split(m.To, "@")[0] + "@" + domain
+
 	mx, err = net.LookupMX(domain)
 	if err != nil {
 		return errors.New(fmt.Sprintf("LookupMX failed: %v\r\n", err))
@@ -218,16 +201,11 @@ func sendMail(m mailData) error {
 
 	err = w.Close()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Close: %v", err))
+		return err
 	}
 
 	// Send the QUIT command and close the connection.
-	err = c.Quit()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Quit: %v", err))
-	}
-
-	return nil
+	return c.Quit()
 }
 
 func makeMail(m mailData) (msg string) {
@@ -235,9 +213,20 @@ func makeMail(m mailData) (msg string) {
 
 	msg = ""
 
+	if m.From_name == "" {
+		msg += `From: ` + m.From + "\r\n"
+	} else {
+		msg += `From: "` + encodeRFC2047(m.From_name) + `" <` + m.From + `>` +"\r\n"
+	}
+
+	if m.To_name == "" {
+		msg += `To: ` + m.To + "\r\n"
+	} else {
+		msg += `To: "` + encodeRFC2047(m.To_name) + `" <` + m.To + `>` + "\r\n"
+	}
+
 	// -------------- head ----------------------------------------------------------
-	msg += "From: " + encodeRFC2047(m.From_name) + " <" + m.From + ">" + "\r\n"
-	msg += "To: " + encodeRFC2047(m.To_name) + " <" + m.To + ">" + "\r\n"
+
 	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
 	msg += "MIME-Version: 1.0\r\n"
 	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"

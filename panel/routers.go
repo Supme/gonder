@@ -1,15 +1,18 @@
 package panel
 
 import (
-//	"encoding/base64"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"encoding/base64"
+	"os"
+	"bufio"
+	"strings"
 )
 
 func Run() {
 
-	//gin.SetMode(gin.ReleaseMode)
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
+	//gin.SetMode(gin.DebugMode)
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
@@ -25,9 +28,27 @@ func Run() {
 	})
 */
 
+	users := make(gin.Accounts)
 
-	mailer := router.Group("mailer")
+	file, err := os.Open("users.txt")
+	checkErr(err)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		user :=strings.Split(line,":")
+		users[user[0]] = user[1]
+	}
+
+	checkErr(err)
+
+	mailer := router.Group("mailer", gin.BasicAuth(users))
 	{
+		mailer.GET("logout", func(c *gin.Context) {
+			c.HTML(http.StatusUnauthorized, "logout.html", nil)
+		})
+
 		mailer.GET("group", func(c *gin.Context) {
 			data := gin.H{
 				"groups": getGroups(),
@@ -59,7 +80,10 @@ func Run() {
 				}
 				c.HTML(http.StatusOK, "campaignEdit.html", data)
 			} else {
-				c.String(http.StatusNotFound, "Campaign not found")
+				// blank 16x16 png
+				c.Header("Content-Type", "image/png")
+				output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
+				c.String(http.StatusOK, string(output))
 			}
 		})
 

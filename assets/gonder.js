@@ -1,3 +1,4 @@
+
 tinymce.init({
     selector:'textarea#message',
     force_br_newlines : false,

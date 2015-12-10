@@ -7,10 +7,14 @@ import (
 	"html/template"
 	"regexp"
 	"strings"
+	"fmt"
 )
 
 func statOpened(campaignId string, recipientId string) {
-	_ = Db.QueryRow("UPDATE recipient SET opened=1 WHERE id=? AND campaign_id=?", recipientId, campaignId)
+	//_ = Db.QueryRow("UPDATE recipient SET opened=1 WHERE id=? AND campaign_id=?", recipientId, campaignId)
+	row, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
+	checkErr(err)
+	defer row.Close()
 }
 
 func statJump(campaignId string, recipientId string, url string) {
@@ -25,13 +29,13 @@ func postUnsubscribe(campaignId string, recipientId string) {
 }
 
 func getWebMessage(campaignId string, recipientId string) string {
-	m, err := getMessage(campaignId, recipientId)
+	m, err := getMessage(campaignId, recipientId, true)
 	checkErr(err)
 	return string(m.Body)
 }
 
 func getMailMessage(campaignId string, recipientId string) message {
-	m, err := getMessage(campaignId, recipientId)
+	m, err := getMessage(campaignId, recipientId, false)
 	checkErr(err)
 	return m
 }
@@ -92,13 +96,15 @@ func getStatPngUrl(campaignId string, recipientId string) string {
 	return HostName + "/data/" + base64.URLEncoding.EncodeToString(j) + ".png"
 }
 
-func getMessage(campaignId string, recipientId string) (message, error) {
+func getMessage(campaignId string, recipientId string, web bool) (message, error) {
 	var subject, body string
 
 	err := Db.QueryRow("SELECT `subject`, `message` FROM campaign WHERE `id`=?", campaignId).Scan(&subject, &body)
 	if err != nil {
 		return message{Subject: "Error", Body: "Message not found"}, nil
 	} else {
+		body = strings.Replace(body, "../../../static/", HostName + "/static/", -1)
+		weburl := getWebUrl(campaignId, recipientId)
 		// Replace links for statistic
 		rx := regexp.MustCompile(`href=["'](.*?)["']`)
 		body = rx.ReplaceAllStringFunc(body, func(str string) string {
@@ -107,7 +113,11 @@ func getMessage(campaignId string, recipientId string) (message, error) {
 			s = strings.Replace(s, "href=", "", 1)
 			switch s {
 			case "{{.WebUrl}}":
-				return `href="` + getWebUrl(campaignId, recipientId) + `"`
+				if web {
+					return `href=""`
+				} else {
+					return `href="` + weburl + `"`
+				}
 			case "{{.UnsubscribeUrl}}":
 				return `href="` + getUnsubscribeUrl(campaignId, recipientId) + `"`
 			default:
@@ -117,10 +127,14 @@ func getMessage(campaignId string, recipientId string) (message, error) {
 		tmpl := template.New("mail")
 		tmpl, err = tmpl.Parse(body)
 		if err != nil {
-			return message{Subject: "Error", Body: "Error parse template"}, nil
+			e := fmt.Sprintf("Error parse template: %v", err)
+			return message{Subject: "Error", Body: e}, nil
 		}
 		people := getRecipientParam(recipientId)
 		people["StatPng"] = getStatPngUrl(campaignId, recipientId)
+		if !web {
+			people["WebUrl"] = weburl
+		}
 		t := bytes.NewBufferString("")
 		tmpl.Execute(t, people)
 		return message{Subject: subject, Body: t.String()}, nil

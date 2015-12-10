@@ -10,6 +10,7 @@ import (
 	"log"
 	"runtime"
 	"net"
+	_ "github.com/icattlecoder/godaemon"
 )
 
 func main() {
@@ -45,19 +46,19 @@ func main() {
 		mailer.HostName = "http://" + hostConfig.ValueOf("name") + ":" + hostConfig.ValueOf("port")
 	}
 
+	log.Println("Start panel http server")
+	go panel.Run()
+
 	log.Println("Start database mailer")
 	go mailer.Sender()
 
 	log.Println("Start statistics http server")
-	go mailer.Stat(hostConfig.ValueOf("port"))
-
-	log.Println("Start panel http server")
-	go panel.Run()
+	mailer.Stat(hostConfig.ValueOf("port"))
 
 	//log.Println("Press Enter for stop")
 	//var input string
 	//fmt.Scanln(&input)
-	for {}
+	//for {}
 }
 
 func checkErr(err error) {

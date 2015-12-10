@@ -1,3 +1,12 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
+--
+-- База данных: `gosender`
+--
+
+-- --------------------------------------------------------
+
 --
 -- Структура таблицы `attachment`
 --
@@ -26,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `message` text NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -48,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `group` (
 CREATE TABLE IF NOT EXISTS `interface` (
 `id` int(11) NOT NULL,
   `name` text NOT NULL,
-  `iface` text NOT NULL COMMENT 'Example: eth0 or xx.xx.xx.xx:xxxx for socks5. Blank for default interface.',
+  `iface` text NOT NULL COMMENT 'Example: xx.xx.xx.xx or socks://ip:port for socks5. Blank for default interface.',
   `host` text NOT NULL COMMENT 'The name of the server on behalf of which there is a sending.',
   `stream` int(11) NOT NULL COMMENT 'Number of concurrent streams',
   `delay` int(11) NOT NULL COMMENT 'Delay between one time stream in seconds'
@@ -64,8 +73,9 @@ CREATE TABLE IF NOT EXISTS `jumping` (
 `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `recipient_id` int(11) NOT NULL,
-  `url` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+  `url` text NOT NULL,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -92,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `email` text NOT NULL,
   `name` text NOT NULL,
   `status` text,
-  `opened` int(1) NOT NULL DEFAULT '0'
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB AUTO_INCREMENT=145771 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -173,7 +183,7 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
 -- AUTO_INCREMENT для таблицы `campaign`
 --
 ALTER TABLE `campaign`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 --
 -- AUTO_INCREMENT для таблицы `group`
 --
@@ -188,7 +198,7 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 -- AUTO_INCREMENT для таблицы `jumping`
 --
 ALTER TABLE `jumping`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 --
 -- AUTO_INCREMENT для таблицы `parameter`
 --

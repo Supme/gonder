@@ -120,4 +120,3 @@ func getRecipientParam(id string) map[string]string {
 	return recipient
 }
 
-

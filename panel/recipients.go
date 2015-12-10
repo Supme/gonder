@@ -95,7 +95,7 @@ func uploadRecipients(c *gin.Context) {
 	hRecipients(c)
 }
 
-// ToDo optimize function
+// ToDo optimize this
 func postRecipientCsv(campaignId string, file string) error {
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -108,14 +108,6 @@ func postRecipientCsv(campaignId string, file string) error {
 	reader.FieldsPerRecord = -1
 	rawCSVdata, err := reader.ReadAll()
 	checkErr(err)
-
-	/*recipient, err := Db.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
-	checkErr(err)
-	defer recipient.Close()*/
-
-	//parameter, err := Db.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
-	//checkErr(err)
-	//defer parameter.Close()
 
 	for k, v := range rawCSVdata {
 		if k == 0 {
@@ -135,7 +127,6 @@ func postRecipientCsv(campaignId string, file string) error {
 				}
 			}
 
-			//res, err := recipient.QueryRow(campaignId, email, name).Scan()
 			res, err := Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
 			checkErr(err)
 
@@ -143,7 +134,6 @@ func postRecipientCsv(campaignId string, file string) error {
 			checkErr(err)
 
 			for i, t := range data {
-				//_ = parameter.QueryRow(id, i, t).Scan()
 				_, err := Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
 				checkErr(err)
 			}
