@@ -1,10 +1,6 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
---
--- База данных: `gosender`
---
-
 -- --------------------------------------------------------
 
 --
@@ -35,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `message` text NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -46,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
 CREATE TABLE IF NOT EXISTS `group` (
 `id` int(11) NOT NULL,
   `name` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -75,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `jumping` (
   `recipient_id` int(11) NOT NULL,
   `url` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -88,7 +84,7 @@ CREATE TABLE IF NOT EXISTS `parameter` (
   `recipient_id` int(11) NOT NULL,
   `key` text NOT NULL,
   `value` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=435 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=498 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -103,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `name` text NOT NULL,
   `status` text,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=145771 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=145792 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -114,9 +110,10 @@ CREATE TABLE IF NOT EXISTS `recipient` (
 CREATE TABLE IF NOT EXISTS `unsubscribe` (
 `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
+  `campaign_id` int(11) NOT NULL,
   `email` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 --
 -- Индексы сохранённых таблиц
@@ -168,7 +165,7 @@ ALTER TABLE `recipient`
 -- Индексы таблицы `unsubscribe`
 --
 ALTER TABLE `unsubscribe`
- ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`);
+ ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`), ADD KEY `campaign_id` (`campaign_id`);
 
 --
 -- AUTO_INCREMENT для сохранённых таблиц
@@ -183,12 +180,12 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
 -- AUTO_INCREMENT для таблицы `campaign`
 --
 ALTER TABLE `campaign`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=8;
 --
 -- AUTO_INCREMENT для таблицы `group`
 --
 ALTER TABLE `group`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
 --
 -- AUTO_INCREMENT для таблицы `interface`
 --
@@ -198,22 +195,22 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 -- AUTO_INCREMENT для таблицы `jumping`
 --
 ALTER TABLE `jumping`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=50;
 --
 -- AUTO_INCREMENT для таблицы `parameter`
 --
 ALTER TABLE `parameter`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=435;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=498;
 --
 -- AUTO_INCREMENT для таблицы `recipient`
 --
 ALTER TABLE `recipient`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=145771;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=145792;
 --
 -- AUTO_INCREMENT для таблицы `unsubscribe`
 --
 ALTER TABLE `unsubscribe`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
 --
 -- Ограничения внешнего ключа сохраненных таблиц
 --

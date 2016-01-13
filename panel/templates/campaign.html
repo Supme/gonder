@@ -2,6 +2,22 @@
 
 <div class="page-header">Campaigns</div>
 
+<form class="form-horizontal" method="POST">
+    <fieldset>
+
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="name">New campaign</label>
+            <div class="col-md-6">
+                <input id="name" name="name" type="text" placeholder="Campaign name" class="form-control input-md">
+            </div>
+            <div class="col-md-2">
+                <input type="submit" name="add" class="btn btn-success" value="Add">
+            </div>
+        </div>
+
+    </fieldset>
+</form>
+
 <ul>
 {{range $k, $c := .campaigns}}
     <li><a href="/mailer/campaign/edit/{{$k}}">{{$c.Name}} <<{{$c.Subject}})>></a></li>

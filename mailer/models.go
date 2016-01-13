@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"html/template"
+	"text/template"
 	"regexp"
 	"strings"
 	"fmt"
@@ -23,8 +23,14 @@ func statJump(campaignId string, recipientId string, url string) {
 	defer row.Close()
 }
 
+func statWebVersion(campaignId string, recipientId string)  {
+	row, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
+	checkErr(err)
+	defer row.Close()
+}
+
 func postUnsubscribe(campaignId string, recipientId string) {
-	_, err := Db.Query("INSERT INTO unsubscribe (`group_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), (SELECT email FROM recipient WHERE id=?))", campaignId, recipientId)
+	_, err := Db.Query("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
 	checkErr(err)
 }
 
@@ -103,14 +109,26 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 	if err != nil {
 		return message{Subject: "Error", Body: "Message not found"}, nil
 	} else {
+
 		body = strings.Replace(body, "../../../static/", HostName + "/static/", -1)
+
 		weburl := getWebUrl(campaignId, recipientId)
+
+		people := getRecipientParam(recipientId)
+		people["UnsubscribeUrl"] = getUnsubscribeUrl(campaignId, recipientId)
+		people["StatPng"] = getStatPngUrl(campaignId, recipientId)
+		if !web {
+			people["WebUrl"] = weburl
+		}
+
 		// Replace links for statistic
 		rx := regexp.MustCompile(`href=["'](.*?)["']`)
 		body = rx.ReplaceAllStringFunc(body, func(str string) string {
+			// get only url
 			s := strings.Replace(str, "'", "", -1)
 			s = strings.Replace(s, `"`, "", -1)
 			s = strings.Replace(s, "href=", "", 1)
+
 			switch s {
 			case "{{.WebUrl}}":
 				if web {
@@ -119,22 +137,36 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 					return `href="` + weburl + `"`
 				}
 			case "{{.UnsubscribeUrl}}":
-				return `href="` + getUnsubscribeUrl(campaignId, recipientId) + `"`
+				return `href="` + people["UnsubscribeUrl"] + `"`
 			default:
+				// template parameter in url
+				urlt := template.New("url")
+				urlt, err = urlt.Parse(s)
+				if err != nil {
+					s = fmt.Sprintf("Error parse url params: %v", err)
+				}
+				u := bytes.NewBufferString("")
+				urlt.Execute(u, people)
+				s = u.String()
+
 				return `href="` + getStatUrl(campaignId, recipientId, s) + `"`
 			}
 		})
 		tmpl := template.New("mail")
+
+		// Client check
+/*		body = strings.Replace(body,"{{endif}}", "<![endif]-->", -1)
+		tmpl.Funcs(template.FuncMap{"raw": func(t string) template.HTML {return template.HTML(t)}})
+		tmpl.Funcs(template.FuncMap{"ifgte": func(t string) template.HTML {return " <!--[if gte " + template.HTML(t) + "]> "}})
+		tmpl.Funcs(template.FuncMap{"iflte": func(t string) template.HTML {return " <!--[if lte " + template.HTML(t) + "]> "}})
+		tmpl.Funcs(template.FuncMap{"ifeq": func(t string) template.HTML {return " <!--[if " + template.HTML(t) + "]> "}})
+*/
 		tmpl, err = tmpl.Parse(body)
 		if err != nil {
 			e := fmt.Sprintf("Error parse template: %v", err)
 			return message{Subject: "Error", Body: e}, nil
 		}
-		people := getRecipientParam(recipientId)
-		people["StatPng"] = getStatPngUrl(campaignId, recipientId)
-		if !web {
-			people["WebUrl"] = weburl
-		}
+
 		t := bytes.NewBufferString("")
 		tmpl.Execute(t, people)
 		return message{Subject: subject, Body: t.String()}, nil

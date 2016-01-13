@@ -1,4 +1,8 @@
 package panel
+import (
+"regexp"
+"strings"
+)
 
 func getGroups() map[string]string {
 	var key, name string
@@ -13,6 +17,11 @@ func getGroups() map[string]string {
 	return groups
 }
 
+func addGroup(name string) {
+	_, err := Db.Query("INSERT INTO `group` (`name`) VALUES (?)", name)
+	checkErr(err)
+}
+
 func getCampaigns(id string) map[string]campaign {
 	var key, name, subject string
 	campaigns := make(map[string]campaign)
@@ -25,6 +34,11 @@ func getCampaigns(id string) map[string]campaign {
 		campaigns[key] = campaign{Name: name, Subject: subject}
 	}
 	return campaigns
+}
+
+func addCampaigns(id string, name string) {
+	_, err := Db.Query("INSERT INTO `campaign`(`group_id`, `interface_id`, `from`, `from_name`, `name`, `subject`, `message`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
+	checkErr(err)
 }
 
 func getCampaignInfo(id string) (campaign, error) {
@@ -67,6 +81,11 @@ func getIfaces() map[string]iFace {
 
 func updateCampaignInfo(camp campaign) campaign {
 
+	// Fix TinyMce bug replace & to &amp; in url
+	r := regexp.MustCompile(`href=["'](.*?)["']`)
+	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
+		return strings.Replace(str, "&amp;", "&", -1)
+	})
 	_, err := Db.Query("UPDATE campaign SET `interface_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `message`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,

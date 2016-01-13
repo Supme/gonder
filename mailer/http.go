@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
+	"fmt"
 )
 
 func Stat(hostPort string) {
@@ -29,17 +30,21 @@ func Stat(hostPort string) {
 		err = json.Unmarshal([]byte(data), &param)
 		checkErr(err)
 
+		fmt.Sprintln(param)
+
 		if param.Opened != "" {
+			//ToDo Записывать параметры клиента (клиент, браузер, ip и т.д.)
+			go statOpened(param.Campaign, param.Recipient)
 			// blank 16x16 png
 			c.Header("Content-Type", "image/png")
 			output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 			c.String(http.StatusOK, string(output))
-			go statOpened(param.Campaign, param.Recipient)
 		} else if param.Url != "" {
+			go statJump(param.Campaign, param.Recipient, param.Url)
 			// jump to url
 			c.Redirect(http.StatusMovedPermanently, param.Url)
-			go statJump(param.Campaign, param.Recipient, param.Url)
 		} else if param.Webver != "" {
+			go statWebVersion(param.Campaign, param.Recipient)
 			// web version
 			message := getWebMessage(param.Campaign, param.Recipient)
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(message))

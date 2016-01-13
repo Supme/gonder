@@ -2,6 +2,22 @@
 
 <div class="page-header">Groups</div>
 
+<form class="form-horizontal" method="POST">
+    <fieldset>
+
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="name">New group</label>
+            <div class="col-md-8">
+                <input id="name" name="name" type="text" placeholder="Group name" class="form-control input-md">
+            </div>
+            <div class="col-md-2">
+                <input type="submit" name="add" class="btn btn-success" value="Add">
+            </div>
+        </div>
+
+    </fieldset>
+</form>
+
 <ul>
 {{range $k, $c := .groups}}
     <li><a href="/mailer/group/{{$k}}">{{$c}}</a></li>

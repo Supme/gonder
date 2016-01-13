@@ -22,82 +22,91 @@ import (
 func Sender() {
 
 	var data mailData
-	var wg sync.WaitGroup
 
 	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `interface` t2 ON t2.`id`=t1.`interface_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
 	checkErr(err)
 	defer campaign.Close()
-
-	attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-	checkErr(err)
-	defer attachment.Close()
-
-	// Select recipient
-	recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-	checkErr(err)
-	defer recipient.Close()
 
 	for {
 		camp, err := campaign.Query()
 		checkErr(err)
 		defer camp.Close()
 
+		var wc sync.WaitGroup
 		for camp.Next() {
 			err = camp.Scan(&campaignId, &data.From, &data.From_name, &iface, &data.Host, &stream, &delay)
 			checkErr(err)
 
-			err = setIface(iface)
-			checkErr(err)
+			wc.Add(1)
+			go func(cId string, cData mailData, cIface string, cStream int, cDelay int) {
 
-			attach, err := attachment.Query(campaignId)
-			checkErr(err)
-			defer attach.Close()
-
-			data.Attachments = nil
-
-			var location string
-			var name string
-			for attach.Next() {
-				err = attach.Scan(&location, &name)
+				attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
 				checkErr(err)
-				data.Attachments = append(data.Attachments, attachmentData{Location: location, Name: name})
-			}
+				defer attachment.Close()
 
-			recip, err := recipient.Query(campaignId, stream)
-			checkErr(err)
-			defer recip.Close()
-
-			for recip.Next() {
-
-				err = recip.Scan(&recipientId, &data.To, &data.To_name)
+				err = setIface(cIface)
 				checkErr(err)
 
-				d := getMailMessage(campaignId, recipientId)
-				data.Subject = d.Subject
-				data.Html = d.Body
-				data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(campaignId, recipientId) + "\r\nPrecedence: bulk\r\n"
+				attach, err := attachment.Query(cId)
+				checkErr(err)
+				defer attach.Close()
 
-				// Send mail
-				wg.Add(1)
-				go func(id string, data mailData) {
-					var r string
+				cData.Attachments = nil
 
-					res := sendMail(data)
-					if res == nil {
-						r = "Ok"
-					} else {
-						r = res.Error()
-					}
-					log.Printf("Send mail for recipient id %s email %s is %s", id, data.To, r)
-					rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", r, id)
+				var location string
+				var name string
+				for attach.Next() {
+					err = attach.Scan(&location, &name)
 					checkErr(err)
-					defer rows.Close()
-					defer wg.Done()
-				}(recipientId, data)
-			}
-			wg.Wait()
+					cData.Attachments = append(cData.Attachments, attachmentData{Location: location, Name: name})
+				}
+
+				recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
+				checkErr(err)
+				defer recipient.Close()
+
+				recip, err := recipient.Query(cId, cStream)
+				checkErr(err)
+				defer recip.Close()
+
+				var wr sync.WaitGroup
+				for recip.Next() {
+
+					var rId string
+					err = recip.Scan(&rId, &cData.To, &cData.To_name)
+					checkErr(err)
+
+					wr.Add(1)
+					go func(cid string, rid string, rData mailData) {
+
+						d := getMailMessage(cid, rid)
+						rData.Subject = d.Subject
+						rData.Html = d.Body
+						rData.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cid, rid) + "\r\nPrecedence: bulk\r\n"
+
+						// Send mail
+						res := sendMail(rData)
+
+						var r string
+						if res == nil {
+							r = "Ok"
+						} else {
+							r = res.Error()
+						}
+
+						log.Printf("Send mail for recipient id %s email %s is %s", rid, rData.To, r)
+						rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", r, rid)
+						checkErr(err)
+						defer rows.Close()
+						defer wr.Done()
+					}(cId, rId, cData)
+				}
+				wr.Wait()
+				time.Sleep(time.Second + time.Duration(cDelay)*time.Second)
+				defer wc.Done()
+			}(campaignId, data, iface, stream, delay)
 		}
-		time.Sleep(time.Second + time.Duration(delay)*time.Second)
+		wc.Wait()
 	}
 }
 
@@ -164,26 +173,26 @@ func sendMail(m mailData) error {
 		}
 	}
 	if err != nil {
-		return errors.New(fmt.Sprintf("Connect: %v\r\n", err))
+		return err
 	}
 
 	host, _, _ := net.SplitHostPort(smx)
 	c, err := smtp.NewClient(conn, host)
 	if err != nil {
-		return errors.New(fmt.Sprintf("New client failed: %v\r\n", err))
+		return err
 	}
 
 	if err := c.Hello(m.Host); err != nil {
-		return errors.New(fmt.Sprintf("Hello: %v\r\n", err))
+		return err
 	}
 
 	// Set the sender and recipient first
 	if err := c.Mail(m.From); err != nil {
-		return errors.New(fmt.Sprintf("Mail: %v\r\n", err))
+		return err
 	}
 
 	if err := c.Rcpt(m.To); err != nil {
-		return errors.New(fmt.Sprintf("Rcpt: %v\r\n", err))
+		return err
 	}
 
 	msg := makeMail(m)
@@ -192,11 +201,11 @@ func sendMail(m mailData) error {
 
 	w, err := c.Data()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Data: %v", err))
+		return err
 	}
 	_, err = fmt.Fprintf(w, msg)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Fprintf: %v", err))
+		return err
 	}
 
 	err = w.Close()

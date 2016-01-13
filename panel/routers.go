@@ -22,26 +22,21 @@ func Run() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "main.html", gin.H{})
 	})
-/*
-	router.GET("campaign/add", func(c *gin.Context) {
 
-	})
-*/
 
+	// get users from file
 	users := make(gin.Accounts)
-
 	file, err := os.Open("users.txt")
 	checkErr(err)
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		user :=strings.Split(line,":")
 		users[user[0]] = user[1]
 	}
-
 	checkErr(err)
+
 
 	mailer := router.Group("mailer", gin.BasicAuth(users))
 	{
@@ -56,20 +51,29 @@ func Run() {
 			c.HTML(http.StatusOK, "group.html", data)
 		})
 
+		mailer.POST("group", func(c *gin.Context) {
+			addGroup(c.PostForm("name"))
+			data := gin.H{
+				"groups": getGroups(),
+			}
+			c.HTML(http.StatusOK, "group.html", data)
+		})
+
 		mailer.GET("group/:id", func(c *gin.Context) {
 			data := gin.H{
 				"campaigns": getCampaigns(c.Param("id")),
 			}
 			c.HTML(http.StatusOK, "campaign.html", data)
 		})
-/*
-		mailer.GET("campaign/edit/:id/{{.StatPng}}", func(c *gin.Context) {
-			// blank 16x16 png
-			c.Header("Content-Type", "image/png")
-			output, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
-			c.String(http.StatusOK, string(output))
+
+		mailer.POST("group/:id", func(c *gin.Context) {
+			addCampaigns(c.Param("id"), c.PostForm("name"))
+			data := gin.H{
+				"campaigns": getCampaigns(c.Param("id")),
+			}
+			c.HTML(http.StatusOK, "campaign.html", data)
 		})
-*/
+
 		mailer.GET("campaign/edit/:id", func(c *gin.Context) {
 			camp, err := getCampaignInfo(c.Param("id"))
 

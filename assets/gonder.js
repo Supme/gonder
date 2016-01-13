@@ -1,5 +1,86 @@
+window.onload = function() {
 
-tinymce.init({
+    CKEDITOR.replace( 'message', {
+            filebrowserBrowseUrl: '/assets/filemanager/index.html',
+            plugins:
+            //'dialogui,' +
+            'dialog,' +
+            'a11yhelp,' +
+            'dialogadvtab,' +
+            'basicstyles,' +
+            'bidi,' +
+            'blockquote,' +
+            'clipboard,' +
+            'button,' +
+            'panelbutton,' +
+            'panel,' +
+            'floatpanel,' +
+            'colorbutton,' +
+            'colordialog,' +
+            'templates,' +
+            'menu,' +
+            'contextmenu,' +
+            'div,' +
+            'resize,' +
+            'toolbar,' +
+            'elementspath,' +
+            'enterkey,' +
+            'entities,' +
+            'popup,' +
+            'filebrowser,' +
+            'find,' +
+            'fakeobjects,' +
+            //'flash,' +
+            'floatingspace,' +
+            'listblock,' +
+            'richcombo,' +
+            'font,' +
+            //'forms,' +
+            'format,' +
+            'horizontalrule,' +
+            'htmlwriter,' +
+            //'iframe,' +
+            'wysiwygarea,' +
+            'image,' +
+            'indent,' +
+            'indentblock,' +
+            'indentlist,' +
+            //'smiley,' +
+            'justify,' +
+            'menubutton,' +
+            //'language,' +
+            'link,' +
+            'list,' +
+            'liststyle,' +
+            'magicline,' +
+            'maximize,' +
+            //'newpage,' +
+            'pagebreak,' +
+            'pastetext,' +
+            'pastefromword,' +
+            'preview,' +
+            'print,' +
+            'removeformat,' +
+            //'save,' +
+            'selectall,' +
+            'showblocks,' +
+            'showborders,' +
+            'sourcearea,' +
+            'specialchar,' +
+            'scayt,' +
+            'stylescombo,' +
+            'tab,' +
+            'table,' +
+            'tabletools,' +
+            'undo,' +
+            'wsc,' +
+            'docprops,'
+        }
+    );
+};
+
+//ToDo Косяк в ссылках с заменой & на &amp;
+/*tinymce.init({
     selector:'textarea#message',
     force_br_newlines : false,
     force_p_newlines : false,
@@ -41,9 +122,16 @@ tinymce.init({
               ]
     },
 
+    convert_urls : false,
     relative_urls: true,
     document_base_url: '',
-//  save_enablewhendirty: true,
+
+    //entity_encoding : "raw",
+    editor_encoding : "raw",
+    //valid_elements : "*[*]",
+    cleanup : false,
+    cleanup_on_startup : false,
+    //  save_enablewhendirty: true,
 
     paste_data_images: true,
 
@@ -79,7 +167,7 @@ tinymce.init({
 
     }
 });
-
+*/
 
 /*
 
