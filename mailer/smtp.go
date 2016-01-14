@@ -107,6 +107,7 @@ func Sender() {
 			}(campaignId, data, iface, stream, delay)
 		}
 		wc.Wait()
+		time.Sleep(30 * time.Second) // easy with database
 	}
 }
 

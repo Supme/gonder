@@ -10,23 +10,29 @@ import (
 	"fmt"
 )
 
-func statOpened(campaignId string, recipientId string) {
+func statOpened(campaignId string, recipientId string, userAgent string) {
 	//_ = Db.QueryRow("UPDATE recipient SET opened=1 WHERE id=? AND campaign_id=?", recipientId, campaignId)
-	row, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
+	_, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
 	checkErr(err)
-	defer row.Close()
+	_, err = Db.Query("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, recipientId)
+	checkErr(err)
+	//defer row.Close()
 }
 
-func statJump(campaignId string, recipientId string, url string) {
-	row, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
+func statJump(campaignId string, recipientId string, url string, userAgent string) {
+	_, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
 	checkErr(err)
-	defer row.Close()
+	_, err = Db.Query("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+	checkErr(err)
+	//defer row.Close()
 }
 
-func statWebVersion(campaignId string, recipientId string)  {
-	row, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
+func statWebVersion(campaignId string, recipientId string, userAgent string)  {
+	_, err := Db.Query("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
 	checkErr(err)
-	defer row.Close()
+	_, err = Db.Query("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+	checkErr(err)
+	//defer row.Close()
 }
 
 func postUnsubscribe(campaignId string, recipientId string) {

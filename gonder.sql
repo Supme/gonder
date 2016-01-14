@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `jumping` (
   `recipient_id` int(11) NOT NULL,
   `url` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -98,7 +98,9 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `email` text NOT NULL,
   `name` text NOT NULL,
   `status` text,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `client_agent` text,
+  `web_agent` text
 ) ENGINE=InnoDB AUTO_INCREMENT=145792 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -195,7 +197,7 @@ MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=5;
 -- AUTO_INCREMENT для таблицы `jumping`
 --
 ALTER TABLE `jumping`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=50;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=79;
 --
 -- AUTO_INCREMENT для таблицы `parameter`
 --
