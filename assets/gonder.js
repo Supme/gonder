@@ -1,6 +1,5 @@
 window.onload = function() {
-
-    CKEDITOR.replace( 'message', {
+    var editor = CKEDITOR.replace( 'message', {
             filebrowserBrowseUrl: '/assets/filemanager/index.html',
             plugins:
             //'dialogui,' +
@@ -74,12 +73,20 @@ window.onload = function() {
             'tabletools,' +
             'undo,' +
             'wsc,' +
-            'docprops,'
+            'docprops,',
+
+            allowedContent:  true,
+            removeFormatAttributes: '',
         }
     );
+
+    editor.on( 'instanceReady', function() {
+        console.log( editor.filter.allowedContent );
+    } );
+
 };
 
-//ToDo Косяк в ссылках с заменой & на &amp;
+//Косяк в ссылках с заменой & на &amp;
 /*tinymce.init({
     selector:'textarea#message',
     force_br_newlines : false,

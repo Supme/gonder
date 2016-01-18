@@ -116,6 +116,7 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 		return message{Subject: "Error", Body: "Message not found"}, nil
 	} else {
 
+		//replace url to absolute
 		body = strings.Replace(body, "../../../static/", HostName + "/static/", -1)
 
 		weburl := getWebUrl(campaignId, recipientId)
@@ -125,6 +126,15 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 		people["StatPng"] = getStatPngUrl(campaignId, recipientId)
 		if !web {
 			people["WebUrl"] = weburl
+
+			// add statistic png
+			if strings.Index(body, "{{.StatPng}}") == -1 {
+				if strings.Index(body, "</body>") == -1 {
+					body = body + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
+				} else {
+					body = strings.Replace(body, "</body>", "\n<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>\n</body>", -1)
+				}
+			}
 		}
 
 		// Replace links for statistic

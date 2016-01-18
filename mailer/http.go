@@ -11,7 +11,8 @@ import (
 
 func Stat(hostPort string) {
 
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
+
 	router := gin.Default()
 	router.LoadHTMLGlob("mailer/templates/*")
 

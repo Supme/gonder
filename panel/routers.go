@@ -11,9 +11,6 @@ import (
 
 func Run() {
 
-	gin.SetMode(gin.ReleaseMode)
-	//gin.SetMode(gin.DebugMode)
-
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
 	router.Static("/static/", "static")

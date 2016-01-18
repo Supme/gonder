@@ -10,7 +10,8 @@ import (
 	"log"
 	"runtime"
 	"net"
-	_ "github.com/icattlecoder/godaemon"
+	"os"
+	"os/exec"
 )
 
 func main() {
@@ -34,7 +35,6 @@ func main() {
 	db, err := sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
 	checkErr(err)
 	defer db.Close()
-
 	checkErr(db.Ping())
 
 	mailer.Db = db
@@ -46,19 +46,81 @@ func main() {
 		mailer.HostName = "http://" + hostConfig.ValueOf("name") + ":" + hostConfig.ValueOf("port")
 	}
 
-	log.Println("Start panel http server")
-	go panel.Run()
+	if len(os.Args) == 2 {
 
-	log.Println("Start database mailer")
-	go mailer.Sender()
+		if os.Args[1] == "start" {
+			p := exec.Command(os.Args[0], "start", "panel")
+			p.Start()
+			fmt.Println("Panel [PID]", p.Process.Pid)
 
-	log.Println("Start statistics http server")
-	mailer.Stat(hostConfig.ValueOf("port"))
+			sd := exec.Command(os.Args[0], "start", "sender")
+			sd.Start()
+			fmt.Println("Sender [PID]", sd.Process.Pid)
 
-	//log.Println("Press Enter for stop")
-	//var input string
-	//fmt.Scanln(&input)
-	//for {}
+			st := exec.Command(os.Args[0], "start", "stat")
+			st.Start()
+			fmt.Println("Statistic [PID]", st.Process.Pid)
+
+			os.Exit(0)
+		}
+
+		if os.Args[1] == "start" {
+			c := exec.Command("killall", os.Args[0])
+			c.Start()
+			fmt.Println("Stop all services")
+
+			os.Exit(0)
+		}
+	}
+
+	if len(os.Args) == 3 {
+
+		if os.Args[1] == "start" {
+
+			if os.Args[2] == "panel" {
+
+				log.Println("Start panel http server")
+				panel.Run()
+
+				for {}
+			}
+
+			if os.Args[2] == "sender" {
+
+				log.Println("Start database mailer")
+				mailer.Sender()
+
+				for {}
+			}
+
+			if os.Args[2] == "stat" {
+
+				log.Println("Start statistics http server")
+				mailer.Stat(hostConfig.ValueOf("port"))
+
+				for {}
+			}
+
+		}
+
+	}
+
+	if len(os.Args) == 1 {
+		log.Println("Start panel http server")
+		go panel.Run()
+
+		log.Println("Start database mailer")
+		go mailer.Sender()
+
+		log.Println("Start statistics http server")
+		go mailer.Stat(hostConfig.ValueOf("port"))
+
+		log.Println("Press Enter for stop")
+		var input string
+		fmt.Scanln(&input)
+	}
+
+
 }
 
 func checkErr(err error) {
