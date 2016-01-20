@@ -330,8 +330,8 @@ func Sender() {
 						data.Html = d.Body
 						data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
 
-						data.To = r.to
-						data.To_name = r.to_name
+						data.To = rData.to
+						data.To_name = rData.to_name
 
 						// Send mail
 						res := data.SendMail()
