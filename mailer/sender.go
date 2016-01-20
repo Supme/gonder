@@ -275,36 +275,37 @@ func Sender() {
 		var wc sync.WaitGroup
 		for camp.Next() {
 
-			c := new(campaignData)
+			var id, from, from_name, iface, host string
+			var stream, delay int
 
-			err = camp.Scan(&c.id, &c.from, &c.from_name, &c.iface, &c.host, &c.stream, &c.delay)
+			err = camp.Scan(&id, &from, &from_name, &iface, &host, &stream, &delay)
 			checkErr(err)
 
 			wc.Add(1)
-			go func(cPart *campaignData) {
+			go func(c campaignData) {
 				attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
 				checkErr(err)
 				defer attachment.Close()
 
-				attach, err := attachment.Query(cPart.id)
+				attach, err := attachment.Query(c.id)
 				checkErr(err)
 				defer attach.Close()
 
-				cPart.attachments = nil
+				c.attachments = nil
 
 				var location string
 				var name string
 				for attach.Next() {
 					err = attach.Scan(&location, &name)
 					checkErr(err)
-					cPart.attachments = append(cPart.attachments, attachmentData{Location: location, Name: name})
+					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
 				}
 
 				recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
 				checkErr(err)
 				defer recipient.Close()
 
-				recip, err := recipient.Query(cPart.id, cPart.stream)
+				recip, err := recipient.Query(c.id, c.stream)
 				checkErr(err)
 				defer recip.Close()
 
@@ -324,23 +325,26 @@ func Sender() {
 						data.From_name = cData.from_name
 						data.Host = cData.host
 						data.Attachments = cData.attachments
-
-						d := getMailMessage(cData.id, rData.id)
-						data.Subject = d.Subject
-						data.Html = d.Body
-						data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-
 						data.To = rData.to
 						data.To_name = rData.to_name
 
-						// Send mail
-						res := data.SendMail()
-
 						var rs string
-						if res == nil {
-							rs = "Ok"
+						d, e := getMailMessage(cData.id, rData.id)
+						if e == nil {
+							data.Subject = d.Subject
+							data.Html = d.Body
+							data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
+
+							// Send mail
+							res := data.SendMail()
+
+							if res == nil {
+								rs = "Ok"
+							} else {
+								rs = res.Error()
+							}
 						} else {
-							rs = res.Error()
+							rs = "Error " + e.Error()
 						}
 
 						log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
@@ -348,12 +352,21 @@ func Sender() {
 						checkErr(err)
 						defer rows.Close()
 						defer wr.Done()
-					}(cPart, r)
+					}(&c, r)
 				}
 				wr.Wait()
 				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
 				defer wc.Done()
-			}(c)
+
+			}(campaignData{
+				id: id,
+				from: from,
+				from_name: from_name,
+				iface: iface,
+				host: host,
+				stream: stream,
+				delay: delay,
+			})
 		}
 		wc.Wait()
 		time.Sleep(15 * time.Second) // easy with database

@@ -46,10 +46,8 @@ func getWebMessage(campaignId string, recipientId string) string {
 	return string(m.Body)
 }
 
-func getMailMessage(campaignId string, recipientId string) message {
-	m, err := getMessage(campaignId, recipientId, false)
-	checkErr(err)
-	return m
+func getMailMessage(campaignId string, recipientId string) (message, error) {
+	return getMessage(campaignId, recipientId, false)
 }
 
 func getWebUrl(campaignId string, recipientId string) string {
@@ -116,9 +114,6 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 		return message{Subject: "Error", Body: "Message not found"}, nil
 	} else {
 
-		//replace url to absolute
-		body = strings.Replace(body, "../../../static/", HostName + "/static/", -1)
-
 		weburl := getWebUrl(campaignId, recipientId)
 
 		people := getRecipientParam(recipientId)
@@ -138,8 +133,8 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 		}
 
 		// Replace links for statistic
-		rx := regexp.MustCompile(`href=["'](.*?)["']`)
-		body = rx.ReplaceAllStringFunc(body, func(str string) string {
+		re := regexp.MustCompile(`href=["'](\bhttp:\/\/\b|\bhttps:\/\/\b)(.*?)["']`)
+		body = re.ReplaceAllStringFunc(body, func(str string) string {
 			// get only url
 			s := strings.Replace(str, "'", "", -1)
 			s = strings.Replace(s, `"`, "", -1)
@@ -168,6 +163,14 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 				return `href="` + getStatUrl(campaignId, recipientId, s) + `"`
 			}
 		})
+
+
+		//replace url to absolute
+		//re = regexp.MustCompile(`(\bhref\b|\bsrc\b)=["'](\/\bstatic\b\/)`)
+		//body = re.ReplaceAllString(body, `"` + HostName + "/static/")
+		body = strings.Replace(body, "\"/static/", "\"" + HostName + "/static/", -1)
+		body = strings.Replace(body, "'/static/", "'" + HostName + "'/static/", -1)
+
 		tmpl := template.New("mail")
 
 		// Client check
@@ -180,7 +183,7 @@ func getMessage(campaignId string, recipientId string, web bool) (message, error
 		tmpl, err = tmpl.Parse(body)
 		if err != nil {
 			e := fmt.Sprintf("Error parse template: %v", err)
-			return message{Subject: "Error", Body: e}, nil
+			return message{Subject: "Error", Body: e}, err
 		}
 
 		t := bytes.NewBufferString("")
