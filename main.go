@@ -64,7 +64,7 @@ func main() {
 			os.Exit(0)
 		}
 
-		if os.Args[1] == "start" {
+		if os.Args[1] == "stop" {
 			c := exec.Command("killall", os.Args[0])
 			c.Start()
 			fmt.Println("Stop all services")

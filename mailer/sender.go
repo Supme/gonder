@@ -17,135 +17,72 @@ import (
 	"sync"
 	"time"
 	"golang.org/x/net/idna"
+	"database/sql"
 )
 
-func Sender() {
+var HostName string
 
-	var data mailData
+var Db *sql.DB
 
-	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `interface` t2 ON t2.`id`=t1.`interface_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
-	checkErr(err)
-	defer campaign.Close()
-
-	for {
-		camp, err := campaign.Query()
-		checkErr(err)
-		defer camp.Close()
-
-		var wc sync.WaitGroup
-		for camp.Next() {
-			err = camp.Scan(&campaignId, &data.From, &data.From_name, &iface, &data.Host, &stream, &delay)
-			checkErr(err)
-
-			wc.Add(1)
-			go func(cId string, cData mailData, cIface string, cStream int, cDelay int) {
-
-				attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-				checkErr(err)
-				defer attachment.Close()
-
-				err = setIface(cIface)
-				checkErr(err)
-
-				attach, err := attachment.Query(cId)
-				checkErr(err)
-				defer attach.Close()
-
-				cData.Attachments = nil
-
-				var location string
-				var name string
-				for attach.Next() {
-					err = attach.Scan(&location, &name)
-					checkErr(err)
-					cData.Attachments = append(cData.Attachments, attachmentData{Location: location, Name: name})
-				}
-
-				recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-				checkErr(err)
-				defer recipient.Close()
-
-				recip, err := recipient.Query(cId, cStream)
-				checkErr(err)
-				defer recip.Close()
-
-				var wr sync.WaitGroup
-				for recip.Next() {
-
-					var rId string
-					err = recip.Scan(&rId, &cData.To, &cData.To_name)
-					checkErr(err)
-
-					wr.Add(1)
-					go func(cid string, rid string, rData mailData) {
-
-						d := getMailMessage(cid, rid)
-						rData.Subject = d.Subject
-						rData.Html = d.Body
-						rData.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cid, rid) + "\r\nPrecedence: bulk\r\n"
-
-						// Send mail
-						res := sendMail(rData)
-
-						var r string
-						if res == nil {
-							r = "Ok"
-						} else {
-							r = res.Error()
-						}
-
-						log.Printf("Send mail for recipient id %s email %s is %s", rid, rData.To, r)
-						rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", r, rid)
-						checkErr(err)
-						defer rows.Close()
-						defer wr.Done()
-					}(cId, rId, cData)
-				}
-				wr.Wait()
-				time.Sleep(time.Second + time.Duration(cDelay)*time.Second)
-				defer wc.Done()
-			}(campaignId, data, iface, stream, delay)
-		}
-		wc.Wait()
-		time.Sleep(30 * time.Second) // easy with database
-	}
+type message struct {
+	Subject string
+	Body    string
 }
 
-func setIface(iface string) error {
-	if iface == "" {
+type pJson struct {
+	Campaign    string `json:"c"`
+	Recipient   string `json:"r"`
+	Url         string `json:"u"`
+	Webver      string `json:"w"`
+	Opened      string `json:"o"`
+	Unsubscribe string `json:"s"`
+}
+
+
+type attachmentData struct {
+	Location string
+	Name     string
+}
+
+type MailData struct {
+	Iface 	     string
+	Host         string
+	From         string
+	From_name    string
+	To           string
+	To_name      string
+	Extra_header string
+	Subject      string
+	Html         string
+	Attachments  []attachmentData
+	s	     proxy.Dialer
+	n            net.Dialer
+}
+
+func (m *MailData) SendMail() error {
+	var smx string
+	var mx []*net.MX
+	var conn net.Conn
+
+	if m.Iface == "" {
 		// default interface
-		n = net.Dialer{}
+		m.n = net.Dialer{}
 	} else {
-		if iface[0:8] == "socks://" {
-			iface = iface[8:]
-			err := socksConnect(iface)
+		if m.Iface[0:8] == "socks://" {
+			m.Iface = m.Iface[8:]
+			var err error
+			m.s, err = proxy.SOCKS5("tcp", m.Iface, nil, proxy.FromEnvironment())
 			if err != nil {
 				return err
 			}
 		} else {
-			connectAddr := net.ParseIP(iface)
+			connectAddr := net.ParseIP(m.Iface)
 			tcpAddr := &net.TCPAddr{
 				IP: connectAddr,
 			}
-			n = net.Dialer{LocalAddr: tcpAddr}
+			m.n = net.Dialer{LocalAddr: tcpAddr}
 		}
 	}
-	return nil
-}
-
-func socksConnect(socks string) error {
-	var err error
-	s, err = proxy.SOCKS5("tcp", socks, nil, proxy.FromEnvironment())
-	if err != nil {
-		return errors.New(fmt.Sprintf("Socks failed: %v\r\n", err))
-	}
-	return nil
-}
-
-func sendMail(m mailData) error {
-	var smx string
-	var mx []*net.MX
-	var conn net.Conn
 
 	//ToDo cache MX servers
 	// punycode convert
@@ -162,10 +99,10 @@ func sendMail(m mailData) error {
 		for i := range mx {
 			smx := net.JoinHostPort(mx[i].Host, "25")
 			// Set ip (from MX records) and port mail server
-			if s != nil {
-				conn, err = s.Dial("tcp", smx)
+			if m.s != nil {
+				conn, err = m.s.Dial("tcp", smx)
 			} else {
-				conn, err = n.Dial("tcp", smx)
+				conn, err = m.n.Dial("tcp", smx)
 			}
 			if err == nil {
 				defer conn.Close()
@@ -196,7 +133,7 @@ func sendMail(m mailData) error {
 		return err
 	}
 
-	msg := makeMail(m)
+	msg := m.makeMail()
 
 	//dkim.New()
 
@@ -218,7 +155,7 @@ func sendMail(m mailData) error {
 	return c.Quit()
 }
 
-func makeMail(m mailData) (msg string) {
+func (m *MailData) makeMail() (msg string) {
 	marker := makeMarker()
 
 	msg = ""
@@ -310,6 +247,119 @@ func isVchar(c byte) bool {
 	// Visible (printing) characters.
 	return '!' <= c && c <= '~'
 }
+
+
+
+func Sender() {
+
+	type campaignData struct {
+		id, from, from_name, iface, host string
+		attachments []attachmentData
+		stream      int
+		delay       int
+	}
+
+	type recipientData struct {
+		id, to, to_name	string
+	}
+
+	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `interface` t2 ON t2.`id`=t1.`interface_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
+	checkErr(err)
+	defer campaign.Close()
+
+	for {
+		camp, err := campaign.Query()
+		checkErr(err)
+		defer camp.Close()
+
+		var wc sync.WaitGroup
+		for camp.Next() {
+
+			c := new(campaignData)
+
+			err = camp.Scan(&c.id, &c.from, &c.from_name, &c.iface, &c.host, &c.stream, &c.delay)
+			checkErr(err)
+
+			wc.Add(1)
+			go func(cPart *campaignData) {
+				attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
+				checkErr(err)
+				defer attachment.Close()
+
+				attach, err := attachment.Query(cPart.id)
+				checkErr(err)
+				defer attach.Close()
+
+				cPart.attachments = nil
+
+				var location string
+				var name string
+				for attach.Next() {
+					err = attach.Scan(&location, &name)
+					checkErr(err)
+					cPart.attachments = append(cPart.attachments, attachmentData{Location: location, Name: name})
+				}
+
+				recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
+				checkErr(err)
+				defer recipient.Close()
+
+				recip, err := recipient.Query(cPart.id, cPart.stream)
+				checkErr(err)
+				defer recip.Close()
+
+				var wr sync.WaitGroup
+				for recip.Next() {
+
+					r := new(recipientData)
+
+					err = recip.Scan(&r.id, &r.to, &r.to_name)
+					checkErr(err)
+
+					wr.Add(1)
+					go func(cData *campaignData, rData *recipientData ) {
+						data := new(MailData)
+						data.Iface = cData.iface
+						data.From = cData.from
+						data.From_name = cData.from_name
+						data.Host = cData.host
+						data.Attachments = cData.attachments
+
+						d := getMailMessage(cData.id, rData.id)
+						data.Subject = d.Subject
+						data.Html = d.Body
+						data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
+
+						data.To = r.to
+						data.To_name = r.to_name
+
+						// Send mail
+						res := data.SendMail()
+
+						var rs string
+						if res == nil {
+							rs = "Ok"
+						} else {
+							rs = res.Error()
+						}
+
+						log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
+						rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, rData.id)
+						checkErr(err)
+						defer rows.Close()
+						defer wr.Done()
+					}(cPart, r)
+				}
+				wr.Wait()
+				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
+				defer wc.Done()
+			}(c)
+		}
+		wc.Wait()
+		time.Sleep(15 * time.Second) // easy with database
+	}
+}
+
 
 func checkErr(err error) {
 	if err != nil {
