@@ -253,7 +253,7 @@ func isVchar(c byte) bool {
 func Sender() {
 
 	type campaignData struct {
-		id, from, from_name, iface, host string
+		id, from, from_name, subject, body, iface, host string
 		attachments []attachmentData
 		stream      int
 		delay       int
@@ -263,7 +263,7 @@ func Sender() {
 		id, to, to_name	string
 	}
 
-	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `interface` t2 ON t2.`id`=t1.`interface_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
+	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `interface` t2 ON t2.`id`=t1.`interface_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
 	checkErr(err)
 	defer campaign.Close()
 
@@ -275,10 +275,10 @@ func Sender() {
 		var wc sync.WaitGroup
 		for camp.Next() {
 
-			var id, from, from_name, iface, host string
+			var id, from, from_name, subject, body, iface, host string
 			var stream, delay int
 
-			err = camp.Scan(&id, &from, &from_name, &iface, &host, &stream, &delay)
+			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay)
 			checkErr(err)
 
 			wc.Add(1)
@@ -329,7 +329,7 @@ func Sender() {
 						data.To_name = rData.to_name
 
 						var rs string
-						d, e := getMailMessage(cData.id, rData.id)
+						d, e := getMailMessage(cData.id, rData.id, cData.subject, cData.body)
 						if e == nil {
 							data.Subject = d.Subject
 							data.Html = d.Body
@@ -348,9 +348,8 @@ func Sender() {
 						}
 
 						log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
-						rows, err := Db.Query("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, rData.id)
-						checkErr(err)
-						defer rows.Close()
+						statSend(rData.id, rs)
+
 						defer wr.Done()
 					}(&c, r)
 				}
@@ -362,6 +361,8 @@ func Sender() {
 				id: id,
 				from: from,
 				from_name: from_name,
+				subject: subject,
+				body: body,
 				iface: iface,
 				host: host,
 				stream: stream,

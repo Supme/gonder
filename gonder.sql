@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `from_name` text NOT NULL,
   `name` text NOT NULL,
   `subject` text NOT NULL,
-  `message` text NOT NULL,
+  `body` text NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;

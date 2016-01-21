@@ -37,13 +37,13 @@ func getCampaigns(id string) map[string]campaign {
 }
 
 func addCampaigns(id string, name string) {
-	_, err := Db.Query("INSERT INTO `campaign`(`group_id`, `interface_id`, `from`, `from_name`, `name`, `subject`, `message`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
+	_, err := Db.Query("INSERT INTO `campaign`(`group_id`, `interface_id`, `from`, `from_name`, `name`, `subject`, `body`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
 	checkErr(err)
 }
 
 func getCampaignInfo(id string) (campaign, error) {
 	var camp campaign
-	err := Db.QueryRow("SELECT `id`, `interface_id`, `name`, `subject`, `from`, `from_name`, `message`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
+	err := Db.QueryRow("SELECT `id`, `interface_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
 		&camp.Id,
 		&camp.IfaceId,
 		&camp.Name,
@@ -86,7 +86,7 @@ func updateCampaignInfo(camp campaign) campaign {
 	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
 		return strings.Replace(str, "&amp;", "&", -1)
 	})
-	_, err := Db.Query("UPDATE campaign SET `interface_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `message`=?, `start_time`=?, `end_time`=? WHERE id=?",
+	_, err := Db.Query("UPDATE campaign SET `interface_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
 		camp.Subject,
