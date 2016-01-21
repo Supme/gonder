@@ -13,9 +13,6 @@ Dependencies:
 * github.com/go-sql-driver/mysql
 * github.com/alyu/configparser
 * github.com/eaigner/dkim (not use now)
-* gopkg.in/bluesuncorp/validator.v5
-* github.com/manucorporat/sse
-* github.com/mattn/go-colorable
 * github.com/gin-gonic/gin
 
 License
