@@ -16,7 +16,7 @@
                 <select id="ifaceId" name="ifaceId" class="form-control">
                     {{$iface := .campaign.IfaceId}}
                     {{range $k, $c := .ifaces}}
-                    <option value="{{$k}}" {{if eq $c.Id $iface}}selected{{end}}>{{$c.Name}}</option>
+                    <option value="{{$k}}" {{if eq $c.Id $iface}}selected{{end}}>{{$c.Name}} (S: {{$c.Stream}} D: {{$c.Delay}})</option>
                     {{end}}
                 </select>
             </div>

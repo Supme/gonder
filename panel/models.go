@@ -1,7 +1,7 @@
 package panel
 import (
-"regexp"
-"strings"
+	"regexp"
+	"strings"
 )
 
 func getGroups() map[string]string {
@@ -138,4 +138,3 @@ func getRecipientParam(id string) map[string]string {
 
 	return recipient
 }
-

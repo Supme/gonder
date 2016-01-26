@@ -25,6 +25,14 @@ func main() {
 	config, err := configparser.Read("./config.ini")
 	checkErr(err)
 
+	mainConfig, err := config.Section("Main")
+	checkErr(err)
+	if mainConfig.ValueOf("realsend") == "yes" {
+		mailer.RealSend = true
+	} else {
+		mailer.RealSend = false
+	}
+
 	dbConfig, err := config.Section("Database")
 	checkErr(err)
 
@@ -36,6 +44,9 @@ func main() {
 	checkErr(err)
 	defer db.Close()
 	checkErr(db.Ping())
+
+	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(5)
 
 	mailer.Db = db
 	panel.Db = db

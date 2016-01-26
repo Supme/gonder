@@ -23,6 +23,7 @@ import (
 var HostName string
 
 var Db *sql.DB
+var RealSend bool
 
 type message struct {
 	Subject string
@@ -317,6 +318,9 @@ func Sender() {
 					err = recip.Scan(&r.id, &r.to, &r.to_name)
 					checkErr(err)
 
+					stats := Db.Stats()
+					log.Println(stats.OpenConnections)
+
 					wr.Add(1)
 					go func(cData *campaignData, rData *recipientData ) {
 						data := new(MailData)
@@ -335,8 +339,13 @@ func Sender() {
 							data.Html = d.Body
 							data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
 
-							// Send mail
-							res := data.SendMail()
+							var res error
+							if RealSend {
+								// Send mail
+								res = data.SendMail()
+							} else {
+								res = errors.New("Test send")
+							}
 
 							if res == nil {
 								rs = "Ok"
@@ -356,7 +365,6 @@ func Sender() {
 				wr.Wait()
 				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
 				defer wc.Done()
-
 			}(campaignData{
 				id: id,
 				from: from,
@@ -370,7 +378,7 @@ func Sender() {
 			})
 		}
 		wc.Wait()
-		time.Sleep(15 * time.Second) // easy with database
+		time.Sleep(1 * time.Second) // easy with database
 	}
 }
 

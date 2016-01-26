@@ -12,34 +12,26 @@ import (
 )
 
 func statOpened(campaignId string, recipientId string, userAgent string) {
-	waitDb()
-	Db.QueryRow("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
-	waitDb()
-	Db.QueryRow("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, recipientId)
+	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
+	Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, recipientId)
 }
 
 func statJump(campaignId string, recipientId string, url string, userAgent string) {
-	waitDb()
-	Db.QueryRow("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
-	waitDb()
-	Db.QueryRow("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
+	Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
 }
 
 func statWebVersion(campaignId string, recipientId string, userAgent string)  {
-	waitDb()
-	Db.QueryRow("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
-	waitDb()
-	Db.QueryRow("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
+	Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
 }
 
 func statSend(id, result string) {
-	waitDb()
-	Db.QueryRow("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, id)
+	Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, id)
 }
 
 func postUnsubscribe(campaignId string, recipientId string) {
-	waitDb()
-	Db.QueryRow("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
+	Db.Exec("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
 }
 
 func getWebUrl(campaignId string, recipientId string) string {
@@ -116,7 +108,6 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 	var web bool
 
 	if subject == "" && body == "" {
-		waitDb()
 		err = Db.QueryRow("SELECT `subject`, `body` FROM campaign WHERE `id`=?", campaignId).Scan(&subject, &body)
 		if err == sql.ErrNoRows {
 			return message{Subject: "Error", Body: "Message not found"}, nil
@@ -198,7 +189,6 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 func getRecipientParam(id string) map[string]string {
 	var paramKey, paramValue string
 	recipient := make(map[string]string)
-	waitDb()
 	param, err := Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", id)
 	checkErr(err)
 	defer param.Close()
@@ -208,8 +198,4 @@ func getRecipientParam(id string) map[string]string {
 		recipient[string(paramKey)] = string(paramValue)
 	}
 	return recipient
-}
-
-func waitDb() {
-	for Db.Ping() != nil {}
 }
