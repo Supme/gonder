@@ -18,6 +18,7 @@ import (
 	"time"
 	"golang.org/x/net/idna"
 	"database/sql"
+	"strconv"
 )
 
 var HostName string
@@ -318,9 +319,6 @@ func Sender() {
 					err = recip.Scan(&r.id, &r.to, &r.to_name)
 					checkErr(err)
 
-					stats := Db.Stats()
-					log.Println(stats.OpenConnections)
-
 					wr.Add(1)
 					go func(cData *campaignData, rData *recipientData ) {
 						data := new(MailData)
@@ -338,7 +336,7 @@ func Sender() {
 							data.Subject = d.Subject
 							data.Html = d.Body
 							data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-
+							data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
 							var res error
 							if RealSend {
 								// Send mail
@@ -378,7 +376,8 @@ func Sender() {
 			})
 		}
 		wc.Wait()
-		time.Sleep(1 * time.Second) // easy with database
+		time.Sleep(10 * time.Second) // easy with database
+		log.Println("Database open connections: " + strconv.Itoa(Db.Stats().OpenConnections))
 	}
 }
 
