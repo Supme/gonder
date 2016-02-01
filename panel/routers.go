@@ -14,6 +14,7 @@ func Run() {
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
 	router.Static("/static/", "static")
+	router.Static("/fonts/", "fonts")
 	router.Static("/assets/", "assets")
 
 	router.GET("/", func(c *gin.Context) {
@@ -76,7 +77,7 @@ func Run() {
 
 			if err == nil {
 				data := gin.H{
-					"ifaces":   getIfaces(),
+					"ifaces":   getProfiles(),
 					"campaign": camp,
 				}
 				c.HTML(http.StatusOK, "campaignEdit.html", data)
@@ -90,7 +91,7 @@ func Run() {
 
 		mailer.POST("campaign/edit/:id", func(c *gin.Context) {
 			data := gin.H{
-				"ifaces": getIfaces(),
+				"ifaces": getProfiles(),
 				"campaign": updateCampaignInfo(
 					campaign{
 						Id:        c.Param("id"),
@@ -160,11 +161,30 @@ func Run() {
 
 	api := router.Group("api")
 	{
-		table := api.Group("mailer")
+		mailer := api.Group("mailer", gin.BasicAuth(users))
 		{
-			table.GET("recipients/:id", aRecipients)
+			mailer.GET("recipients/:id", aRecipients)
+			mailer.GET("profile/", apiGetProfiles)
+			mailer.GET("profile/:id", apiGetProfile)
+			mailer.POST("profile/", apiPostProfile)
+			mailer.PUT("profile/", apiPutProfile)
 		}
 	}
 
+	settings := router.Group("settings", gin.BasicAuth(users))
+	{
+
+		settings.GET("interfaces", func(c *gin.Context){
+			data := gin.H{
+				"ifaces":   getProfiles(),
+				"ip": getIfaces(),
+			}
+			c.HTML(http.StatusOK, "settings.html", data)
+		})
+
+	}
+
 	router.Run(":7777")
+
+
 }

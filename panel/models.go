@@ -2,6 +2,7 @@ package panel
 import (
 	"regexp"
 	"strings"
+	"net"
 )
 
 func getGroups() map[string]string {
@@ -37,13 +38,13 @@ func getCampaigns(id string) map[string]campaign {
 }
 
 func addCampaigns(id string, name string) {
-	_, err := Db.Query("INSERT INTO `campaign`(`group_id`, `interface_id`, `from`, `from_name`, `name`, `subject`, `body`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
+	_, err := Db.Exec("INSERT INTO `campaign`(`group_id`, `profile_id`, `from`, `from_name`, `name`, `subject`, `body`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
 	checkErr(err)
 }
 
 func getCampaignInfo(id string) (campaign, error) {
 	var camp campaign
-	err := Db.QueryRow("SELECT `id`, `interface_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
+	err := Db.QueryRow("SELECT `id`, `profile_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
 		&camp.Id,
 		&camp.IfaceId,
 		&camp.Name,
@@ -58,10 +59,10 @@ func getCampaignInfo(id string) (campaign, error) {
 	return camp, err
 }
 
-func getIfaces() map[string]iFace {
+func getProfiles() map[string]iFace {
 	var id, name, iface, host, stream, delay string
 	ifaces := make(map[string]iFace)
-	query, err := Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM interface")
+	query, err := Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
@@ -76,17 +77,32 @@ func getIfaces() map[string]iFace {
 			Delay:  delay,
 		}
 	}
+
 	return ifaces
+}
+
+func getIfaces() []string {
+	ip, err := net.InterfaceAddrs()
+	checkErr(err)
+	ips := make([]string, len(ip))
+	n := 0
+	for _, i := range ip {
+		if ipnet, ok := i.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			ips[n] = ipnet.IP.String()
+			n++
+		}
+	}
+
+	return ips[0:n]
 }
 
 func updateCampaignInfo(camp campaign) campaign {
 
-	// Fix TinyMce bug replace & to &amp; in url
 	r := regexp.MustCompile(`href=["'](.*?)["']`)
 	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
 		return strings.Replace(str, "&amp;", "&", -1)
 	})
-	_, err := Db.Query("UPDATE campaign SET `interface_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
+	_, err := Db.Query("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
 		camp.Subject,

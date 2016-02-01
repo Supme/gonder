@@ -9,15 +9,11 @@ import (
 	"github.com/supme/gonder/panel"
 	"log"
 	"runtime"
-	"net"
 	"os"
 	"os/exec"
 )
 
 func main() {
-
-	i, _ :=net.InterfaceAddrs()
-	fmt.Println(i)
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
