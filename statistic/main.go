@@ -1,30 +1,38 @@
-package mailer
+package statistic
 
 import (
+	"github.com/supme/gonder/models"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 	"net"
+	"database/sql"
+	"log"
+	"strconv"
 )
 
-func Stat(hostPort string) {
+var (
+	Db *sql.DB
+	Port string
+)
+func Run() {
 
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	router.LoadHTMLGlob("mailer/templates/*")
+	router.LoadHTMLGlob("statistic/templates/*")
 
 	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Welcome to San Tropez!")
+		c.String(http.StatusOK, "Welcome to San Tropez! ("  + strconv.Itoa(Db.Stats().OpenConnections) + ")")
 	})
 
 	router.Static("/static/", "static")
 
 	router.GET("/data/:params", func(c *gin.Context) {
 
-		var param *pJson
+		var param *models.Json
 		data, err := base64.URLEncoding.DecodeString(strings.Split(c.Param("params"), ".")[0])
 		checkErr(err)
 
@@ -51,7 +59,7 @@ func Stat(hostPort string) {
 		} else if param.Webver != "" {
 			go statWebVersion(param.Campaign, param.Recipient, userAgent)
 			// web version
-			message := getWebMessage(param.Campaign, param.Recipient)
+			message := models.WebMessage(param.Campaign, param.Recipient)
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(message))
 		} else if param.Unsubscribe != "" {
 			// unsubscribe ToDo CSRF
@@ -70,21 +78,35 @@ func Stat(hostPort string) {
 		c.HTML(http.StatusOK, "unsubscribeOk.html", gin.H{})
 	})
 
-	router.GET("/code", func(c *gin.Context) {
-		d := pJson{
-			c.Query("c"),
-			c.Query("r"),
-			c.Query("u"),
-			c.Query("w"),
-			c.Query("o"),
-			c.Query("s"),
-		}
-		j, err := json.Marshal(d)
-		checkErr(err)
-		data := base64.URLEncoding.EncodeToString(j)
-		c.String(http.StatusOK, "encoded: %s", data)
-	})
-
 	// Listen and server on 0.0.0.0:8080
-	router.Run(":" + hostPort)
+	router.Run(":" + Port)
+}
+
+func statOpened(campaignId string, recipientId string, userAgent string) {
+	models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
+	models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, recipientId)
+}
+
+func statJump(campaignId string, recipientId string, url string, userAgent string) {
+	models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
+	models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+}
+
+func statWebVersion(campaignId string, recipientId string, userAgent string)  {
+	models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
+	models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
+}
+
+func postUnsubscribe(campaignId string, recipientId string) {
+	models.Db.Exec("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func main() {
+	Run()
 }

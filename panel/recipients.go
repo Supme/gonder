@@ -7,7 +7,7 @@ import (
 	"time"
 	"io"
 	"encoding/csv"
-	"log"
+	"github.com/supme/gonder/models"
 )
 
 type tRecipients struct {
@@ -43,7 +43,7 @@ func (t *tRecipients) Recipients() [][]string {
 	var id, email, name string
 	var r [][]string
 
-	query, err := Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", t.CampaignId, t.Start, t.Length)
+	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", t.CampaignId, t.Start, t.Length)
 	checkErr(err)
 	defer query.Close()
 
@@ -63,7 +63,7 @@ func (t *tRecipients) Recipients() [][]string {
 func (t *tRecipients) RecordsTotal() string {
 	var count string
 
-	err := Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", t.CampaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", t.CampaignId).Scan(&count)
 	checkErr(err)
 
 	return count
@@ -71,8 +71,7 @@ func (t *tRecipients) RecordsTotal() string {
 
 func uploadRecipients(c *gin.Context) {
 	if c.PostForm("delete") != "" {
-		log.Printf("DeleteAll")
-		_, err := Db.Exec("DELETE FROM `recipient` WHERE `campaign_id`=?", c.Param("id"))
+		_, err := models.Db.Exec("DELETE FROM `recipient` WHERE `campaign_id`=?", c.Param("id"))
 		checkErr(err)
 	}
 
@@ -127,14 +126,14 @@ func postRecipientCsv(campaignId string, file string) error {
 				}
 			}
 
-			res, err := Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
+			res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
 			checkErr(err)
 
 			id, err := res.LastInsertId()
 			checkErr(err)
 
 			for i, t := range data {
-				_, err := Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
+				_, err := models.Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
 				checkErr(err)
 			}
 		}

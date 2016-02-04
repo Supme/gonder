@@ -1,11 +1,8 @@
 package panel
 
-import (
-	"database/sql"
-	"log"
-)
+import "log"
 
-var Db *sql.DB
+var Port string
 
 type iFace struct {
 	Id     string
@@ -33,6 +30,14 @@ type recipient struct {
 	CampaignId string
 	Email      string
 	Name       string
+}
+
+func main()  {
+	Run()
+}
+
+func Run()  {
+	routers()
 }
 
 func checkErr(err error) {

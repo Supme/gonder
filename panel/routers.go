@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-func Run() {
+
+func routers() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
@@ -20,7 +21,6 @@ func Run() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "main.html", gin.H{})
 	})
-
 
 	// get users from file
 	users := make(gin.Accounts)
@@ -184,7 +184,7 @@ func Run() {
 
 	}
 
-	router.Run(":7777")
+	router.Run(":" + Port)
 
 
 }

@@ -3,12 +3,13 @@ import (
 	"regexp"
 	"strings"
 	"net"
+	"github.com/supme/gonder/models"
 )
 
 func getGroups() map[string]string {
 	var key, name string
 	groups := make(map[string]string)
-	query, err := Db.Query("SELECT `id`, `name` FROM `group`")
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group`")
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
@@ -19,14 +20,14 @@ func getGroups() map[string]string {
 }
 
 func addGroup(name string) {
-	_, err := Db.Query("INSERT INTO `group` (`name`) VALUES (?)", name)
+	_, err := models.Db.Query("INSERT INTO `group` (`name`) VALUES (?)", name)
 	checkErr(err)
 }
 
 func getCampaigns(id string) map[string]campaign {
 	var key, name, subject string
 	campaigns := make(map[string]campaign)
-	query, err := Db.Query("SELECT `id`, `name`, `subject` FROM `campaign` WHERE group_id=?", id)
+	query, err := models.Db.Query("SELECT `id`, `name`, `subject` FROM `campaign` WHERE group_id=?", id)
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
@@ -38,13 +39,13 @@ func getCampaigns(id string) map[string]campaign {
 }
 
 func addCampaigns(id string, name string) {
-	_, err := Db.Exec("INSERT INTO `campaign`(`group_id`, `profile_id`, `from`, `from_name`, `name`, `subject`, `body`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
+	_, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `profile_id`, `from`, `from_name`, `name`, `subject`, `body`, `start_time`, `end_time`) VALUES (?,0,'','',?,'New clear campaign','',NOW(),NOW())", id, name)
 	checkErr(err)
 }
 
 func getCampaignInfo(id string) (campaign, error) {
 	var camp campaign
-	err := Db.QueryRow("SELECT `id`, `profile_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
+	err := models.Db.QueryRow("SELECT `id`, `profile_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
 		&camp.Id,
 		&camp.IfaceId,
 		&camp.Name,
@@ -62,7 +63,7 @@ func getCampaignInfo(id string) (campaign, error) {
 func getProfiles() map[string]iFace {
 	var id, name, iface, host, stream, delay string
 	ifaces := make(map[string]iFace)
-	query, err := Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
+	query, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
@@ -102,7 +103,7 @@ func updateCampaignInfo(camp campaign) campaign {
 	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
 		return strings.Replace(str, "&amp;", "&", -1)
 	})
-	_, err := Db.Query("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
+	_, err := models.Db.Query("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
 		camp.Subject,
@@ -122,7 +123,7 @@ func updateCampaignInfo(camp campaign) campaign {
 func getRecipients(campId string, from string, limit string) map[string]recipient {
 	var key, email, name string
 	recipients := make(map[string]recipient)
-	query, err := Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", campId, from, limit)
+	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", campId, from, limit)
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
@@ -135,7 +136,7 @@ func getRecipients(campId string, from string, limit string) map[string]recipien
 
 func getRecipient(id string) recipient {
 	var campaignId, email, name string
-	err := Db.QueryRow("SELECT `campaign_id`, `email`, `name` FROM `recipient` WHERE `id`=?", id).Scan(&campaignId, &email, &name)
+	err := models.Db.QueryRow("SELECT `campaign_id`, `email`, `name` FROM `recipient` WHERE `id`=?", id).Scan(&campaignId, &email, &name)
 	checkErr(err)
 	return recipient{Id: id, CampaignId: campaignId, Email: email, Name: name}
 }
@@ -143,7 +144,7 @@ func getRecipient(id string) recipient {
 func getRecipientParam(id string) map[string]string {
 	var paramKey, paramValue string
 	recipient := make(map[string]string)
-	param, err := Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", id)
+	param, err := models.Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", id)
 	checkErr(err)
 	defer param.Close()
 	for param.Next() {

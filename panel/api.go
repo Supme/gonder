@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"log"
+	"github.com/supme/gonder/models"
 )
 
 type profile struct  {
@@ -20,7 +21,7 @@ type profile struct  {
 func apiGetProfiles(c *gin.Context)  {
 	var p profile
 	var ps []profile
-	rows, err := Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
+	rows, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
 	checkErr(err)
 	for rows.Next() {
 		rows.Scan(&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay)
@@ -32,7 +33,7 @@ func apiGetProfiles(c *gin.Context)  {
 
 func apiGetProfile(c *gin.Context) {
 	var p profile
-	err := Db.QueryRow("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile` WHERE `id`=?", c.Param("id")).Scan(
+	err := models.Db.QueryRow("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile` WHERE `id`=?", c.Param("id")).Scan(
 		&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay,
 	)
 	if err != nil {
@@ -68,7 +69,7 @@ func apiPostProfile(c *gin.Context)  {
 		if p.Iface[:8] == "socks://" {
 			p.Iface = p.Iface + p.Server
 		}
-		res, err := Db.Exec("INSERT INTO `profile`(`name`, `iface`, `host`, `stream`, `delay`) VALUES (?,?,?,?,?)", p.Name, p.Iface, p.Host, p.Stream, p.Delay)
+		res, err := models.Db.Exec("INSERT INTO `profile`(`name`, `iface`, `host`, `stream`, `delay`) VALUES (?,?,?,?,?)", p.Name, p.Iface, p.Host, p.Stream, p.Delay)
 		checkErr(err)
 		id, err := res.LastInsertId()
 		p.Id = strconv.FormatInt(id, 10)
@@ -87,7 +88,7 @@ func apiPutProfile(c *gin.Context)  {
 		if p.Iface[:8] == "socks://" {
 			p.Iface = p.Iface + p.Server
 		}
-		res, err := Db.Exec("UPDATE `profile` SET `name`=?,`iface`=?,`host`=?,`stream`=?,`delay`=? WHERE `id`=?", p.Name, p.Iface, p.Host, p.Stream, p.Delay, p.Id)
+		res, err := models.Db.Exec("UPDATE `profile` SET `name`=?,`iface`=?,`host`=?,`stream`=?,`delay`=? WHERE `id`=?", p.Name, p.Iface, p.Host, p.Stream, p.Delay, p.Id)
 		checkErr(err)
 		n, err := res.RowsAffected()
 		checkErr(err)

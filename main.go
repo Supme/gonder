@@ -1,16 +1,18 @@
 package main
 
 import (
-	"database/sql"
+	"github.com/supme/gonder/mailer"
+	"github.com/supme/gonder/statistic"
+	"github.com/supme/gonder/panel"
+	"github.com/supme/gonder/models"
 	"fmt"
 	"github.com/alyu/configparser"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/supme/gonder/mailer"
-	"github.com/supme/gonder/panel"
 	"log"
-	"runtime"
 	"os"
 	"os/exec"
+	"runtime"
+	"database/sql"
 )
 
 func main() {
@@ -23,36 +25,49 @@ func main() {
 
 	mainConfig, err := config.Section("Main")
 	checkErr(err)
-	if mainConfig.ValueOf("realsend") == "yes" {
-		mailer.RealSend = true
-	} else {
-		mailer.RealSend = false
-	}
 
 	dbConfig, err := config.Section("Database")
 	checkErr(err)
 
-	hostConfig, err := config.Section("Host")
+	mailerConfig, err := config.Section("Mailer")
 	checkErr(err)
 
+	statisticConfig, err := config.Section("Statistic")
+	checkErr(err)
+
+	panelConfig, err := config.Section("Panel")
+	checkErr(err)
+
+	// Init models
 	log.Println("Connect to database")
-	db, err := sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
+	models.Db, err = sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
 	checkErr(err)
-	defer db.Close()
-	checkErr(db.Ping())
+	defer models.Db.Close()
+	checkErr(models.Db.Ping())
 
-	db.SetMaxIdleConns(5)
-	db.SetMaxOpenConns(5)
+	models.Db.SetMaxIdleConns(5)
+	models.Db.SetMaxOpenConns(5)
 
-	mailer.Db = db
-	panel.Db = db
-
-	if hostConfig.ValueOf("port") == "80" {
-		mailer.HostName = "http://" + hostConfig.ValueOf("name")
+	if statisticConfig.ValueOf("port") == "80" {
+		models.StatUrl = "http://" + mainConfig.ValueOf("name")
 	} else {
-		mailer.HostName = "http://" + hostConfig.ValueOf("name") + ":" + hostConfig.ValueOf("port")
+		models.StatUrl = "http://" + mainConfig.ValueOf("name") + ":" + statisticConfig.ValueOf("port")
 	}
 
+	// Init mailer
+	if mailerConfig.ValueOf("send") == "yes" {
+		mailer.Send = true
+	} else {
+		mailer.Send = false
+	}
+
+	// Init statistic
+	statistic.Port = statisticConfig.ValueOf("port")
+
+	// Init control panel
+	panel.Port = panelConfig.ValueOf("port")
+
+	// Start
 	if len(os.Args) == 2 {
 
 		if os.Args[1] == "start" {
@@ -95,7 +110,7 @@ func main() {
 			if os.Args[2] == "sender" {
 
 				log.Println("Start database mailer")
-				mailer.Sender()
+				mailer.Run()
 
 				for {}
 			}
@@ -103,7 +118,7 @@ func main() {
 			if os.Args[2] == "stat" {
 
 				log.Println("Start statistics http server")
-				mailer.Stat(hostConfig.ValueOf("port"))
+				statistic.Run()
 
 				for {}
 			}
@@ -117,10 +132,10 @@ func main() {
 		go panel.Run()
 
 		log.Println("Start database mailer")
-		go mailer.Sender()
+		go mailer.Run()
 
 		log.Println("Start statistics http server")
-		go mailer.Stat(hostConfig.ValueOf("port"))
+		go statistic.Run()
 
 		log.Println("Press Enter for stop")
 		var input string

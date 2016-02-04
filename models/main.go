@@ -1,41 +1,39 @@
-package mailer
+package models
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
-	"text/template"
-	"regexp"
-	"strings"
-	"fmt"
+	"encoding/base64"
 	"database/sql"
+	"text/template"
+	"strings"
+	"regexp"
+	"bytes"
+	"fmt"
+	"log"
 )
 
-func statOpened(campaignId string, recipientId string, userAgent string) {
-	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "open_trace")
-	Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, recipientId)
-}
+var (
+	StatUrl string
+	Db *sql.DB
+)
 
-func statJump(campaignId string, recipientId string, url string, userAgent string) {
-	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, url)
-	Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
-}
+type (
+	Json struct {
+		Campaign    string `json:"c"`
+		Recipient   string `json:"r"`
+		Url         string `json:"u"`
+		Webver      string `json:"w"`
+		Opened      string `json:"o"`
+		Unsubscribe string `json:"s"`
+	}
+	message struct {
+		Subject string
+		Body    string
+	}
+)
 
-func statWebVersion(campaignId string, recipientId string, userAgent string)  {
-	Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", campaignId, recipientId, "web_version")
-	Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
-}
-
-func statSend(id, result string) {
-	Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, id)
-}
-
-func postUnsubscribe(campaignId string, recipientId string) {
-	Db.Exec("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
-}
-
-func getWebUrl(campaignId string, recipientId string) string {
-	dat := pJson{
+func webUrl(campaignId string, recipientId string) string {
+	dat := Json{
 		Campaign:    campaignId,
 		Recipient: recipientId,
 		Url:         "",
@@ -45,11 +43,15 @@ func getWebUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return HostName + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
+	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
 }
 
-func getUnsubscribeUrl(campaignId string, recipientId string) string {
-	dat := pJson{
+func UnsubscribeUrl(campaignId string, recipientId string) string {
+	return unsubscribeUrl(campaignId, recipientId)
+}
+
+func unsubscribeUrl(campaignId string, recipientId string) string {
+	dat := Json{
 		Campaign:    campaignId,
 		Recipient:   recipientId,
 		Url:         "",
@@ -59,11 +61,11 @@ func getUnsubscribeUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return HostName + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
+	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
 }
 
-func getStatUrl(campaignId string, recipientId string, url string) string {
-	d := pJson{
+func statUrl(campaignId string, recipientId string, url string) string {
+	d := Json{
 		Campaign:    campaignId,
 		Recipient:   recipientId,
 		Url:         url,
@@ -73,11 +75,11 @@ func getStatUrl(campaignId string, recipientId string, url string) string {
 	}
 	j, err := json.Marshal(d)
 	checkErr(err)
-	return HostName + "/data/" + base64.URLEncoding.EncodeToString(j)
+	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j)
 }
 
-func getStatPngUrl(campaignId string, recipientId string) string {
-	dat := pJson{
+func statPngUrl(campaignId string, recipientId string) string {
+	dat := Json{
 		Campaign:    campaignId,
 		Recipient:   recipientId,
 		Url:         "",
@@ -87,19 +89,19 @@ func getStatPngUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return HostName + "/data/" + base64.URLEncoding.EncodeToString(j) + ".png"
+	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".png"
 }
 
-func getWebMessage(campaignId string, recipientId string) string {
+func MailMessage(campaignId, recipientId, subject, body string ) (message, error) {
+	return getMessage(campaignId, recipientId, subject, body)
+}
+
+func WebMessage(campaignId string, recipientId string) string {
 	subject := ""
 	body := ""
 	m, err := getMessage(campaignId, recipientId, subject, body)
 	checkErr(err)
 	return string(m.Body)
-}
-
-func getMailMessage(campaignId, recipientId, subject, body string ) (message, error) {
-	return getMessage(campaignId, recipientId, subject, body)
 }
 
 func getMessage(campaignId, recipientId, subject, body string) (message, error) {
@@ -117,11 +119,11 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 		web = false
 	}
 
-	weburl := getWebUrl(campaignId, recipientId)
+	weburl := webUrl(campaignId, recipientId)
 
-	people := getRecipientParam(recipientId)
-	people["UnsubscribeUrl"] = getUnsubscribeUrl(campaignId, recipientId)
-	people["StatPng"] = getStatPngUrl(campaignId, recipientId)
+	people := recipientParam(recipientId)
+	people["UnsubscribeUrl"] = unsubscribeUrl(campaignId, recipientId)
+	people["StatPng"] = statPngUrl(campaignId, recipientId)
 
 	if !web {
 		people["WebUrl"] = weburl
@@ -164,14 +166,14 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 			urlt.Execute(u, people)
 			s = u.String()
 
-			return `href="` + getStatUrl(campaignId, recipientId, s) + `"`
+			return `href="` + statUrl(campaignId, recipientId, s) + `"`
 		}
 	})
 
 
 	//replace static url to absolute
-	body = strings.Replace(body, "\"/static/", "\"" + HostName + "/static/", -1)
-	body = strings.Replace(body, "'/static/", "'" + HostName + "'/static/", -1)
+	body = strings.Replace(body, "\"/static/", "\"" + StatUrl + "/static/", -1)
+	body = strings.Replace(body, "'/static/", "'" + StatUrl + "'/static/", -1)
 
 	tmpl := template.New("mail")
 
@@ -186,7 +188,7 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 	return message{Subject: subject, Body: t.String()}, nil
 }
 
-func getRecipientParam(id string) map[string]string {
+func recipientParam(id string) map[string]string {
 	var paramKey, paramValue string
 	recipient := make(map[string]string)
 	param, err := Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", id)
@@ -198,4 +200,10 @@ func getRecipientParam(id string) map[string]string {
 		recipient[string(paramKey)] = string(paramValue)
 	}
 	return recipient
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Println(err)
+	}
 }
