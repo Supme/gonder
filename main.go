@@ -13,13 +13,17 @@ import (
 	"os/exec"
 	"runtime"
 	"database/sql"
+	"io"
+	"bufio"
+	"syscall"
+	"strconv"
+	"errors"
 )
 
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	log.Println("Read config file")
 	config, err := configparser.Read("./config.ini")
 	checkErr(err)
 
@@ -39,7 +43,6 @@ func main() {
 	checkErr(err)
 
 	// Init models
-	log.Println("Connect to database")
 	models.Db, err = sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
 	checkErr(err)
 	defer models.Db.Close()
@@ -69,35 +72,146 @@ func main() {
 
 	// Start
 	if len(os.Args) == 2 {
-
+		var err error
 		if os.Args[1] == "start" {
-			p := exec.Command(os.Args[0], "start", "panel")
-			p.Start()
-			fmt.Println("Panel [PID]", p.Process.Pid)
-
-			sd := exec.Command(os.Args[0], "start", "sender")
-			sd.Start()
-			fmt.Println("Sender [PID]", sd.Process.Pid)
-
-			st := exec.Command(os.Args[0], "start", "stat")
-			st.Start()
-			fmt.Println("Statistic [PID]", st.Process.Pid)
-
+			err = startProcess("panel")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = startProcess("sender")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = startProcess("stat")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
 			os.Exit(0)
 		}
-
 		if os.Args[1] == "stop" {
-			c := exec.Command("killall", os.Args[0])
-			c.Start()
-			fmt.Println("Stop all services")
-
+			err = stopProcess("panel")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = stopProcess("sender")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = stopProcess("stat")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			os.Exit(0)
+		}
+		if os.Args[1] == "restart" {
+			err = stopProcess("panel")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = startProcess("panel")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = stopProcess("stat")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = startProcess("stat")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = stopProcess("sender")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			err = startProcess("sender")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
 			os.Exit(0)
 		}
 	}
 
 	if len(os.Args) == 3 {
-
 		if os.Args[1] == "start" {
+			if os.Args[2] == "panel" {
+				err = startProcess("panel")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "sender" {
+				err = startProcess("sender")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "stat" {
+				err = startProcess("stat")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			os.Exit(0)
+		}
+
+		if os.Args[1] == "stop" {
+			if os.Args[2] == "panel" {
+				err = stopProcess("panel")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "sender" {
+				err = stopProcess("sender")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "stat" {
+				err = stopProcess("stat")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			os.Exit(0)
+		}
+
+		if os.Args[1] == "restart" {
+			if os.Args[2] == "panel" {
+				err = stopProcess("panel")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+				err = startProcess("panel")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "sender" {
+				err = stopProcess("sender")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+				err = startProcess("sender")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			if os.Args[2] == "stat" {
+				err = stopProcess("stat")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+				err = startProcess("stat")
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+			os.Exit(0)
+		}
+
+		if os.Args[1] == "daemonize" {
 
 			if os.Args[2] == "panel" {
 
@@ -143,6 +257,91 @@ func main() {
 	}
 
 
+}
+
+func startProcess(name string) error {
+	err := checkPid(name)
+	if err == nil {
+		return errors.New("Process " + name + " already running")
+	} else {
+		p := exec.Command(os.Args[0], "daemonize", name)
+		p.Start()
+		fmt.Println("Started " + name + " pid", p.Process.Pid)
+		err := setPid(name, p.Process.Pid)
+		if err != nil {
+			return errors.New(name + " set PID error: " + err.Error())
+		}
+	}
+
+	return  nil
+}
+
+func stopProcess(name string) error {
+	err := checkPid(name)
+	if err != nil {
+		fmt.Println("Process " + name + " not found:")
+		return err
+	} else {
+		file, err := os.Open(name + ".pid")
+		if err != nil {
+			return err
+		}
+		reader := bufio.NewReader(file)
+		pid, _, err :=reader.ReadLine()
+		if err != nil {
+			return err
+		}
+		p, _ := strconv.Atoi(string(pid))
+		process, _ := os.FindProcess(p)
+		err = process.Kill()
+		if err != nil {
+			return err
+		}
+		os.Remove(name + ".pid")
+	}
+	fmt.Println("Process " + name + " stoped")
+	return nil
+}
+
+func setPid(name string, pid int) error {
+	p := strconv.Itoa(pid)
+	file, err := os.Create(name + ".pid")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = io.WriteString(file, p)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkPid(name string) error {
+	file, err := os.Open(name + ".pid")
+	if err != nil {
+		return err
+	}
+	reader := bufio.NewReader(file)
+	pid, _, err :=reader.ReadLine()
+	if err != nil {
+		return err
+	}
+
+	p, _ := strconv.Atoi(string(pid))
+	process, err := os.FindProcess(p)
+	if err != nil {
+		os.Remove(name + ".pid")
+		return errors.New("Failed to find process")
+	} else {
+		err := process.Signal(syscall.Signal(0))
+		if err != nil {
+			os.Remove(name + ".pid")
+			return errors.New("Process not response to signal.")
+		}
+	}
+
+	return nil
 }
 
 func checkErr(err error) {

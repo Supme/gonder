@@ -20,7 +20,7 @@ func getGroups() map[string]string {
 }
 
 func addGroup(name string) {
-	_, err := models.Db.Query("INSERT INTO `group` (`name`) VALUES (?)", name)
+	_, err := models.Db.Exec("INSERT INTO `group` (`name`) VALUES (?)", name)
 	checkErr(err)
 }
 
@@ -56,7 +56,6 @@ func getCampaignInfo(id string) (campaign, error) {
 		&camp.StartTime,
 		&camp.EndTime,
 	)
-
 	return camp, err
 }
 
@@ -103,7 +102,7 @@ func updateCampaignInfo(camp campaign) campaign {
 	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
 		return strings.Replace(str, "&amp;", "&", -1)
 	})
-	_, err := models.Db.Query("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
+	_, err := models.Db.Exec("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
 		camp.Subject,

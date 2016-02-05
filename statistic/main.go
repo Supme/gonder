@@ -8,13 +8,11 @@ import (
 	"net/http"
 	"strings"
 	"net"
-	"database/sql"
 	"log"
 	"strconv"
 )
 
 var (
-	Db *sql.DB
 	Port string
 )
 func Run() {
@@ -25,7 +23,7 @@ func Run() {
 	router.LoadHTMLGlob("statistic/templates/*")
 
 	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Welcome to San Tropez! ("  + strconv.Itoa(Db.Stats().OpenConnections) + ")")
+		c.String(http.StatusOK, "Welcome to San Tropez! ("  + strconv.Itoa(models.Db.Stats().OpenConnections) + ")")
 	})
 
 	router.Static("/static/", "static")
@@ -105,8 +103,4 @@ func checkErr(err error) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func main() {
-	Run()
 }
