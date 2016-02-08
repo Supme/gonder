@@ -51,11 +51,7 @@ func main() {
 	models.Db.SetMaxIdleConns(5)
 	models.Db.SetMaxOpenConns(5)
 
-	if statisticConfig.ValueOf("port") == "80" {
-		models.StatUrl = "http://" + mainConfig.ValueOf("name")
-	} else {
-		models.StatUrl = "http://" + mainConfig.ValueOf("name") + ":" + statisticConfig.ValueOf("port")
-	}
+	models.StatUrl = "http://" + mainConfig.ValueOf("host")
 
 	// Init mailer
 	if mailerConfig.ValueOf("send") == "yes" {
@@ -73,6 +69,26 @@ func main() {
 	// Start
 	if len(os.Args) == 2 {
 		var err error
+		if os.Args[1] == "status" {
+			err = checkPid("panel")
+			if err == nil {
+				fmt.Println("Process panel running")
+			} else {
+				fmt.Println("Process panel stoping")
+			}
+			err = checkPid("sender")
+			if err == nil {
+				fmt.Println("Process sender running")
+			} else {
+				fmt.Println("Process sender stoping")
+			}
+			err = checkPid("stat")
+			if err == nil {
+				fmt.Println("Process stat running")
+			} else {
+				fmt.Println("Process stat stoping")
+			}
+		}
 		if os.Args[1] == "start" {
 			err = startProcess("panel")
 			if err != nil {

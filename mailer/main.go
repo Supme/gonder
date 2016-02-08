@@ -115,6 +115,7 @@ func Run() {
 					err = recip.Scan(&r.id, &r.to, &r.to_name)
 					checkErr(err)
 
+					//ToDo not send for unsubscribed recipients
 					wr.Add(1)
 					go func(cData *campaignData, rData *recipientData ) {
 						data := new(MailData)

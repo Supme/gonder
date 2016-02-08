@@ -96,6 +96,9 @@ func uploadRecipients(c *gin.Context) {
 
 // ToDo optimize this
 func postRecipientCsv(campaignId string, file string) error {
+	var groupId string
+	models.Db.QueryRow("SELECT `group_id` FROM `campaign` WHERE `id`=? ", campaignId).Scan(&groupId)
+
 	title := make(map[int]string)
 	data := make(map[string]string)
 
@@ -126,7 +129,15 @@ func postRecipientCsv(campaignId string, file string) error {
 				}
 			}
 
-			res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
+			var cnt int
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE `group_id`=? AND `email`=? ", groupId, email).Scan(&cnt)
+
+			sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
+			if cnt > 0 {
+				sql = "INSERT INTO recipient (`campaign_id`, `email`, `name`, `status`) VALUES (?, ?, ?, 'Unsubscribed')"
+			}
+
+			res, err := models.Db.Exec(sql, campaignId, email, name)
 			checkErr(err)
 
 			id, err := res.LastInsertId()
