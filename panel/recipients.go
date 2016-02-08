@@ -130,7 +130,7 @@ func postRecipientCsv(campaignId string, file string) error {
 			}
 
 			var cnt int
-			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE `group_id`=? AND `email`=? ", groupId, email).Scan(&cnt)
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE `group_id`=? AND `email`=?", groupId, email).Scan(&cnt)
 
 			sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
 			if cnt > 0 {

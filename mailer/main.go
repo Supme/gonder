@@ -115,47 +115,55 @@ func Run() {
 					err = recip.Scan(&r.id, &r.to, &r.to_name)
 					checkErr(err)
 
-					//ToDo not send for unsubscribed recipients
-					wr.Add(1)
-					go func(cData *campaignData, rData *recipientData ) {
-						data := new(MailData)
-						data.Iface = cData.iface
-						data.From = cData.from
-						data.From_name = cData.from_name
-						data.Host = cData.host
-						data.Attachments = cData.attachments
-						data.To = rData.to
-						data.To_name = rData.to_name
+					var unsubscribeCount int
+					models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
 
-						var rs string
-						d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
-						if e == nil {
-							data.Subject = d.Subject
-							data.Html = d.Body
-							data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-							data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
-							var res error
-							if Send {
-								// Send mail
-								res = data.Send()
+					if unsubscribeCount == 0 {
+						wr.Add(1)
+						go func(cData *campaignData, rData *recipientData ) {
+							data := new(MailData)
+							data.Iface = cData.iface
+							data.From = cData.from
+							data.From_name = cData.from_name
+							data.Host = cData.host
+							data.Attachments = cData.attachments
+							data.To = rData.to
+							data.To_name = rData.to_name
+
+							var rs string
+							d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
+							if e == nil {
+								data.Subject = d.Subject
+								data.Html = d.Body
+								data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
+								data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
+								var res error
+								if Send {
+									// Send mail
+									res = data.Send()
+								} else {
+									res = errors.New("Test send")
+								}
+
+								if res == nil {
+									rs = "Ok"
+								} else {
+									rs = res.Error()
+								}
 							} else {
-								res = errors.New("Test send")
+								rs = "Error " + e.Error()
 							}
 
-							if res == nil {
-								rs = "Ok"
-							} else {
-								rs = res.Error()
-							}
-						} else {
-							rs = "Error " + e.Error()
-						}
+							log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
+							statSend(rData.id, rs)
 
-						log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
-						statSend(rData.id, rs)
+							defer wr.Done()
+						}(&c, r)
+					} else {
+						log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+						statSend(r.id, "Unsubscribed")
+					}
 
-						defer wr.Done()
-					}(&c, r)
 				}
 				wr.Wait()
 				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
