@@ -1,3 +1,15 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package panel
 
 import (
@@ -7,7 +19,7 @@ import (
 	"time"
 	"io"
 	"encoding/csv"
-	"log"
+	"github.com/supme/gonder/models"
 )
 
 type tRecipients struct {
@@ -43,7 +55,7 @@ func (t *tRecipients) Recipients() [][]string {
 	var id, email, name string
 	var r [][]string
 
-	query, err := Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", t.CampaignId, t.Start, t.Length)
+	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? ORDER BY `id` LIMIT ?,?", t.CampaignId, t.Start, t.Length)
 	checkErr(err)
 	defer query.Close()
 
@@ -63,7 +75,7 @@ func (t *tRecipients) Recipients() [][]string {
 func (t *tRecipients) RecordsTotal() string {
 	var count string
 
-	err := Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", t.CampaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", t.CampaignId).Scan(&count)
 	checkErr(err)
 
 	return count
@@ -71,8 +83,7 @@ func (t *tRecipients) RecordsTotal() string {
 
 func uploadRecipients(c *gin.Context) {
 	if c.PostForm("delete") != "" {
-		log.Printf("DeleteAll")
-		_, err := Db.Exec("DELETE FROM `recipient` WHERE `campaign_id`=?", c.Param("id"))
+		_, err := models.Db.Exec("DELETE FROM `recipient` WHERE `campaign_id`=?", c.Param("id"))
 		checkErr(err)
 	}
 
@@ -97,6 +108,9 @@ func uploadRecipients(c *gin.Context) {
 
 // ToDo optimize this
 func postRecipientCsv(campaignId string, file string) error {
+	var groupId string
+	models.Db.QueryRow("SELECT `group_id` FROM `campaign` WHERE `id`=? ", campaignId).Scan(&groupId)
+
 	title := make(map[int]string)
 	data := make(map[string]string)
 
@@ -127,14 +141,22 @@ func postRecipientCsv(campaignId string, file string) error {
 				}
 			}
 
-			res, err := Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
+			var cnt int
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE `group_id`=? AND `email`=?", groupId, email).Scan(&cnt)
+
+			sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
+			if cnt > 0 {
+				sql = "INSERT INTO recipient (`campaign_id`, `email`, `name`, `status`) VALUES (?, ?, ?, 'Unsubscribed')"
+			}
+
+			res, err := models.Db.Exec(sql, campaignId, email, name)
 			checkErr(err)
 
 			id, err := res.LastInsertId()
 			checkErr(err)
 
 			for i, t := range data {
-				_, err := Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
+				_, err := models.Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
 				checkErr(err)
 			}
 		}

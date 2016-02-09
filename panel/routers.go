@@ -1,3 +1,15 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package panel
 
 import (
@@ -9,7 +21,8 @@ import (
 	"strings"
 )
 
-func Run() {
+
+func routers() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
@@ -20,7 +33,6 @@ func Run() {
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "main.html", gin.H{})
 	})
-
 
 	// get users from file
 	users := make(gin.Accounts)
@@ -184,7 +196,7 @@ func Run() {
 
 	}
 
-	router.Run(":7777")
+	router.Run(":" + Port)
 
 
 }

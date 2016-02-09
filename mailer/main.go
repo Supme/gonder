@@ -1,6 +1,19 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package mailer
 
 import (
+	"github.com/supme/gonder/models"
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
@@ -17,51 +30,174 @@ import (
 	"sync"
 	"time"
 	"golang.org/x/net/idna"
-	"database/sql"
 	"strconv"
 )
 
-var HostName string
+var (
+	Send bool
+)
 
-var Db *sql.DB
-var RealSend bool
+type (
+	MailData struct {
+		Iface 	     string
+		Host         string
+		From         string
+		From_name    string
+		To           string
+		To_name      string
+		Extra_header string
+		Subject      string
+		Html         string
+		Attachments  []attachmentData
+		s	     proxy.Dialer
+		n            net.Dialer
+	}
 
-type message struct {
-	Subject string
-	Body    string
+
+	attachmentData struct {
+		Location string
+		Name     string
+	}
+)
+
+func Run() {
+
+	type campaignData struct {
+		id, from, from_name, subject, body, iface, host string
+		attachments []attachmentData
+		stream      int
+		delay       int
+	}
+
+	type recipientData struct {
+		id, to, to_name	string
+	}
+
+	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
+	checkErr(err)
+	defer campaign.Close()
+
+	for {
+		camp, err := campaign.Query()
+		checkErr(err)
+		defer camp.Close()
+
+		var wc sync.WaitGroup
+		for camp.Next() {
+
+			var id, from, from_name, subject, body, iface, host string
+			var stream, delay int
+
+			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay)
+			checkErr(err)
+
+			wc.Add(1)
+			go func(c campaignData) {
+				attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
+				checkErr(err)
+				defer attachment.Close()
+
+				attach, err := attachment.Query(c.id)
+				checkErr(err)
+				defer attach.Close()
+
+				c.attachments = nil
+
+				var location string
+				var name string
+				for attach.Next() {
+					err = attach.Scan(&location, &name)
+					checkErr(err)
+					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
+				}
+
+				recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
+				checkErr(err)
+				defer recipient.Close()
+
+				recip, err := recipient.Query(c.id, c.stream)
+				checkErr(err)
+				defer recip.Close()
+
+				var wr sync.WaitGroup
+				for recip.Next() {
+
+					r := new(recipientData)
+
+					err = recip.Scan(&r.id, &r.to, &r.to_name)
+					checkErr(err)
+
+					var unsubscribeCount int
+					models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
+
+					if unsubscribeCount == 0 {
+						wr.Add(1)
+						go func(cData *campaignData, rData *recipientData ) {
+							data := new(MailData)
+							data.Iface = cData.iface
+							data.From = cData.from
+							data.From_name = cData.from_name
+							data.Host = cData.host
+							data.Attachments = cData.attachments
+							data.To = rData.to
+							data.To_name = rData.to_name
+
+							var rs string
+							d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
+							if e == nil {
+								data.Subject = d.Subject
+								data.Html = d.Body
+								data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
+								data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
+								var res error
+								if Send {
+									// Send mail
+									res = data.Send()
+								} else {
+									res = errors.New("Test send")
+								}
+
+								if res == nil {
+									rs = "Ok"
+								} else {
+									rs = res.Error()
+								}
+							} else {
+								rs = "Error " + e.Error()
+							}
+
+							log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
+							statSend(rData.id, rs)
+
+							defer wr.Done()
+						}(&c, r)
+					} else {
+						log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+						statSend(r.id, "Unsubscribed")
+					}
+
+				}
+				wr.Wait()
+				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
+				defer wc.Done()
+			}(campaignData{
+				id: id,
+				from: from,
+				from_name: from_name,
+				subject: subject,
+				body: body,
+				iface: iface,
+				host: host,
+				stream: stream,
+				delay: delay,
+			})
+		}
+		wc.Wait()
+		time.Sleep(10 * time.Second) // easy with database
+	}
 }
 
-type pJson struct {
-	Campaign    string `json:"c"`
-	Recipient   string `json:"r"`
-	Url         string `json:"u"`
-	Webver      string `json:"w"`
-	Opened      string `json:"o"`
-	Unsubscribe string `json:"s"`
-}
-
-
-type attachmentData struct {
-	Location string
-	Name     string
-}
-
-type MailData struct {
-	Iface 	     string
-	Host         string
-	From         string
-	From_name    string
-	To           string
-	To_name      string
-	Extra_header string
-	Subject      string
-	Html         string
-	Attachments  []attachmentData
-	s	     proxy.Dialer
-	n            net.Dialer
-}
-
-func (m *MailData) SendMail() error {
+func (m *MailData) Send() error {
 	var smx string
 	var mx []*net.MX
 	var conn net.Conn
@@ -179,7 +315,7 @@ func (m *MailData) makeMail() (msg string) {
 	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
 	msg += "MIME-Version: 1.0\r\n"
 	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"
-	msg += "X-Mailer: Gonder 0.2\r\n"
+	msg += "X-Mailer: " + models.Version + "\r\n"
 	msg += m.Extra_header + "\r\n"
 	// ------------- /head ---------------------------------------------------------
 
@@ -250,137 +386,9 @@ func isVchar(c byte) bool {
 	return '!' <= c && c <= '~'
 }
 
-
-
-func Sender() {
-
-	type campaignData struct {
-		id, from, from_name, subject, body, iface, host string
-		attachments []attachmentData
-		stream      int
-		delay       int
-	}
-
-	type recipientData struct {
-		id, to, to_name	string
-	}
-
-	campaign, err := Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
-	checkErr(err)
-	defer campaign.Close()
-
-	for {
-		camp, err := campaign.Query()
-		checkErr(err)
-		defer camp.Close()
-
-		var wc sync.WaitGroup
-		for camp.Next() {
-
-			var id, from, from_name, subject, body, iface, host string
-			var stream, delay int
-
-			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay)
-			checkErr(err)
-
-			wc.Add(1)
-			go func(c campaignData) {
-				attachment, err := Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-				checkErr(err)
-				defer attachment.Close()
-
-				attach, err := attachment.Query(c.id)
-				checkErr(err)
-				defer attach.Close()
-
-				c.attachments = nil
-
-				var location string
-				var name string
-				for attach.Next() {
-					err = attach.Scan(&location, &name)
-					checkErr(err)
-					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
-				}
-
-				recipient, err := Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-				checkErr(err)
-				defer recipient.Close()
-
-				recip, err := recipient.Query(c.id, c.stream)
-				checkErr(err)
-				defer recip.Close()
-
-				var wr sync.WaitGroup
-				for recip.Next() {
-
-					r := new(recipientData)
-
-					err = recip.Scan(&r.id, &r.to, &r.to_name)
-					checkErr(err)
-
-					wr.Add(1)
-					go func(cData *campaignData, rData *recipientData ) {
-						data := new(MailData)
-						data.Iface = cData.iface
-						data.From = cData.from
-						data.From_name = cData.from_name
-						data.Host = cData.host
-						data.Attachments = cData.attachments
-						data.To = rData.to
-						data.To_name = rData.to_name
-
-						var rs string
-						d, e := getMailMessage(cData.id, rData.id, cData.subject, cData.body)
-						if e == nil {
-							data.Subject = d.Subject
-							data.Html = d.Body
-							data.Extra_header = "List-Unsubscribe: " + getUnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-							data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
-							var res error
-							if RealSend {
-								// Send mail
-								res = data.SendMail()
-							} else {
-								res = errors.New("Test send")
-							}
-
-							if res == nil {
-								rs = "Ok"
-							} else {
-								rs = res.Error()
-							}
-						} else {
-							rs = "Error " + e.Error()
-						}
-
-						log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
-						statSend(rData.id, rs)
-
-						defer wr.Done()
-					}(&c, r)
-				}
-				wr.Wait()
-				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
-				defer wc.Done()
-			}(campaignData{
-				id: id,
-				from: from,
-				from_name: from_name,
-				subject: subject,
-				body: body,
-				iface: iface,
-				host: host,
-				stream: stream,
-				delay: delay,
-			})
-		}
-		wc.Wait()
-		time.Sleep(10 * time.Second) // easy with database
-		log.Println("Database open connections: " + strconv.Itoa(Db.Stats().OpenConnections))
-	}
+func statSend(id, result string) {
+	models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, id)
 }
-
 
 func checkErr(err error) {
 	if err != nil {
