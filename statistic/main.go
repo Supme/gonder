@@ -1,3 +1,15 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package statistic
 
 import (
@@ -7,7 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
-	"net"
 	"log"
 	"strconv"
 )
@@ -37,11 +48,7 @@ func Run() {
 		err = json.Unmarshal([]byte(data), &param)
 		checkErr(err)
 
-		rIP, _, err := net.SplitHostPort(c.ClientIP())
-		if err != nil {
-			rIP = "bad IP address"
-		}
-		userAgent := rIP + " " + c.Request.UserAgent()
+		userAgent := c.ClientIP() + " " + c.Request.UserAgent()
 
 		if param.Opened != "" {
 			//ToDo Записывать параметры клиента (клиент, браузер, ip и т.д.)

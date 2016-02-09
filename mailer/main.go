@@ -1,3 +1,15 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package mailer
 
 import (
@@ -303,7 +315,7 @@ func (m *MailData) makeMail() (msg string) {
 	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
 	msg += "MIME-Version: 1.0\r\n"
 	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"
-	msg += "X-Mailer: Gonder 0.2\r\n"
+	msg += "X-Mailer: " + models.Version + "\r\n"
 	msg += m.Extra_header + "\r\n"
 	// ------------- /head ---------------------------------------------------------
 

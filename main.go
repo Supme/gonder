@@ -1,3 +1,15 @@
+// Project Gonder.
+// Author Supme
+// Copyright Supme 2016
+// License http://opensource.org/licenses/MIT MIT License
+//
+//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//  PURPOSE.
+//
+// Please see the License.txt file for more information.
+//
 package main
 
 import (
@@ -48,9 +60,10 @@ func main() {
 	defer models.Db.Close()
 	checkErr(models.Db.Ping())
 
-	models.Db.SetMaxIdleConns(5)
-	models.Db.SetMaxOpenConns(5)
+	models.Db.SetMaxIdleConns(10)
+	models.Db.SetMaxOpenConns(10)
 
+	models.Version = "Gonder 0.4"
 	models.StatUrl = "http://" + mainConfig.ValueOf("host")
 
 	// Init mailer
