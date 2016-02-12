@@ -35,6 +35,7 @@ type campaign struct {
 	Message   string
 	StartTime string
 	EndTime   string
+	SendUnsubscribe string
 }
 
 type recipient struct {

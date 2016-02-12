@@ -115,6 +115,7 @@ func routers() {
 						Message:   c.PostForm("message"),
 						StartTime: c.PostForm("startTime"),
 						EndTime:   c.PostForm("endTime"),
+						SendUnsubscribe: c.PostForm("sendUnsubscribe"),
 					},
 				),
 			}

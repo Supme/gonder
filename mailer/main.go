@@ -63,7 +63,7 @@ type (
 func Run() {
 
 	type campaignData struct {
-		id, from, from_name, subject, body, iface, host string
+		id, from, from_name, subject, body, iface, host, send_unsubscribe string
 		attachments []attachmentData
 		stream      int
 		delay       int
@@ -73,7 +73,7 @@ func Run() {
 		id, to, to_name	string
 	}
 
-	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
+	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
 	checkErr(err)
 	defer campaign.Close()
 
@@ -85,10 +85,10 @@ func Run() {
 		var wc sync.WaitGroup
 		for camp.Next() {
 
-			var id, from, from_name, subject, body, iface, host string
+			var id, from, from_name, subject, body, iface, host, send_unsubscribe string
 			var stream, delay int
 
-			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay)
+			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay, &send_unsubscribe)
 			checkErr(err)
 
 			wc.Add(1)
@@ -130,7 +130,7 @@ func Run() {
 					var unsubscribeCount int
 					models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
 
-					if unsubscribeCount == 0 {
+					if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
 						wr.Add(1)
 						go func(cData *campaignData, rData *recipientData ) {
 							data := new(MailData)
@@ -190,6 +190,7 @@ func Run() {
 				host: host,
 				stream: stream,
 				delay: delay,
+				send_unsubscribe: send_unsubscribe,
 			})
 		}
 		wc.Wait()
