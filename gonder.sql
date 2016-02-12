@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
 
 CREATE TABLE IF NOT EXISTS `group` (
 `id` int(11) NOT NULL,
-  `name` text NOT NULL
+  `name` text NOT NULL,
+  `template` text
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `jumping` (

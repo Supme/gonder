@@ -21,20 +21,25 @@ import (
 	"strings"
 	"log"
 	"strconv"
+	"runtime"
+	"os"
 )
 
 var (
 	Port string
 )
+
 func Run() {
 
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	router.LoadHTMLGlob("statistic/templates/*")
+	//router.LoadHTMLGlob("statistic/templates/**/*")
 
 	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Welcome to San Tropez! ("  + strconv.Itoa(models.Db.Stats().OpenConnections) + ")")
+		mem := new(runtime.MemStats)
+		runtime.ReadMemStats(mem)
+		c.String(http.StatusOK, "Welcome to San Tropez! (Conn: "  + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")")
 	})
 
 	router.Static("/static/", "static")
@@ -51,7 +56,6 @@ func Run() {
 		userAgent := c.ClientIP() + " " + c.Request.UserAgent()
 
 		if param.Opened != "" {
-			//ToDo Записывать параметры клиента (клиент, браузер, ip и т.д.)
 			go statOpened(param.Campaign, param.Recipient, userAgent)
 			// blank 16x16 png
 			c.Header("Content-Type", "image/png")
@@ -72,7 +76,8 @@ func Run() {
 				"campaignId":  param.Campaign,
 				"recipientId": param.Recipient,
 			}
-			c.HTML(http.StatusOK, "unsubscribe.html", data)
+			router.LoadHTMLFiles("statistic/templates/" + getTemplateName(param.Campaign) + "/accept.html")
+			c.HTML(http.StatusOK, "accept.html", data)
 		} else {
 			c.String(http.StatusNotFound, "Not found")
 		}
@@ -80,11 +85,27 @@ func Run() {
 
 	router.POST("/unsubscribe", func(c *gin.Context) {
 		postUnsubscribe(c.PostForm("campaignId"), c.PostForm("recipientId"))
-		c.HTML(http.StatusOK, "unsubscribeOk.html", gin.H{})
+		router.LoadHTMLFiles("statistic/templates/" + getTemplateName(c.PostForm("campaignId")) + "/success.html")
+		c.HTML(http.StatusOK, "success.html", gin.H{})
 	})
 
 	// Listen and server on 0.0.0.0:8080
 	router.Run(":" + Port)
+}
+
+func getTemplateName(campaignId string) (name string) {
+	models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", campaignId).Scan(&name)
+	if name == "" {
+		name = "default"
+	} else {
+		if _, err := os.Stat("statistic/templates/" + name + "/accept.html"); err != nil {
+			name = "default"
+		}
+		if _, err := os.Stat("statistic/templates/" + name + "/success.html"); err != nil {
+			name = "default"
+		}
+	}
+	return
 }
 
 func statOpened(campaignId string, recipientId string, userAgent string) {
