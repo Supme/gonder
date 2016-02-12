@@ -57,7 +57,7 @@ func addCampaigns(id string, name string) {
 
 func getCampaignInfo(id string) (campaign, error) {
 	var camp campaign
-	err := models.Db.QueryRow("SELECT `id`, `profile_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time` FROM `campaign` WHERE id=?", id).Scan(
+	err := models.Db.QueryRow("SELECT `id`, `profile_id`, `name`, `subject`, `from`, `from_name`, `body`, `start_time`, `end_time`, `send_unsubscribe` FROM `campaign` WHERE id=?", id).Scan(
 		&camp.Id,
 		&camp.IfaceId,
 		&camp.Name,
@@ -67,6 +67,7 @@ func getCampaignInfo(id string) (campaign, error) {
 		&camp.Message,
 		&camp.StartTime,
 		&camp.EndTime,
+		&camp.SendUnsubscribe,
 	)
 	return camp, err
 }
@@ -114,7 +115,11 @@ func updateCampaignInfo(camp campaign) campaign {
 	camp.Message = r.ReplaceAllStringFunc(camp.Message, func(str string) string {
 		return strings.Replace(str, "&amp;", "&", -1)
 	})
-	_, err := models.Db.Exec("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=? WHERE id=?",
+	sendUnsubscribe := "n"
+	if camp.SendUnsubscribe == "on" {
+		sendUnsubscribe = "y"
+	}
+	_, err := models.Db.Exec("UPDATE campaign SET `profile_id`=?, `name`=?, `subject`=?, `from`=?, `from_name`=?, `body`=?, `start_time`=?, `end_time`=?, `send_unsubscribe`=? WHERE id=?",
 		camp.IfaceId,
 		camp.Name,
 		camp.Subject,
@@ -123,6 +128,7 @@ func updateCampaignInfo(camp campaign) campaign {
 		camp.Message,
 		camp.StartTime,
 		camp.EndTime,
+		sendUnsubscribe,
 		camp.Id,
 	)
 	checkErr(err)

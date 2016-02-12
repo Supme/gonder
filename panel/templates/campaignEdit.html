@@ -54,6 +54,13 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label class="col-md-2 control-label" for="sendUnsubscribe">Send unsubscribe</label>
+            <div class="col-md-1">
+                    <input id="sendUnsubscribe" name="sendUnsubscribe" class="checkbox" type="checkbox"{{if eq .campaign.SendUnsubscribe "y"}} checked{{end}}>
+            </div>
+        </div>
+
         <!-- Text input-->
         <div class="form-group">
             <label class="col-md-2 control-label" for="startTime">Star time</label>
