@@ -22,6 +22,7 @@ import (
 	"log"
 	"strconv"
 	"runtime"
+	"os"
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 
 func Run() {
 
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
 	//router.LoadHTMLGlob("statistic/templates/**/*")
@@ -96,6 +97,13 @@ func getTemplateName(campaignId string) (name string) {
 	models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", campaignId).Scan(&name)
 	if name == "" {
 		name = "default"
+	} else {
+		if _, err := os.Stat("statistic/templates/" + name + "/accept.html"); err != nil {
+			name = "default"
+		}
+		if _, err := os.Stat("statistic/templates/" + name + "/success.html"); err != nil {
+			name = "default"
+		}
 	}
 	return
 }
