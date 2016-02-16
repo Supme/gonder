@@ -3,7 +3,7 @@
 * color code : #666666
 **/
 
-@import url('//fonts.googleapis.com/css?family=Oxygen');
+@import url('https://fonts.googleapis.com/css?family=Oxygen');
 
 * {
     font-family: Oxygen, Lucida Sans Unicode, Lucida Grande, sans-serif;
@@ -53,7 +53,6 @@ video, audio {
 
 #filetree {
 	overflow: auto;
-	min-width: 100px;	/* optional */
 	/*border:1px solid #eee;*/
 	background-color: #777777;
 	-webkit-border-radius: 2px;
@@ -622,3 +621,9 @@ html[data-useragent*='MSIE 11.0'] #newfile {
 #total-progress .progress-bar {height:3px;background-color: #333;}
 
 #fm-pdf-viewer {margin-top:3em;}
+
+div.CodeMirror.CodeMirror-fullscreen {
+  width:100%;
+  margin:0;
+  z-index: 9;
+}

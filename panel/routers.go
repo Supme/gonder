@@ -26,7 +26,7 @@ func routers() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
-	router.Static("/static/", "static")
+	router.Static("/files/", "files")
 	router.Static("/fonts/", "fonts")
 	router.Static("/assets/", "assets")
 

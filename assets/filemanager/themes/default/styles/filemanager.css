@@ -51,7 +51,6 @@ video, audio {
 
 #filetree {
 	overflow: auto;
-	min-width: 100px;	/* optional */
 	border: 1px solid #ccc;
 	/* no margin or border allowed */
 }
@@ -607,3 +606,9 @@ html[data-useragent*='MSIE 11.0'] #newfile {
 #total-progress .progress-bar {height:3px;background-color: #294750;}
 
 #fm-pdf-viewer {margin-top:3em;}
+
+div.CodeMirror.CodeMirror-fullscreen {
+  width:100%;
+  margin:0;
+  z-index: 9;
+}

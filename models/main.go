@@ -185,8 +185,8 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 
 
 	//replace static url to absolute
-	body = strings.Replace(body, "\"/static/", "\"" + StatUrl + "/static/", -1)
-	body = strings.Replace(body, "'/static/", "'" + StatUrl + "'/static/", -1)
+	body = strings.Replace(body, "\"/files/", "\"" + StatUrl + "/files/", -1)
+	body = strings.Replace(body, "'/files/", "'" + StatUrl + "'/files/", -1)
 
 	tmpl := template.New("mail")
 
