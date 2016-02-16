@@ -58,20 +58,21 @@ type (
 		Location string
 		Name     string
 	}
-)
 
-func Run() {
 
-	type campaignData struct {
+    campaignData struct {
 		id, from, from_name, subject, body, iface, host, send_unsubscribe string
 		attachments []attachmentData
 		stream      int
 		delay       int
 	}
 
-	type recipientData struct {
+	recipientData struct {
 		id, to, to_name	string
 	}
+)
+
+func Run() {
 
 	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
 	checkErr(err)
@@ -111,75 +112,11 @@ func Run() {
 					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
 				}
 
-				recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-				checkErr(err)
-				defer recipient.Close()
+				sendCampaign(c)
 
-				recip, err := recipient.Query(c.id, c.stream)
-				checkErr(err)
-				defer recip.Close()
-
-				var wr sync.WaitGroup
-				for recip.Next() {
-
-					r := new(recipientData)
-
-					err = recip.Scan(&r.id, &r.to, &r.to_name)
-					checkErr(err)
-
-					var unsubscribeCount int
-					models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
-
-					if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
-						wr.Add(1)
-						go func(cData *campaignData, rData *recipientData ) {
-							data := new(MailData)
-							data.Iface = cData.iface
-							data.From = cData.from
-							data.From_name = cData.from_name
-							data.Host = cData.host
-							data.Attachments = cData.attachments
-							data.To = rData.to
-							data.To_name = rData.to_name
-
-							var rs string
-							d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
-							if e == nil {
-								data.Subject = d.Subject
-								data.Html = d.Body
-								data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-								data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
-								var res error
-								if Send {
-									// Send mail
-									res = data.Send()
-								} else {
-									res = errors.New("Test send")
-								}
-
-								if res == nil {
-									rs = "Ok"
-								} else {
-									rs = res.Error()
-								}
-							} else {
-								rs = "Error " + e.Error()
-							}
-
-							log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
-							statSend(rData.id, rs)
-
-							defer wr.Done()
-						}(&c, r)
-					} else {
-						log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-						statSend(r.id, "Unsubscribed")
-					}
-
-				}
-				wr.Wait()
-				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
+				time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
 				defer wc.Done()
+
 			}(campaignData{
 				id: id,
 				from: from,
@@ -194,8 +131,109 @@ func Run() {
 			})
 		}
 		wc.Wait()
-		time.Sleep(10 * time.Second) // easy with database
+		time.Sleep(1 * time.Second) // easy with database
 	}
+}
+
+func sendCampaign(c campaignData) {
+
+	recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM `recipient` WHERE campaign_id=? AND status IS NULL LIMIT ?")
+	checkErr(err)
+	defer recipient.Close()
+
+	// stream send
+	recipientCount := 1
+	for recipientCount > 0 {
+
+		recip, err := recipient.Query(c.id, c.stream)
+		checkErr(err)
+		defer recip.Close()
+
+		var wr sync.WaitGroup
+		for recip.Next() {
+			r := new(recipientData)
+			err = recip.Scan(&r.id, &r.to, &r.to_name)
+			checkErr(err)
+
+			var unsubscribeCount int
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
+
+			if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
+				wr.Add(1)
+				go func(cData *campaignData, rData *recipientData ) {
+					sendRecipient(cData, rData)
+					defer wr.Done()
+				}(&c, r)
+			} else {
+				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+				statSend(r.id, "Unsubscribed")
+			}
+		}
+
+		wr.Wait()
+		models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE id = ?", c.id).Scan(&recipientCount)
+	}
+
+	// send one per cycle
+	//SELECT DISTINCT r.`id`, r.`email`, r.`name`, r.`status` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=15 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT("%",s.`pattern`,"%")
+	recipient, err = models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+	checkErr(err)
+	defer recipient.Close()
+
+	for i := 0; i < 3; i++ {
+		time.Sleep(900 * time.Second)
+
+		recip, err := recipient.Query(c.id)
+		checkErr(err)
+		defer recip.Close()
+
+		for recip.Next() {
+			r := new(recipientData)
+			err = recip.Scan(&r.id, &r.to, &r.to_name)
+			checkErr(err)
+
+			sendRecipient(&c, r)
+		}
+	}
+}
+
+func sendRecipient(cData *campaignData, rData *recipientData )  {
+
+		data := new(MailData)
+		data.Iface = cData.iface
+		data.From = cData.from
+		data.From_name = cData.from_name
+		data.Host = cData.host
+		data.Attachments = cData.attachments
+		data.To = rData.to
+		data.To_name = rData.to_name
+
+		var rs string
+		d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
+		if e == nil {
+			data.Subject = d.Subject
+			data.Html = d.Body
+			data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
+			data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
+			var res error
+			if Send {
+				// Send mail
+				res = data.Send()
+			} else {
+				res = errors.New("Test send")
+			}
+
+			if res == nil {
+				rs = "Ok"
+			} else {
+				rs = res.Error()
+			}
+		} else {
+			rs = "Error " + e.Error()
+		}
+
+		log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
+		statSend(rData.id, rs)
 }
 
 func (m *MailData) Send() error {
@@ -224,6 +262,8 @@ func (m *MailData) Send() error {
 	}
 
 	//ToDo cache MX servers
+	// trim space
+	m.To = strings.TrimSpace(m.To)
 	// punycode convert
 	domain, err := idna.ToASCII(strings.Split(m.To, "@")[1])
 	if err != nil {
