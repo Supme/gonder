@@ -73,7 +73,32 @@ type (
 	recipientData struct {
 		id, to, to_name	string
 	}
+
+	campaigns []campaign
+
+	campaign struct {
+		id, from, from_name, subject, body, iface, host, send_unsubscribe string
+		stream      int
+		delay       int
+		attachments []attachmentData
+		recipients  []recipient
+	}
+
+	recipient struct {
+		id, to, to_name	string
+	}
 )
+
+func (r *recipient) get() {
+	models.Db.QueryRow("SELECT `email`, `name` FROM `recipient` WHERE campaign_id=? AND status IS NULL LIMIT ?", r.id).Scan(r.to, r.to_name)
+}
+
+func (r *recipient) send() {
+
+}
+
+func (c *campaigns) getActiv(limit int) {
+}
 
 func stringInSlice(list [50]string, str string) bool {
 	for _, v := range list {
