@@ -35,6 +35,9 @@ import (
 
 var (
 	Send bool
+	MaxCampaingns int
+	workCampaigns [50]string
+	startedCampaigns int
 )
 
 type (
@@ -72,127 +75,171 @@ type (
 	}
 )
 
-func Run() {
+func stringInSlice(list [50]string, str string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
 
-	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
+func Run() {
+	var id, from, from_name, subject, body, iface, host, send_unsubscribe string
+	var stream, delay int
+	MaxCampaingns = 2
+
+	if MaxCampaingns > 50 {
+		MaxCampaingns = 50
+	}
+
+	startedCampaigns = 0
+
+	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time` AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND status IS NULL) > 0")
 	checkErr(err)
 	defer campaign.Close()
 
+	// Работам в цикле
 	for {
+		// Где там все наши кампании попавшие под условия?
 		camp, err := campaign.Query()
 		checkErr(err)
 		defer camp.Close()
 
-		var wc sync.WaitGroup
+		// Просматриваем все 
 		for camp.Next() {
-
-			var id, from, from_name, subject, body, iface, host, send_unsubscribe string
-			var stream, delay int
-
+			// берем параметры
 			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay, &send_unsubscribe)
 			checkErr(err)
 
-			wc.Add(1)
-			go func(c campaignData) {
-				attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-				checkErr(err)
-				defer attachment.Close()
-
-				attach, err := attachment.Query(c.id)
-				checkErr(err)
-				defer attach.Close()
-
-				c.attachments = nil
-
-				var location string
-				var name string
-				for attach.Next() {
-					err = attach.Scan(&location, &name)
-					checkErr(err)
-					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
+			// эта кампания еще не запущена?
+			if stringInSlice(workCampaigns, id) == false {
+				// если число запущеных максимально, ждем пока не освободится кто-нибудь
+				for startedCampaigns >= MaxCampaingns {
+					time.Sleep(1 * time.Second)
 				}
 
-				sendCampaign(c)
-
-				time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
-				defer wc.Done()
-
-			}(campaignData{
-				id: id,
-				from: from,
-				from_name: from_name,
-				subject: subject,
-				body: body,
-				iface: iface,
-				host: host,
-				stream: stream,
-				delay: delay,
-				send_unsubscribe: send_unsubscribe,
-			})
+				log.Println("Start campaign id:",id)
+				// добавим количество запущеных и запишем id запущеной кампании
+				workCampaigns[startedCampaigns] = id
+				n := startedCampaigns
+				startedCampaigns++
+				go func(c campaignData, i int) {
+					// и запускаем
+					sendCampaign(c)
+					// отослали- удалим из отсылаемых и уменьшим количество работающих кампаний
+					workCampaigns[i] = ""
+					startedCampaigns--
+				}(campaignData{
+					id: id,
+					from: from,
+					from_name: from_name,
+					subject: subject,
+					body: body,
+					iface: iface,
+					host: host,
+					stream: stream,
+					delay: delay,
+					send_unsubscribe: send_unsubscribe,
+				}, n)
+			}
+			time.Sleep(1 * time.Second) // easy with database
 		}
-		wc.Wait()
-		time.Sleep(1 * time.Second) // easy with database
 	}
 }
 
 func sendCampaign(c campaignData) {
+	// Если есть получатели то начинаем работу
+	var recipientCount uint64
+	models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE campaign_id=? AND status IS NULL", c.id).Scan(&recipientCount)
 
-	recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM `recipient` WHERE campaign_id=? AND status IS NULL LIMIT ?")
+	// добавим приложенные к кампании файлы
+	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
 	checkErr(err)
-	defer recipient.Close()
+	defer attachment.Close()
 
-	// stream send
-	recipientCount := 1
-	for recipientCount > 0 {
+	attach, err := attachment.Query(c.id)
+	checkErr(err)
+	defer attach.Close()
 
-		recip, err := recipient.Query(c.id, c.stream)
+	c.attachments = nil
+	var location string
+	var name string
+	for attach.Next() {
+		err = attach.Scan(&location, &name)
 		checkErr(err)
-		defer recip.Close()
-
-		var wr sync.WaitGroup
-		for recip.Next() {
-			r := new(recipientData)
-			err = recip.Scan(&r.id, &r.to, &r.to_name)
-			checkErr(err)
-
-			var unsubscribeCount int
-			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
-
-			if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
-				wr.Add(1)
-				go func(cData *campaignData, rData *recipientData ) {
-					sendRecipient(cData, rData)
-					defer wr.Done()
-				}(&c, r)
-			} else {
-				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-				statSend(r.id, "Unsubscribed")
-			}
-		}
-
-		wr.Wait()
-		models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE id = ?", c.id).Scan(&recipientCount)
+		c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
 	}
 
-	// send one per cycle
-	//SELECT DISTINCT r.`id`, r.`email`, r.`name`, r.`status` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=15 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT("%",s.`pattern`,"%")
-	recipient, err = models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
-	checkErr(err)
-	defer recipient.Close()
-
-	for i := 0; i < 3; i++ {
-		time.Sleep(900 * time.Second)
-
-		recip, err := recipient.Query(c.id)
+	if recipientCount > 0 {
+		// Шлём потоками
+		recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM `recipient` WHERE campaign_id=? AND status IS NULL LIMIT ?")
 		checkErr(err)
-		defer recip.Close()
+		defer recipient.Close()
 
-		for recip.Next() {
-			r := new(recipientData)
-			err = recip.Scan(&r.id, &r.to, &r.to_name)
+		// если получатели еще остались
+		for recipientCount > 0 {
+			// берём пачку пользователей
+			recip, err := recipient.Query(c.id, c.stream)
 			checkErr(err)
+			defer recip.Close()
+			var wr sync.WaitGroup
+			// перебираем их
+			for recip.Next() {
+				// получаем параметры получателя
+				r := new(recipientData)
+				err = recip.Scan(&r.id, &r.to, &r.to_name)
+				checkErr(err)
+				// если пользователь ни разу не отказался от подписки в этой группе
+				var unsubscribeCount int
+				models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
+				if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
+					// добавляем в поток для отправки
+					wr.Add(1)
+					go func(cData *campaignData, rData *recipientData ) {
+						sendRecipient(cData, rData)
+						defer wr.Done()
+					}(&c, r)
+				} else {
+					// если отказался, значит так и запишем
+					log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+					statSend(r.id, "Unsubscribed")
+				}
+			}
+			// ждём пока все отправятся
+			wr.Wait()
+			time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
+					    // остались еще получатели?
+			models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status` IS NULL", c.id).Scan(&recipientCount)
+		}
 
-			sendRecipient(&c, r)
+		// есть ли получатели с мягкими отбивками?
+		models.Db.QueryRow("SELECT COUNT(r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")", c.id).Scan(&recipientCount)
+		// если есть
+		if recipientCount > 0 {
+			log.Println("Resend soft bounced mail from campaign:",c.id)
+			// досылаем по одному неспеша, тому про кого сервер мягко ответил
+			recipient, err = models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+			checkErr(err)
+			defer recipient.Close()
+
+			// повторим несколько раз
+			for i := 0; i < 3; i++ {
+				// с паузой перед досылкой
+				time.Sleep(900 * time.Second)
+				// выбираем всех
+				recip, err := recipient.Query(c.id)
+				checkErr(err)
+				defer recip.Close()
+				// и отсылаем
+				for recip.Next() {
+					r := new(recipientData)
+					err = recip.Scan(&r.id, &r.to, &r.to_name)
+					checkErr(err)
+
+					sendRecipient(&c, r)
+				}
+			}
 		}
 	}
 }
@@ -232,7 +279,7 @@ func sendRecipient(cData *campaignData, rData *recipientData )  {
 			rs = "Error " + e.Error()
 		}
 
-		log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
+		log.Printf("Campaign %s for recipient id %s email %s is %s", cData.id, rData.id, data.To, rs)
 		statSend(rData.id, rs)
 }
 
