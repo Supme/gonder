@@ -13,7 +13,6 @@
 package main
 
 import (
-	"github.com/supme/gonder/mailer"
 	"github.com/supme/gonder/statistic"
 	"github.com/supme/gonder/panel"
 	"github.com/supme/gonder/models"
@@ -30,6 +29,7 @@ import (
 	"syscall"
 	"strconv"
 	"errors"
+	"github.com/supme/gonder/campaign"
 )
 
 func main() {
@@ -68,9 +68,9 @@ func main() {
 
 	// Init mailer
 	if mailerConfig.ValueOf("send") == "yes" {
-		mailer.Send = true
+		campaign.Send = true
 	} else {
-		mailer.Send = false
+		campaign.Send = false
 	}
 
 	// Init statistic
@@ -253,7 +253,7 @@ func main() {
 			if os.Args[2] == "sender" {
 
 				log.Println("Start database mailer")
-				mailer.Run()
+				campaign.Run()
 
 				for {}
 			}
@@ -275,7 +275,7 @@ func main() {
 		go panel.Run()
 
 		log.Println("Start database mailer")
-		go mailer.Run()
+		go campaign.Run()
 
 		log.Println("Start statistics http server")
 		go statistic.Run()
