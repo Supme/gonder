@@ -43,5 +43,3 @@ func Run()  {
 		time.Sleep(1 * time.Second)
 	}
 }
-
-// UPDATE `recipient` SET `status`=NULL
