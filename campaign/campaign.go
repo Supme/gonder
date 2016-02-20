@@ -174,7 +174,6 @@ func (c campaign) send() {
 			if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
 				w.Add(1)
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				log.Printf("Start sending for recipient id %s email %s", r.id, r.to)
 				go func(d recipient) {
 					rs := d.send(&c)
 					models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
