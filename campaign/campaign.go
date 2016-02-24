@@ -194,20 +194,22 @@ func (c campaign) resend_soft_bounce() {
 	if len(c.recipients) == 0 {
 		return
 	}
-	time.Sleep(10 * time.Second)
-	for _, r := range c.recipients {
-		// если пользователь ни разу не отказался от подписки в этой группе
-		var unsubscribeCount int
-		models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
-		if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
-			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-			rs := r.send(&c)
-			models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
-		} else {
-			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-			log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-		}
 
+	for n := 0; n < resendCount; n++ {
+		time.Sleep(time.Duration(resendPause) * time.Second)
+		for _, r := range c.recipients {
+			// если пользователь ни разу не отказался от подписки в этой группе
+			var unsubscribeCount int
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
+			if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
+				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+				rs := r.send(&c)
+				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
+			} else {
+				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+			}
+		}
 	}
 }
 
