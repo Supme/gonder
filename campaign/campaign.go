@@ -44,11 +44,13 @@ func (c *campaign) get_null_recipients() {
 	var d recipient
 	c.recipients = nil
 
-	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
+	//query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
+	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL")
 	checkErr(err)
 	defer query.Close()
 
-	q, err := query.Query(c.id, c.stream)
+	//q, err := query.Query(c.id, c.stream)
+	q, err := query.Query(c.id)
 	checkErr(err)
 	defer q.Close()
 
@@ -81,6 +83,15 @@ func (c *campaign) get_soft_bounce_recipients() {
 
 func (r *recipient) get(id string) {
 	models.Db.QueryRow("SELECT `id`, `email`, `name` FROM recipient WHERE id=? AND status IS NULL LIMIT ?", id).Scan(r.id, r.to, r.to_name)
+}
+
+func (r *recipient) unsubscribe(campaignId string) bool {
+	var unsubscribeCount int
+	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.to).Scan(&unsubscribeCount)
+	if unsubscribeCount == 0 {
+		return false
+	}
+	return true
 }
 
 func (r recipient) send(c *campaign) string {
@@ -168,10 +179,7 @@ func (c campaign) send() {
 			s = false
 		}
 		for _, r := range c.recipients {
-			// если пользователь ни разу не отказался от подписки в этой группе
-			var unsubscribeCount int
-			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
-			if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
+			if r.unsubscribe(c.id) == false || c.send_unsubscribe == "y" {
 				w.Add(1)
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 				go func(d recipient) {
@@ -187,6 +195,36 @@ func (c campaign) send() {
 		w.Wait()
 		time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
 	}
+}
+
+func (c campaign) fast_send() {
+	count := 0
+	stream := 0
+	next := make(chan bool)
+
+	c.get_null_recipients()
+	log.Printf("Start campaign %s. Count recipients %d", c.id, len(c.recipients))
+
+	for _, r := range c.recipients {
+		count += 1
+		if r.unsubscribe(c.id) == false  || c.send_unsubscribe == "y" {
+			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+			stream += 1
+			if stream > c.stream {
+				<-next
+				stream -= 1
+			}
+			go func(d recipient) {
+				rs := d.send(&c)
+				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
+				next <- true
+			}(r)
+		} else {
+			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+			log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+		}
+	}
+	log.Printf("Done campaign %s. Count %d", c.id, count)
 }
 
 func (c campaign) resend_soft_bounce() {

@@ -27,7 +27,7 @@ var (
 )
 
 func Run()  {
-	MaxCampaingns = 2
+	MaxCampaingns = 1
 	resendPause = 60
 	resendCount = 3
 
@@ -89,7 +89,7 @@ func remove_started_campaign(id string) {
 func run_campaign(c campaign) {
 	log.Println("Start campaign ", c.id)
 	c.get_attachments()
-	c.send()
+	c.fast_send()
 	log.Println("Resend bounce mail for campaign id", c.id)
 	c.resend_soft_bounce()
 	remove_started_campaign(c.id)
