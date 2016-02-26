@@ -18,7 +18,7 @@ import (
 	"errors"
 //	_ "github.com/eaigner/dkim"
 	"log"
-	"sync"
+//	"sync"
 	"time"
 	"strconv"
 	"math/rand"
@@ -44,8 +44,7 @@ func (c *campaign) get_null_recipients() {
 	var d recipient
 	c.recipients = nil
 
-	//query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL")
+	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL")
 	checkErr(err)
 	defer query.Close()
 
@@ -65,7 +64,7 @@ func (c *campaign) get_soft_bounce_recipients() {
 	var	d recipient
 	c.recipients = nil
 
-	query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+	query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
 	checkErr(err)
 	defer query.Close()
 
@@ -79,10 +78,6 @@ func (c *campaign) get_soft_bounce_recipients() {
 		c.recipients = append(c.recipients, d)
 	}
 
-}
-
-func (r *recipient) get(id string) {
-	models.Db.QueryRow("SELECT `id`, `email`, `name` FROM recipient WHERE id=? AND status IS NULL LIMIT ?", id).Scan(r.id, r.to, r.to_name)
 }
 
 func (r *recipient) unsubscribe(campaignId string) bool {
@@ -171,33 +166,6 @@ func (c *campaign) get_attachments() {
 }
 
 func (c campaign) send() {
-	var w sync.WaitGroup
-	s := true
-	for s {
-		c.get_null_recipients()
-		if len(c.recipients) == 0 {
-			s = false
-		}
-		for _, r := range c.recipients {
-			if r.unsubscribe(c.id) == false || c.send_unsubscribe == "y" {
-				w.Add(1)
-				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				go func(d recipient) {
-					rs := d.send(&c)
-					models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-					w.Done()
-				}(r)
-			} else {
-				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-			}
-		}
-		w.Wait()
-		time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
-	}
-}
-
-func (c campaign) fast_send() {
 	count := 0
 	stream := 0
 	next := make(chan bool)
@@ -251,6 +219,7 @@ func (c campaign) resend_soft_bounce() {
 	}
 }
 
+/*
 // Get active campaigns
 func get_active_campaigns(limit int) []campaign{
 	var c []campaign
@@ -283,6 +252,38 @@ func get_active_campaigns(limit int) []campaign{
 	}
 	return c
 }
+
+func (r *recipient) get(id string) {
+	models.Db.QueryRow("SELECT `id`, `email`, `name` FROM recipient WHERE id=? AND status IS NULL LIMIT ?", id).Scan(r.id, r.to, r.to_name)
+}
+
+func (c campaign) send() {
+	var w sync.WaitGroup
+	s := true
+	for s {
+		c.get_null_recipients()
+		if len(c.recipients) == 0 {
+			s = false
+		}
+		for _, r := range c.recipients {
+			if r.unsubscribe(c.id) == false || c.send_unsubscribe == "y" {
+				w.Add(1)
+				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+				go func(d recipient) {
+					rs := d.send(&c)
+					models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
+					w.Done()
+				}(r)
+			} else {
+				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+			}
+		}
+		w.Wait()
+		time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
+	}
+}
+*/
 
 func checkErr(err error) {
 	if err != nil {

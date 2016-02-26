@@ -27,7 +27,7 @@ var (
 )
 
 func Run()  {
-	MaxCampaingns = 1
+	MaxCampaingns = 2
 	resendPause = 60
 	resendCount = 3
 
@@ -56,7 +56,7 @@ func next_campaign() campaign {
 		started += "'" + s + "'"
 	}
 
-	query := "SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time` AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND status IS NULL) > 0"
+	query := "SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time` AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0"
 	if started != "" {
 		query += " AND t1.`id` NOT IN (" + started + ")"
 	}
@@ -89,7 +89,7 @@ func remove_started_campaign(id string) {
 func run_campaign(c campaign) {
 	log.Println("Start campaign ", c.id)
 	c.get_attachments()
-	c.fast_send()
+	c.send()
 	log.Println("Resend bounce mail for campaign id", c.id)
 	c.resend_soft_bounce()
 	remove_started_campaign(c.id)

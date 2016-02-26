@@ -36,16 +36,16 @@ func addGroup(name string) {
 	checkErr(err)
 }
 
-func getCampaigns(id string) map[string]campaign {
+func getCampaigns(id string) []campaign {
 	var key, name, subject string
-	campaigns := make(map[string]campaign)
-	query, err := models.Db.Query("SELECT `id`, `name`, `subject` FROM `campaign` WHERE group_id=?", id)
+	var campaigns []campaign
+	query, err := models.Db.Query("SELECT `id`, `name`, `subject` FROM `campaign` WHERE `group_id`=? ORDER BY `id` ASC", id)
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&key, &name, &subject)
 		checkErr(err)
-		campaigns[key] = campaign{Name: name, Subject: subject}
+		campaigns = append(campaigns,campaign{Id:key, Name: name, Subject: subject})
 	}
 	return campaigns
 }
