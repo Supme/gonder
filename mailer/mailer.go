@@ -19,22 +19,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	_ "github.com/eaigner/dkim"
+//	_ "github.com/eaigner/dkim"
 	"golang.org/x/net/proxy"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/smtp"
 	"strings"
-	"sync"
-	"time"
 	"golang.org/x/net/idna"
-	"strconv"
-)
-
-var (
-	Send bool
 )
 
 type (
@@ -48,155 +40,16 @@ type (
 		Extra_header string
 		Subject      string
 		Html         string
-		Attachments  []attachmentData
-		s	     proxy.Dialer
+		Attachments  []Attachment
+		s	     	 proxy.Dialer
 		n            net.Dialer
 	}
 
-
-	attachmentData struct {
+	Attachment struct {
 		Location string
 		Name     string
 	}
 )
-
-func Run() {
-
-	type campaignData struct {
-		id, from, from_name, subject, body, iface, host, send_unsubscribe string
-		attachments []attachmentData
-		stream      int
-		delay       int
-	}
-
-	type recipientData struct {
-		id, to, to_name	string
-	}
-
-	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time`")
-	checkErr(err)
-	defer campaign.Close()
-
-	for {
-		camp, err := campaign.Query()
-		checkErr(err)
-		defer camp.Close()
-
-		var wc sync.WaitGroup
-		for camp.Next() {
-
-			var id, from, from_name, subject, body, iface, host, send_unsubscribe string
-			var stream, delay int
-
-			err = camp.Scan(&id, &from, &from_name, &subject, &body, &iface, &host, &stream, &delay, &send_unsubscribe)
-			checkErr(err)
-
-			wc.Add(1)
-			go func(c campaignData) {
-				attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-				checkErr(err)
-				defer attachment.Close()
-
-				attach, err := attachment.Query(c.id)
-				checkErr(err)
-				defer attach.Close()
-
-				c.attachments = nil
-
-				var location string
-				var name string
-				for attach.Next() {
-					err = attach.Scan(&location, &name)
-					checkErr(err)
-					c.attachments = append(c.attachments, attachmentData{Location: location, Name: name})
-				}
-
-				recipient, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND status IS NULL LIMIT ?")
-				checkErr(err)
-				defer recipient.Close()
-
-				recip, err := recipient.Query(c.id, c.stream)
-				checkErr(err)
-				defer recip.Close()
-
-				var wr sync.WaitGroup
-				for recip.Next() {
-
-					r := new(recipientData)
-
-					err = recip.Scan(&r.id, &r.to, &r.to_name)
-					checkErr(err)
-
-					var unsubscribeCount int
-					models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
-
-					if unsubscribeCount == 0 || c.send_unsubscribe == "y" {
-						wr.Add(1)
-						go func(cData *campaignData, rData *recipientData ) {
-							data := new(MailData)
-							data.Iface = cData.iface
-							data.From = cData.from
-							data.From_name = cData.from_name
-							data.Host = cData.host
-							data.Attachments = cData.attachments
-							data.To = rData.to
-							data.To_name = rData.to_name
-
-							var rs string
-							d, e := models.MailMessage(cData.id, rData.id, cData.subject, cData.body)
-							if e == nil {
-								data.Subject = d.Subject
-								data.Html = d.Body
-								data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(cData.id, rData.id) + "\r\nPrecedence: bulk\r\n"
-								data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + cData.id + "." + rData.id +"@" + cData.host + ">" + "\r\n"
-								var res error
-								if Send {
-									// Send mail
-									res = data.Send()
-								} else {
-									res = errors.New("Test send")
-								}
-
-								if res == nil {
-									rs = "Ok"
-								} else {
-									rs = res.Error()
-								}
-							} else {
-								rs = "Error " + e.Error()
-							}
-
-							log.Printf("Send mail for recipient id %s email %s is %s", rData.id, data.To, rs)
-							statSend(rData.id, rs)
-
-							defer wr.Done()
-						}(&c, r)
-					} else {
-						log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-						statSend(r.id, "Unsubscribed")
-					}
-
-				}
-				wr.Wait()
-				time.Sleep(time.Second + time.Duration(c.delay)*time.Second)
-				defer wc.Done()
-			}(campaignData{
-				id: id,
-				from: from,
-				from_name: from_name,
-				subject: subject,
-				body: body,
-				iface: iface,
-				host: host,
-				stream: stream,
-				delay: delay,
-				send_unsubscribe: send_unsubscribe,
-			})
-		}
-		wc.Wait()
-		time.Sleep(10 * time.Second) // easy with database
-	}
-}
 
 func (m *MailData) Send() error {
 	var smx string
@@ -224,6 +77,8 @@ func (m *MailData) Send() error {
 	}
 
 	//ToDo cache MX servers
+	// trim space
+	m.To = strings.TrimSpace(m.To)
 	// punycode convert
 	domain, err := idna.ToASCII(strings.Split(m.To, "@")[1])
 	if err != nil {
@@ -244,7 +99,6 @@ func (m *MailData) Send() error {
 				conn, err = m.n.Dial("tcp", smx)
 			}
 			if err == nil {
-				defer conn.Close()
 				break
 			}
 		}
@@ -252,6 +106,7 @@ func (m *MailData) Send() error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	host, _, _ := net.SplitHostPort(smx)
 	c, err := smtp.NewClient(conn, host)
@@ -280,7 +135,7 @@ func (m *MailData) Send() error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(w, msg)
+	_, err = fmt.Fprint(w, msg)
 	if err != nil {
 		return err
 	}
@@ -385,14 +240,4 @@ func encodeRFC2047(s string) string {
 func isVchar(c byte) bool {
 	// Visible (printing) characters.
 	return '!' <= c && c <= '~'
-}
-
-func statSend(id, result string) {
-	models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, id)
-}
-
-func checkErr(err error) {
-	if err != nil {
-		log.Println(err)
-	}
 }

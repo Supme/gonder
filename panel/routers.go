@@ -26,7 +26,7 @@ func routers() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("panel/templates/*")
-	router.Static("/static/", "static")
+	router.Static("/files/", "files")
 	router.Static("/fonts/", "fonts")
 	router.Static("/assets/", "assets")
 
@@ -131,7 +131,10 @@ func routers() {
 			c.HTML(http.StatusOK, "recipient.html", data)
 		})
 
-		mailer.GET("campaign/recipient/param/:id", func(c *gin.Context) {
+
+
+
+		mailer.GET("recipient/:id", func(c *gin.Context) {
 			data := gin.H{
 				"recipient": getRecipient(c.Param("id")),
 				"params":    getRecipientParam(c.Param("id")),

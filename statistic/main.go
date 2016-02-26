@@ -34,7 +34,6 @@ func Run() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	//router.LoadHTMLGlob("statistic/templates/**/*")
 
 	router.GET("/", func(c *gin.Context) {
 		mem := new(runtime.MemStats)
@@ -42,7 +41,7 @@ func Run() {
 		c.String(http.StatusOK, "Welcome to San Tropez! (Conn: "  + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")")
 	})
 
-	router.Static("/static/", "static")
+	router.Static("/files/", "files")
 
 	router.GET("/data/:params", func(c *gin.Context) {
 

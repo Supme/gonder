@@ -9,7 +9,7 @@ window.onload = function() {
     // --- CKEditor ---
 
     var editor = CKEDITOR.replace( 'message', {
-            filebrowserBrowseUrl: '/assets/filemanager/index.html',
+            filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
             plugins:
             //'dialogui,' +
             'dialog,' +

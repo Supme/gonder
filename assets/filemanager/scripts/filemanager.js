@@ -30,7 +30,13 @@ var loadConfigFile = function (type) {
 	type = (typeof type === "undefined") ? "user" : type;
 	
 	if(type == 'user') {
-		var url = './scripts/filemanager.config.js';
+		if($.urlParam('config') != 0) {
+			var url = './scripts/' + $.urlParam('config');
+			userconfig = $.urlParam('config');
+		} else {
+			var url = './scripts/filemanager.config.js';
+			userconfig = 'filemanager.config.js';
+		}
 	} else {
 		var url = './scripts/filemanager.config.js.default';
 	}
@@ -51,10 +57,14 @@ var loadConfigFile = function (type) {
 var configd = loadConfigFile('default');
 // loading user configuration file
 var config = loadConfigFile();
+// we remove version from user config file
+if (config !== null) delete config.version;
+
+
 
 // we merge default config and user config file
-var config = $.extend({}, configd, config);
-
+var config = $.extend(true, configd, config);
+	console.log(config);
 if(config.options.logger) var start = new Date().getTime();
 
 // <head> included files collector
@@ -118,7 +128,14 @@ var capabilities = config.options.capabilities || new Array('select', 'download'
 
 // Get localized messages from file 
 // through culture var or from URL
-if($.urlParam('langCode') != 0 && file_exists ('scripts/languages/'  + $.urlParam('langCode') + '.js')) config.options.culture = $.urlParam('langCode');
+if($.urlParam('langCode') != 0) {
+    if(file_exists ('scripts/languages/'  + $.urlParam('langCode') + '.js')) {
+        config.options.culture = $.urlParam('langCode');
+    } else {
+        var urlLang = $.urlParam('langCode').substring(0, 2);
+        if(file_exists ('scripts/languages/'  + urlLang + '.js')) config.options.culture = urlLang;
+    }
+}
 
 var lg = [];
 $.ajax({
@@ -141,14 +158,15 @@ $.prompt.setDefaults({
 // Forces columns to fill the layout vertically.
 // Called on initial page load and on resize.
 var setDimensions = function(){
-	var bheight = 53;
-	
+	var bheight = 53,
+		$uploader = $('#uploader');
+
 	if($.urlParam('CKEditorCleanUpFuncNum')) bheight +=60;
 
-	var newH = $(window).height() - $('#uploader').height() - bheight;	
+	var newH = $(window).height() - $uploader.height() - $uploader.offset().top - bheight;
 	$('#splitter, #filetree, #fileinfo, .vsplitbar').height(newH);
 	var newW = $('#splitter').width() - $('div.vsplitbar').width() - $('#filetree').width();
-    $('#fileinfo').width(newW);
+	$('#fileinfo').width(newW);
 };
 
 // Display Min Path
@@ -462,7 +480,7 @@ var setUploader = function(path) {
 			if(fname != ''){
 				foldername = cleanString(fname);
 				var d = new Date(); // to prevent IE cache issues
-				$.getJSON(fileConnector + '?mode=addfolder&path=' + $('#currentpath').val() + '&name=' + foldername + '&time=' + d.getMilliseconds(), function(result){
+				$.getJSON(fileConnector + '?mode=addfolder&path=' + $('#currentpath').val() + '&config=' + userconfig + '&name=' + encodeURIComponent(foldername) + '&time=' + d.getMilliseconds(), function(result){
 					if(result['Code'] == 0){
 						addFolder(result['Parent'], result['Name']);
 						getFolderInfo(result['Parent']);
@@ -551,7 +569,7 @@ var bindToolbar = function(data) {
 		$('#fileinfo').find('button#download').hide();
 	} else {
 		$('#fileinfo').find('button#download').click(function(){
-			window.location = fileConnector + '?mode=download&path=' + encodeURIComponent(data['Path']);
+			window.location = fileConnector + '?mode=download&path=' + encodeURIComponent(data['Path']) + '&config=' + userconfig;
 		}).show();
 	}
 };
@@ -713,7 +731,7 @@ var renameItem = function(data) {
 			}
 
 			var oldPath = data['Path'];	
-			var connectString = fileConnector + '?mode=rename&old=' + data['Path'] + '&new=' + givenName;
+			var connectString = fileConnector + '?mode=rename&old=' + encodeURIComponent(data['Path']) + '&new=' + encodeURIComponent(givenName) + '&config=' + userconfig;
 		
 			$.ajax({
 				type: 'GET',
@@ -879,7 +897,7 @@ var moveItem = function(data) {
 		if(rname != ''){
 			var givenName = rname;
 			var oldPath = data['Path'];
-			var connectString = fileConnector + '?mode=move&old=' + encodeURIComponent(data['Path']) + '&new=' + encodeURIComponent(givenName) + '&root=' + encodeURIComponent(fileRoot);
+			var connectString = fileConnector + '?mode=move&old=' + encodeURIComponent(data['Path']) + '&new=' + encodeURIComponent(givenName) + '&root=' + encodeURIComponent(fileRoot) + '&config=' + userconfig;
 
 			$.ajax({
 				type: 'GET',
@@ -929,7 +947,7 @@ var deleteItem = function(data) {
 	var doDelete = function(v, m){
 		if(v != 1) return false;
 		var d = new Date(); // to prevent IE cache issues
-		var connectString = fileConnector + '?mode=delete&path=' + encodeURIComponent(data['Path'])  + '&time=' + d.getMilliseconds(),
+		var connectString = fileConnector + '?mode=delete&path=' + encodeURIComponent(data['Path'])  + '&time=' + d.getMilliseconds() + '&config=' + userconfig,
         parent        = data['Path'].split('/').reverse().slice(1).reverse().join('/') + '/';
 
 		$.ajax({
@@ -981,7 +999,7 @@ var editItem = function(data) {
 					$(this).hide(); // hiding Edit link
 					
 					var d = new Date(); // to prevent IE cache issues
-					var connectString = fileConnector + '?mode=editfile&path=' + encodeURIComponent(data['Path']) + '&time=' + d.getMilliseconds();
+					var connectString = fileConnector + '?mode=editfile&path=' + encodeURIComponent(data['Path'])  + '&config=' + userconfig + '&time=' + d.getMilliseconds();
 
 					$.ajax({
 						type : 'GET',
@@ -1020,7 +1038,7 @@ var editItem = function(data) {
 									
 									$.ajax({
 										type: 'POST',
-										url: fileConnector,
+										url: fileConnector  + '?config=' + userconfig,
 										dataType: 'json',
 										data : postData,
 										async: false,
@@ -1204,7 +1222,7 @@ function getContextMenuOptions(elem) {
 // Binds contextual menus to items in list and grid views.
 var setMenus = function(action, path) {
 	var d = new Date(); // to prevent IE cache issues
-	$.getJSON(fileConnector + '?mode=getinfo&path=' + path + '&time=' + d.getMilliseconds(), function(data){
+	$.getJSON(fileConnector + '?mode=getinfo&path=' + encodeURIComponent(path) + '&config=' + userconfig + '&time=' + d.getMilliseconds(), function(data){
 		if($('#fileinfo').data('view') == 'grid'){
 			var item = $('#fileinfo').find('img[data-path="' + data['Path'] + '"]').parent();
 		} else {
@@ -1217,7 +1235,7 @@ var setMenus = function(action, path) {
 				break;
 			
 			case 'download': // todo implement javascript method to test if exstension is correct
-				window.location = fileConnector + '?mode=download&path=' + data['Path'] + '&time=' + d.getMilliseconds();
+				window.location = fileConnector + '?mode=download&path=' + data['Path']  + '&config=' + userconfig + '&time=' + d.getMilliseconds();
 				break;
 				
 			case 'rename':
@@ -1281,7 +1299,7 @@ var getFileInfo = function(file) {
 	
 	// Retrieve the data & populate the template.
 	var d = new Date(); // to prevent IE cache issues
-	$.getJSON(fileConnector + '?mode=getinfo&path=' + encodeURIComponent(file) + '&time=' + d.getMilliseconds(), function(data){
+	$.getJSON(fileConnector + '?mode=getinfo&path=' + encodeURIComponent(file)  + '&config=' + userconfig + '&time=' + d.getMilliseconds(), function(data){
 		if(data['Code'] == 0){
 			$('#fileinfo').find('h1').text(data['Filename']).attr('title', file);
 			
@@ -1358,7 +1376,7 @@ var getFolderInfo = function(path) {
 	
 	// Retrieve the data and generate the markup.
 	var d = new Date(); // to prevent IE cache issues
-	var url = fileConnector + '?path=' + encodeURIComponent(path) + '&mode=getfolder&showThumbs=' + config.options.showThumbs + '&time=' + d.getMilliseconds();
+	var url = fileConnector + '?path=' + encodeURIComponent(path) + '&config=' + userconfig + '&mode=getfolder&showThumbs=' + config.options.showThumbs + '&time=' + d.getMilliseconds();
 	if ($.urlParam('type')) url += '&type=' + $.urlParam('type');
 	$.getJSON(url, function(data){
 		var result = '';
@@ -1516,7 +1534,7 @@ var getFolderInfo = function(path) {
 // to the callback function in jqueryFileTree
 var populateFileTree = function(path, callback) {
 	var d = new Date(); // to prevent IE cache issues
-	var url = fileConnector + '?path=' + encodeURIComponent(path) + '&mode=getfolder&showThumbs=' + config.options.showThumbs + '&time=' + d.getMilliseconds();
+	var url = fileConnector + '?path=' + encodeURIComponent(path)  + '&config=' + userconfig + '&mode=getfolder&showThumbs=' + config.options.showThumbs + '&time=' + d.getMilliseconds();
 	if ($.urlParam('type')) url += '&type=' + $.urlParam('type');
 	$.getJSON(url, function(data) {
 		var result = '';
@@ -1596,6 +1614,8 @@ $(function(){
 		loadCSS('./scripts/CodeMirror/theme/' + config.edit.theme + '.css');
 		loadJS('./scripts/CodeMirror/lib/codemirror.js');
 		loadJS('./scripts/CodeMirror/addon/selection/active-line.js');
+		loadCSS('./scripts/CodeMirror/addon/display/fullscreen.css');
+		loadJS('./scripts/CodeMirror/addon/display/fullscreen.js');
 		loadJS('./scripts/CodeMirror/dynamic-mode.js');
 	}
 
@@ -1769,7 +1789,7 @@ $(function(){
 			
 			$("div#multiple-uploads").dropzone({ 
 				paramName: "newfile",
-				url: fileConnector,
+				url: fileConnector + '?config=' + userconfig,
 				maxFilesize: fileSize,
 				maxFiles: config.upload.number,
 				addRemoveLinks: true,
@@ -1834,7 +1854,7 @@ $(function(){
 		// Simple Upload
 	} else {
 		
-		$('#uploader').attr('action', fileConnector);
+		$('#uploader').attr('action', fileConnector  + '?config=' + userconfig);
 	
 		$('#uploader').ajaxForm({
 			target: '#uploadresponse',
@@ -1960,11 +1980,11 @@ $(function(){
         // Adjust layout.
 	setDimensions();
 	$(window).resize(setDimensions);
-        
-        // Provides support for adjustible columns.
+	
+    // Provides support for adjustible columns.
 	$('#splitter').splitter({
-		sizeLeft: 200,
-		minLeft: 200,
+		sizeLeft: config.options.splitterMinWidth,
+		minLeft: config.options.splitterMinWidth,
 		minRight: 200
 	});
 

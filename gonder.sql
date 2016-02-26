@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `attachment` (
   `campaign_id` int(11) NOT NULL,
   `path` text NOT NULL,
   `file` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `campaign` (
 `id` int(11) NOT NULL,
@@ -18,14 +18,15 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `subject` text NOT NULL,
   `body` text NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
-  `end_time` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+  `end_time` timestamp NULL DEFAULT NULL,
+  `send_unsubscribe` varchar(1) NOT NULL DEFAULT 'n'
+) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `group` (
 `id` int(11) NOT NULL,
   `name` text NOT NULL,
   `template` text
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `jumping` (
 `id` int(11) NOT NULL,
@@ -33,14 +34,14 @@ CREATE TABLE IF NOT EXISTS `jumping` (
   `recipient_id` int(11) NOT NULL,
   `url` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `parameter` (
 `id` int(11) NOT NULL,
   `recipient_id` int(11) NOT NULL,
   `key` text NOT NULL,
   `value` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=21804 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `profile` (
 `id` int(11) NOT NULL,
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `profile` (
   `host` text NOT NULL COMMENT 'The name of the server on behalf of which there is a sending.',
   `stream` int(11) NOT NULL COMMENT 'Number of concurrent streams',
   `delay` int(11) NOT NULL COMMENT 'Delay between one time stream in seconds'
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `recipient` (
 `id` int(11) NOT NULL,
@@ -59,8 +60,15 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `status` text,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `client_agent` text,
-  `web_agent` text
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+  `web_agent` text,
+  `removed` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB AUTO_INCREMENT=149349 DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `status` (
+`id` int(3) NOT NULL,
+  `pattern` varchar(250) NOT NULL,
+  `bounce_id` int(1) NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=264 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `unsubscribe` (
 `id` int(11) NOT NULL,
@@ -68,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `unsubscribe` (
   `campaign_id` int(11) NOT NULL,
   `email` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
 
 
 ALTER TABLE `attachment`
@@ -92,6 +100,9 @@ ALTER TABLE `profile`
 ALTER TABLE `recipient`
  ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
 
+ALTER TABLE `status`
+ ADD PRIMARY KEY (`id`);
+
 ALTER TABLE `unsubscribe`
  ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`), ADD KEY `campaign_id` (`campaign_id`);
 
@@ -110,6 +121,8 @@ ALTER TABLE `profile`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
 ALTER TABLE `recipient`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+ALTER TABLE `status`
+MODIFY `id` int(3) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
 ALTER TABLE `unsubscribe`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
 
