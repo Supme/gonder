@@ -20,7 +20,7 @@
 
 <ul>
 {{range $k, $c := .campaigns}}
-    <li><a href="/mailer/campaign/edit/{{$k}}">{{$c.Name}} <<{{$c.Subject}})>></a></li>
+    <li><a href="/mailer/campaign/edit/{{$c.Id}}">{{$c.Name}} <<{{$c.Subject}})>></a></li>
 {{end}}
 </ul>
 

@@ -50,6 +50,13 @@
             "ordering": false,
             "searching": false,
             });
+
+        $('#table tbody').on('click', 'tr', function () {
+            var data = t.row( this ).data();
+            //alert( 'You clicked on '+data[0]+'\'s row' );
+            document.location='../recipient/' + data[0];
+        } );
+
     });
 
     $('input[type=file]').bootstrapFileInput();
