@@ -28,15 +28,16 @@ type profile struct  {
 	Host string `form:"host" json:"host"`
 	Stream string `form:"stream" json:"stream"`
 	Delay string `form:"delay" json:"delay"`
+	Count string `form:"count" json:"count"`
 }
 
 func apiGetProfiles(c *gin.Context)  {
 	var p profile
 	var ps []profile
-	rows, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
+	rows, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `resend_delay`, `resend_count` FROM `profile`")
 	checkErr(err)
 	for rows.Next() {
-		rows.Scan(&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay)
+		rows.Scan(&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay, &p.Count)
 		ps = append(ps, p)
 	}
 	log.Print(ps)
@@ -45,8 +46,8 @@ func apiGetProfiles(c *gin.Context)  {
 
 func apiGetProfile(c *gin.Context) {
 	var p profile
-	err := models.Db.QueryRow("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile` WHERE `id`=?", c.Param("id")).Scan(
-		&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay,
+	err := models.Db.QueryRow("SELECT `id`, `name`, `iface`, `host`, `stream`, `resend_delay`, `resend_count` FROM `profile` WHERE `id`=?", c.Param("id")).Scan(
+		&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.Delay, &p.Count,
 	)
 	if err != nil {
 		p.Id = ""
@@ -56,10 +57,13 @@ func apiGetProfile(c *gin.Context) {
 		p.Server = ""
 		p.Stream = "100"
 		p.Delay = "0"
+		p.Count = "0"
 	} else {
-		if p.Iface[:8] == "socks://" {
-			p.Server = p.Iface[8:]
-			p.Iface = p.Iface[:8]
+		if len(p.Iface) > 8 {
+			if p.Iface[:8] == "socks://" {
+				p.Server = p.Iface[8:]
+				p.Iface = p.Iface[:8]
+			}
 		}
 	}
 
@@ -72,6 +76,7 @@ func apiGetProfile(c *gin.Context) {
 		"host": p.Host,
 		"stream": p.Stream,
 		"delay": p.Delay,
+		"count": p.Count,
 	})
 }
 
@@ -81,7 +86,7 @@ func apiPostProfile(c *gin.Context)  {
 		if p.Iface[:8] == "socks://" {
 			p.Iface = p.Iface + p.Server
 		}
-		res, err := models.Db.Exec("INSERT INTO `profile`(`name`, `iface`, `host`, `stream`, `delay`) VALUES (?,?,?,?,?)", p.Name, p.Iface, p.Host, p.Stream, p.Delay)
+		res, err := models.Db.Exec("INSERT INTO `profile`(`name`, `iface`, `host`, `stream`, `resend_delay`, `resend_count`) VALUES (?,?,?,?,?,?)", p.Name, p.Iface, p.Host, p.Stream, p.Delay, p.Count)
 		checkErr(err)
 		id, err := res.LastInsertId()
 		p.Id = strconv.FormatInt(id, 10)
@@ -100,7 +105,7 @@ func apiPutProfile(c *gin.Context)  {
 		if p.Iface[:8] == "socks://" {
 			p.Iface = p.Iface + p.Server
 		}
-		res, err := models.Db.Exec("UPDATE `profile` SET `name`=?,`iface`=?,`host`=?,`stream`=?,`delay`=? WHERE `id`=?", p.Name, p.Iface, p.Host, p.Stream, p.Delay, p.Id)
+		res, err := models.Db.Exec("UPDATE `profile` SET `name`=?,`iface`=?,`host`=?,`stream`=?,`resend_delay`=?,`resend_count`=? WHERE `id`=?", p.Name, p.Iface, p.Host, p.Stream, p.Delay, p.Count, p.Id)
 		checkErr(err)
 		n, err := res.RowsAffected()
 		checkErr(err)

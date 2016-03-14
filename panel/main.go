@@ -23,6 +23,7 @@ type iFace struct {
 	Host   string
 	Stream string
 	Delay  string
+	Count  string
 }
 
 type campaign struct {
