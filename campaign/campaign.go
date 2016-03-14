@@ -29,8 +29,7 @@ var Send bool
 type (
 	campaign struct {
 		id, from, from_name, subject, body, iface, host, send_unsubscribe string
-		stream      int
-		delay       int
+		stream, resend_delay, resend_count       int
 		attachments []mailer.Attachment
 		recipients  []recipient
 	}
@@ -131,7 +130,7 @@ func (r recipient) send(c *campaign) string {
 }
 
 func (c *campaign) get(id string) {
-	models.Db.QueryRow("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM campaign t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE id=?", id).Scan(
+	models.Db.QueryRow("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM campaign t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE id=?", id).Scan(
 		c.id,
 		c.from,
 		c.from_name,
@@ -140,13 +139,13 @@ func (c *campaign) get(id string) {
 		c.iface,
 		c.host,
 		c.stream,
-		c.delay,
 		c.send_unsubscribe,
+		c.resend_delay,
+		c.resend_count,
 	)
 }
 
 func (c *campaign) get_attachments() {
-	// добавим приложенные к кампании файлы
 	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
 	checkErr(err)
 	defer attachment.Close()
@@ -192,17 +191,28 @@ func (c campaign) send() {
 			log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
 		}
 	}
+
+	for stream != 0 {
+		<-next
+		stream -= 1
+	}
+	close(next)
+
 	log.Printf("Done campaign %s. Count %d", c.id, count)
 }
 
 func (c campaign) resend_soft_bounce() {
 	c.get_soft_bounce_recipients()
+	if c.resend_count != 0 {
+		log.Printf("Start %d resend by campaign id %s ", len(c.recipients), c.id)
+	}
 	if len(c.recipients) == 0 {
 		return
 	}
 
-	for n := 0; n < resendCount; n++ {
-		time.Sleep(time.Duration(resendPause) * time.Second)
+	for n := 0; n < c.resend_count; n++ {
+		time.Sleep(time.Duration(c.resend_delay) * time.Second)
+		c.get_soft_bounce_recipients()
 		for _, r := range c.recipients {
 			// если пользователь ни разу не отказался от подписки в этой группе
 			var unsubscribeCount int
@@ -218,72 +228,6 @@ func (c campaign) resend_soft_bounce() {
 		}
 	}
 }
-
-/*
-// Get active campaigns
-func get_active_campaigns(limit int) []campaign{
-	var c []campaign
-	var d campaign
-
-	campaign, err := models.Db.Prepare("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t2.`delay`, t1.`send_unsubscribe`  FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE NOW() BETWEEN t1.`start_time` AND t1.`end_time` AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND status IS NULL) > 0 LIMIT ?")
-	checkErr(err)
-	defer campaign.Close()
-
-	camp, err := campaign.Query(limit)
-	checkErr(err)
-	defer camp.Close()
-
-	for camp.Next() {
-		err = camp.Scan(
-			&d.id,
-			&d.from,
-			&d.from_name,
-			&d.subject,
-			&d.body,
-			&d.iface,
-			&d.host,
-			&d.stream,
-			&d.delay,
-			&d.send_unsubscribe,
-		)
-		checkErr(err)
-
-		c = append(c, d)
-	}
-	return c
-}
-
-func (r *recipient) get(id string) {
-	models.Db.QueryRow("SELECT `id`, `email`, `name` FROM recipient WHERE id=? AND status IS NULL LIMIT ?", id).Scan(r.id, r.to, r.to_name)
-}
-
-func (c campaign) send() {
-	var w sync.WaitGroup
-	s := true
-	for s {
-		c.get_null_recipients()
-		if len(c.recipients) == 0 {
-			s = false
-		}
-		for _, r := range c.recipients {
-			if r.unsubscribe(c.id) == false || c.send_unsubscribe == "y" {
-				w.Add(1)
-				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				go func(d recipient) {
-					rs := d.send(&c)
-					models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-					w.Done()
-				}(r)
-			} else {
-				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-				log.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
-			}
-		}
-		w.Wait()
-		time.Sleep(time.Second + time.Duration(c.delay) * time.Second)
-	}
-}
-*/
 
 func checkErr(err error) {
 	if err != nil {

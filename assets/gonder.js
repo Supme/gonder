@@ -107,25 +107,26 @@ function editProfile(id) {
         url: "/api/mailer/profile/" + id,
         async: false,
     }).done(function(data) {
-        console.log(data)
-        $("#profileId").val(data["id"])
-        $("#profileName").val(data["name"])
-        $("#profileHost").val(data["host"])
-        $("#profileIface").val(data["iface"])
-        $("#profileServer").val(data["server"])
-        $("#profileStreams").val(data["stream"])
-        $("#profileDelay").val(data["delay"])
+        console.log(data);
+        $("#profileId").val(data["id"]);
+        $("#profileName").val(data["name"]);
+        $("#profileHost").val(data["host"]);
+        $("#profileIface").val(data["iface"]);
+        $("#profileServer").val(data["server"]);
+        $("#profileStreams").val(data["stream"]);
+        $("#profileDelay").val(data["delay"]);
+        $("#profileCount").val(data["count"]);
     });
-    socksServerInput()
+    socksServerInput();
 }
 
 function saveProfile() {
-    var method
-    id = $("#profileId").val()
+    var method;
+    id = $("#profileId").val();
     if (id == 0) {
-        method = "POST"
+        method = "POST";
     } else {
-        method = "PUT"
+        method = "PUT";
     }
     var data = {
         "id": $("#profileId").val(),
@@ -135,6 +136,7 @@ function saveProfile() {
         "host": $("#profileHost").val(),
         "stream": $("#profileStreams").val(),
         "delay": $("#profileDelay").val(),
+        "count": $("#profileCount").val(),
     };
     $.ajax({
         type: method,

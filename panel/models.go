@@ -73,13 +73,13 @@ func getCampaignInfo(id string) (campaign, error) {
 }
 
 func getProfiles() map[string]iFace {
-	var id, name, iface, host, stream, delay string
+	var id, name, iface, host, stream, delay, count string
 	ifaces := make(map[string]iFace)
-	query, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `delay` FROM `profile`")
+	query, err := models.Db.Query("SELECT `id`, `name`, `iface`, `host`, `stream`, `resend_delay`, `resend_count` FROM `profile`")
 	checkErr(err)
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&id, &name, &iface, &host, &stream, &delay)
+		err = query.Scan(&id, &name, &iface, &host, &stream, &delay, &count,)
 		checkErr(err)
 		ifaces[id] = iFace{
 			Id:     id,
@@ -88,6 +88,7 @@ func getProfiles() map[string]iFace {
 			Host:   host,
 			Stream: stream,
 			Delay:  delay,
+			Count:	count,
 		}
 	}
 

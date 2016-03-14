@@ -25,7 +25,8 @@
         <td>Interface</td>
         <td>Host name</td>
         <td>Streams count</td>
-        <td>Delay</td>
+        <td>Resend delay</td>
+        <td>Resend count</td>
         <td><a href="#profile" role="button" data-toggle="modal" onclick="editProfile(0)"><span class="glyphicon glyphicon-plus-sign"></span></a></td>
     </tr>
     </thead>
@@ -37,6 +38,7 @@
         <td>{{$i.Host}}</td>
         <td>{{$i.Stream}}</td>
         <td>{{$i.Delay}}</td>
+        <td>{{$i.Count}}</td>
         <td>
             <a href="#profile" role="button" data-toggle="modal" onclick="editProfile('{{$i.Id}}')"><span class="glyphicon glyphicon-edit"></span></a>
         </td>
@@ -95,9 +97,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="col-md-2 control-label" for="profileDelay">Delay</label>
+                            <label class="col-md-2 control-label" for="profileDelay">Resend delay</label>
                             <div class="col-md-2">
                                 <input id="profileDelay" name="profileDelay" type="text" value="" placeholder="" class="form-control input-md">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-md-2 control-label" for="profileDelay">Resend count</label>
+                            <div class="col-md-2">
+                                <input id="profileCount" name="profileCount" type="text" value="" placeholder="" class="form-control input-md">
                             </div>
                         </div>
 
