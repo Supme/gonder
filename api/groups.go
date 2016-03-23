@@ -19,7 +19,7 @@ import (
 )
 
 type Group struct {
-	Id   int `json:"recid"`
+	Id   int64 `json:"recid"`
 	Name string `json:"name"`
 }
 type Groups struct {
@@ -31,6 +31,7 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 
 	var groups Groups
 	var err error
+	var js []byte
 
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -45,7 +46,11 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		js, err = json.Marshal(groups)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		break
 
 	case "save-records":
@@ -55,24 +60,49 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		groups, err = getGroups(r.Form["offset"][0], r.Form["limit"][0])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		js, err = json.Marshal(groups)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		break
-	}
 
-	js, err := json.Marshal(groups)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	case "add-record":
+		group, err := addGroup()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		js, err = json.Marshal(group)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		break
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func addGroup() (Group, error) {
+	g := Group{}
+	g.Name = "New group"
+	row, err := models.Db.Exec("INSERT INTO `group`(`name`) VALUES (?)", g.Name)
+	if err != nil {
+		return g, err
+	}
+	g.Id, err = row.LastInsertId()
+	if err != nil {
+		return g, err
+	}
+
+	return g, nil
 }
 
 func saveGroups(changes map[string]map[string][]string) (err error) {
@@ -88,18 +118,18 @@ func saveGroups(changes map[string]map[string][]string) (err error) {
 }
 
 func getGroups(offset, limit string) (Groups, error) {
-	var group Group
-	var groups Groups
-	groups.Records = []Group{}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `group`")
+	var g Group
+	var gs Groups
+	gs.Records = []Group{}
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` LIMIT ? OFFSET ?", limit, offset)
 	if err != nil {
-		return groups, err
+		return gs, err
 	}
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&group.Id, &group.Name)
-		groups.Records = append(groups.Records, group)
+		err = query.Scan(&g.Id, &g.Name)
+		gs.Records = append(gs.Records, g)
 	}
-	groups.Total = len(groups.Records)
-	return groups, nil
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", campaign).Scan(&gs.Total)
+	return gs, nil
 }

@@ -22,11 +22,16 @@
         </div>
         <div id="recipient" style="width: 100%;">
             <div id="campaignRecipient" style="height: 400px;"></div>
+            <div id="recipientUpload"></div>
         </div>
     </div>
 
 
     <script type="text/javascript">
+
+    $(function () {
+        w2utils.locale('/assets/locale/ru-ru.json');
+
         function getDate(dateStr, timeStr) {
             //ToDo parse config format
             //w2utils.settings.dateFormat
@@ -35,33 +40,44 @@
             return new Date(dateParts[2],(dateParts[1] - 1),dateParts[0],timeParts[0],timeParts[1],0);
         }
 
-        function getProfiles(){
-
-            return profile;
+        function refreshProfilesList(selectedProfile){
+            var profile;
+            $.ajax({
+                type: "GET",
+                async: false,
+                dataType: 'json',
+                url: '/api/profiles?cmd=get-list',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json"
+            }).done(function(data) {
+                profile = data;
+            });
+            w2ui['parameter'].set('campaignProfileId', { options: {
+                items: profile
+            }
+            });
+            w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
+            w2ui['parameter'].refresh();
         }
-
-    $(function () {
-
-        w2utils.locale('/assets/w3ui/locale/ru-ru.json');
 
         // --- Config for layout ---
         var config = {
             sidebar: {
                 name: 'sidebar',
-                topHTML    : '<div style="padding: 10px 5px; border-bottom: 1px solid #99bbe8">MENU</div>',
+                topHTML    : '<div style="padding: 10px 5px; border-bottom: 1px solid #99bbe8";><span style="text-transform: uppercase;">'+w2utils.lang("Menu")+'</span></div>',
                 nodes: [
                     {
                         id: 'campaign', text: w2utils.lang('Campaign'), group: true, expanded: true, nodes: [
-                            {id: 'parameter', text: w2utils.lang('Parameter'), img: 'icon-page', selected: true},
-                            {id: 'editor', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil'},
-                            {id: 'recipient', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns'},
-                            {id: 'save', text: w2utils.lang('Save'), img: 'w2ui-icon-check'}
+                        {id: 'parameter', text: w2utils.lang('Parameters'), img: 'icon-page', selected: true},
+                        {id: 'editor', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil'},
+                        {id: 'recipient', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns'},
+                        {id: 'save', text: w2utils.lang('Save'), img: 'w2ui-icon-check'}
                     ]
                     },
                     {
-                        id: 'settings', text: 'Settings', group: true, expanded: false, nodes: [
-                            {id: 'profile', text: 'Profiles', img: 'icon-page', selected: true},
-                            {id: 'status', text: 'Status', img: 'w2ui-icon-columns'}
+                        id: 'settings', text: w2utils.lang('Settings'), group: true, expanded: false, nodes: [
+                        {id: 'profile', text: w2utils.lang('Profiles'), img: 'icon-page', selected: true},
+                        {id: 'status', text: w2utils.lang('Status'), img: 'w2ui-icon-columns'}
                     ]
                     }
                 ],
@@ -100,7 +116,7 @@
                             $.ajax({
                                 type: "POST",
                                 dataType: 'json',
-                                url: 'api/campaign?cmd=save-data',
+                                url: '/api/campaign?cmd=save-data',
                                 data: JSON.stringify(data),
                                 contentType: "application/json; charset=utf-8",
                                 dataType: "json",
@@ -115,9 +131,9 @@
                             });
                             break;
                     }
+                    w2ui['layout'].resize();
                 }
             }
-
         };
         // --- /Config for layout ---
 
@@ -126,7 +142,7 @@
         $('#layout').w2layout({
             name: 'layout',
             panels: [
-                { type: 'top', size:25, style: pstyle, content: "<center>Gonder</center>" },
+                { type: 'top', size:25, style: pstyle, content: "<center>GOseNDER</center>" },
                 { type: 'left', size: 200, resizable: true, style: pstyle },
                 { type: 'main', hidden: true, style: pstyle},
                 { type: 'bottom', size: 250, resizable: true, style: pstyle }
@@ -137,67 +153,91 @@
         w2ui.layout.content('bottom', $('#bottom').html());
         // --- Parameters form ---
         $("#parameter").w2form({
-            header: "Parameter",
+            header: w2utils.lang("Parameters"),
             name: 'parameter',
             fields: [
-                { name: 'campaignId', type: 'text', html: { caption: 'Id', attr: 'size="4" readonly' } },
-                { name: 'campaignName', type: 'text', html: { caption: 'Name', attr: 'size="40" maxlength="40" readonly' } },
-                { name: 'campaignProfileId', type: 'list', html: { caption: 'Profile', attr: 'size="40"' }, minLength: 0,
- //                   options: {items: profile},
-                },
-                { name: 'campaignSubject', type: 'text', html: { caption: 'Subject', attr: 'size="40" maxlength="40"' } },
-                { name: 'campaignFromName', type: 'text', html: { caption: 'From name', attr: 'size="40"' } },
-                { name: 'campaignFromEmail', type: 'email', html: { caption: 'From email', attr: 'size="40"' } },
-                { name: 'campaignStartDate', type: 'date', html: { caption: 'Start date', attr: 'size="10"' } },
-                { name: 'campaignStartTime', type: 'time', html: { caption: 'Start time', attr: 'size="10"' } },
-                { name: 'campaignEndDate', type: 'date', html: { caption: 'End date', attr: 'size="10"' } },
-                { name: 'campaignEndTime', type: 'time', html: { caption: 'End time', attr: 'size="10"' } },
-                { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: 'Send unsubscribe' } },
+                { name: 'campaignId', type: 'text', html: { caption: w2utils.lang('Id'), attr: 'size="4" readonly' } },
+                { name: 'campaignName', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40" readonly' } },
+                { name: 'campaignProfileId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
+                { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40" maxlength="40"' } },
+                { name: 'campaignFromName', type: 'text', html: { caption: w2utils.lang('From name'), attr: 'size="40"' } },
+                { name: 'campaignFromEmail', type: 'email', html: { caption: w2utils.lang('From email'), attr: 'size="40"' } },
+                { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' } },
+                { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"' } },
+                { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
+                { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' } },
+                { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
             ]
         });
         // --- /Parameters form ---
-        /*
-        w2ui.parameter.on('*', function (event) {
-            console.log('Event: '+ event.type, 'Target: '+ event.target, event);
-            var item = $('#campaignProfileId').data('selected').id;
-            console.log('ProfileId: ' + item);
-        });
-        */
+
+        w2utils.lock('layout', w2utils.lang('Loading...'), true);
+        setTimeout(function(){
+            $('#template').hide();
+            $('#recipient').hide();
+            $('#parameter').hide();
+            w2utils.unlock('layout');
+        }, 2000);
+
+/*
+         w2ui.parameter.on('*', function (event) {
+         console.log('Event: '+ event.type, 'Target: '+ event.target, event);
+         var item = $('#campaignProfileId').data('selected').id;
+         console.log('ProfileId: ' + item);
+         });
+*/
         // --- /Layout ---
-
-
 
 
         // --- Group table ---
         $('#group').w2grid({
             name: 'group',
-            header: 'Group',
+            header: w2utils.lang('Group'),
             show: {
                 header: true,
                 toolbar: true,
                 footer: true,
-                toolbarAdd: true,
-                toolbarDelete: false,
                 toolbarSave: true,
             },
             columns: [
-                { field: 'recid', caption: 'Id', size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-                { field: 'name', caption: 'Name', size: '100%',  editable: { type: 'text' }},
+                { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
+                { field: 'name', caption: w2utils.lang('Name'), size: '100%',  editable: { type: 'text' }},
             ],
             multiSelect: false,
-            url: 'api/groups',
+            url: '/api/groups',
             method: 'GET',
             onSelect: function (event) {
                 w2ui['campaign'].clear();
                 var record = this.get(event.recid);
-                w2ui['campaign'].load('api/campaigns?group='+event.recid);
+                w2ui['campaign'].load('/api/campaigns?group='+event.recid);
+            },
+            toolbar: {
+                items: [
+                    {id: 'add', type: 'button', caption: w2utils.lang('Add New'), icon: 'w2ui-icon-plus'}
+                ],
+                onClick: function (event) {
+                    if (event.target == 'add') {
+                        var id, name
+                        $.ajax({
+                            type: "POST",
+                            async: false,
+                            dataType: 'json',
+                            url: '/api/groups?cmd=add-record',
+                        }).done(function(data) {
+                            id = data["recid"];
+                            name = data["name"];
+                        });
+                        w2ui.group.add({recid: id, name: name});
+                        w2ui.group.editField(id, 1);
+                    }
+                }
             }
         });
         // --- /Group table ---
 
         // --- Campaign table ---
         $('#campaign').w2grid({
-            header: 'Campaign',
+            header: w2utils.lang('Campaign'),
             show: {
                 header: true,
                 toolbar: true,
@@ -208,11 +248,11 @@
             },
             name: 'campaign',
             columns: [
-                { field: 'recid', caption: 'Id', size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-                { field: 'name', caption: 'Name', size: '100%', editable: { type: 'text' } }
+                { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
+                { field: 'name', caption: w2utils.lang('Name'), size: '100%', editable: { type: 'text' } }
             ],
             multiSelect: false,
-            url: 'api/campaigns',
+            url: '/api/campaigns',
             method: 'GET',
             onSelect: function (event) {
                 w2ui.layout.lock('main', w2utils.lang('Loading...'), true);
@@ -220,27 +260,9 @@
                 // --- Get campaign data ---
                 $.ajax({
                     type: "GET",
-                    url: 'api/campaign?cmd=get-data&recid='+event.recid,
+                    url: '/api/campaign?cmd=get-data&recid='+event.recid,
                 }).done(function(data) {
-                    var profile;
-                    $.ajax({
-                        type: "GET",
-                        async: false,
-                        dataType: 'json',
-                        url: 'api/profiles?cmd=get-list',
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json"
-                    }).done(function(data) {
-                        profile = data;
-                    });
-
-                    w2ui['parameter'].set('campaignProfileId', { options: {
-                        items: profile
-                    }
-                    });
-                    w2ui['parameter'].record['campaignProfileId'] = data["profileId"];
-                    w2ui['parameter'].refresh();
-
+                    refreshProfilesList(data["profileId"])
                     $('#campaignId').val(record.recid);
                     $('#campaignName').val(record.name);
                     $("#campaignSubject").val(data["subject"]);
@@ -254,6 +276,9 @@
                     $("#campaignTemplate").val(data["template"]);
 
 
+                    w2ui['recipient'].clear();
+                    w2ui['recipient'].load('/api/recipients?content=recipients&campaign='+record.recid);
+
                     CKEDITOR.instances.campaignTemplate.setData(data["template"]);
                 }).complete(function() {
                     w2ui.layout.unlock('main');
@@ -264,63 +289,55 @@
         });
         // --- /Campaign table ---
 
-
-
-
         // --- Recipients table ---
         $('#campaignRecipient').w2grid({
-            header: "Recipients",
+            header: w2utils.lang("Recipients"),
             name: 'recipient',
             show: {
                 header: true,
                 footer: true,
             },
             columns: [
-                { field: 'name', caption: 'Name', size: '30%' },
-                { field: 'email', caption: 'Email', size: '40%' },
+                { field: 'recid', caption: w2utils.lang('Id'), size: '5%' },
+                { field: 'name', caption: w2utils.lang('Name'), size: '30%' },
+                { field: 'email', caption: w2utils.lang('Email'), size: '40%' }
             ],
-            records: [
-                { recid: 1, name: 'John', email: 'jdoe@gmail.com' },
-                { recid: 2, name: 'Stuart', email: 'jdoe@gmail.com' },
-                { recid: 3, name: 'Jin', email: 'jdoe@gmail.com' },
-                { recid: 4, name: 'Susan', email: 'jdoe@gmail.com' },
-                { recid: 5, name: 'Kelly', email: 'jdoe@gmail.com' },
-                { recid: 6, name: 'Francis', email: 'jdoe@gmail.com' },
-                { recid: 7, name: 'Mark', email: 'jdoe@gmail.com' },
-                { recid: 8, name: 'Thomas', email: 'jdoe@gmail.com' }
-            ],
+            multiSelect: false,
+            method: 'GET',
             onExpand: function (event) {
                 if (w2ui.hasOwnProperty('subgrid-' + event.recid)) w2ui['subgrid-' + event.recid].destroy();
-                $('#'+ event.box_id).css({ margin: '0px', padding: '0px', width: '100%' }).animate({ height: '105px' }, 100);
+                $('#'+ event.box_id).css({ margin: '0px', padding: '0px', width: '100%' }).animate({ height: '100px' }, 100);
                 setTimeout(function () {
                     $('#'+ event.box_id).w2grid({
                         name: 'subgrid-' + event.recid,
                         fixedBody: true,
                         columns: [
-                            { field: 'parametr', caption: 'Parametr', size: '30%' },
-                            { field: 'value', caption: 'Value', size: '70%' },
+                            { field: 'key', caption: w2utils.lang('Parameter'), size: '30%' },
+                            { field: 'value', caption: w2utils.lang('Value'), size: '70%' },
                         ],
-                        records: [
-                            { recid: 1, parametr: 'FirstName', value: 'Bill'},
-                            { recid: 2, parametr: 'LastName', value: 'Gatos'},
-                            { recid: 3, parametr: 'Age', value: '65'},
-                        ]
+                        multiSelect: false,
+                        url: '/api/recipients?content=parameters&recipient='+event.recid,
+                        method: 'GET'
                     });
                     w2ui['subgrid-' + event.recid].resize();
                 }, 300);
+            },
+            onSelect: function (event) {
+                console.log("Select recipient:"+event.recid);
             }
         });
         // --- /Recipients table ---
 
-        w2utils.lock('layout', 'Initializing...', true);
-        setTimeout(function(){
-            $('#template').hide();
-            $('#recipient').hide();
-            $('#parameter').hide();
-        }, 1500);
-        w2utils.unlock('layout');
+        // --- Recipient upload ---
+        $("#recipientUpload").w2form({
+            header: w2utils.lang("Upload recipient"),
+            name: 'recipientUpload',
+            fields: [
+                { name: 'recipientFile', type: 'file', option: {  }, html: { caption: w2utils.lang('File'), attr: ' size="80" ' }}
+            ]
+        });
 
-
+        // --- /Recipient upload ---
 
 
         // --- CKEditor ---
@@ -404,14 +421,14 @@
                 }
         );
 
-/*
-        editor.on( 'instanceReady', function() {
-            console.log( editor.filter.allowedContent );
-        } );
-*/
+        /*
+         editor.on( 'instanceReady', function() {
+         console.log( editor.filter.allowedContent );
+         } );
+         */
         // --- /CKEditor ---
-
     });
+
     </script>
 
 </body>

@@ -79,6 +79,30 @@
         "Toggle Line Numbers": "Вкл/Выкл. номера строк",
         "Reset Column Size": "Восстановить размер колонок",
         "Column": "Колонка",
-        "Loading...": "Загрузка..."
+        "Loading...": "Загрузка...",
+
+
+        "Menu": "Меню",
+        "Parameters": "Параметры",
+        "Editor": "Редактор",
+        "Recipients": "Получатели",
+        "Parameter": "Параметр",
+        "Value": "Значение",
+        "Group": "Группа",
+        "Campaign": "Кампания",
+        "Name": "Имя",
+        "Profile": "Профиль",
+        "Profiles": "Профили",
+        "Subject": "Тема",
+        "From name": "От имени",
+        "From email": "От email",
+        "Start date": "Дата начала",
+        "Start time": "Время начала",
+        "End date": "Дата окончания",
+        "End time": "Время окончания",
+        "Send unsubscribe": "Слать отписавшимся",
+        "Settings": "Настройки",
+        "Status": "Статус"
+
     }
 }

@@ -94,20 +94,20 @@ func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-
+//ToDo check right errors
 func getCampaigns(group, offset, limit string) (Campaigns, error) {
-	var campaign Campaign
-	var campaigns Campaigns
-	campaigns.Records = []Campaign{}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=?", group)
+	var c Campaign
+	var cs Campaigns
+	cs.Records = []Campaign{}
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? LIMIT ? OFFSET ?", group, limit, offset)
 	if err != nil {
-		return campaigns, err
+		return cs, err
 	}
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&campaign.Id, &campaign.Name)
-		campaigns.Records = append(campaigns.Records, campaign)
+		err = query.Scan(&c.Id, &c.Name)
+		cs.Records = append(cs.Records, c)
 	}
-	campaigns.Total = len(campaigns.Records)
-	return campaigns, nil
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=?", campaign).Scan(&cs.Total)
+	return cs, nil
 }

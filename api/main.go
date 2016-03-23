@@ -22,6 +22,7 @@ func Run()  {
 	http.HandleFunc("/api/campaigns", campaigns)
 	http.HandleFunc("/api/campaign", campaign)
 	http.HandleFunc("/api/profiles", profiles)
+	http.HandleFunc("/api/recipients", recipients)
 	http.Handle("/files/", http.FileServer(http.Dir("./files/")))
 	http.Handle("/", http.FileServer(http.Dir("./api/http/")))
 

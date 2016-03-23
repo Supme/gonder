@@ -16,8 +16,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/supme/gonder/models"
-"github.com/go-sql-driver/mysql"
-	"github.com/lunny/log"
+	"github.com/go-sql-driver/mysql"
 	"time"
 )
 
@@ -77,8 +76,8 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		}
 		start := time.Unix(data.StartDate, 0).UTC().Format(time.RFC3339)
 		end := time.Unix(data.EndDate, 0).UTC().Format(time.RFC3339)
-log.Println(data)
-		row, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
+
+		_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 			data.Name,
 			data.ProfileId,
 			data.Subject,
@@ -90,7 +89,7 @@ log.Println(data)
 			data.Template,
 			data.Id,
 		)
-log.Println(row.RowsAffected())
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

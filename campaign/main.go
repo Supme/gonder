@@ -25,7 +25,6 @@ var (
 )
 
 func Run()  {
-	MaxCampaingns = 2
 
 	go api.Run()
 	for {
