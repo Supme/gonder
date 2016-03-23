@@ -16,6 +16,7 @@ import (
 	"github.com/supme/gonder/statistic"
 	"github.com/supme/gonder/panel"
 	"github.com/supme/gonder/models"
+	"github.com/supme/gonder/campaign"
 	"fmt"
 	"github.com/alyu/configparser"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,7 +30,6 @@ import (
 	"syscall"
 	"strconv"
 	"errors"
-	"github.com/supme/gonder/campaign"
 )
 
 func main() {
@@ -71,6 +71,10 @@ func main() {
 		campaign.Send = true
 	} else {
 		campaign.Send = false
+	}
+	campaign.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
+	if err != nil {
+		panic("Error parse config parametr 'maxcampaign'")
 	}
 
 	// Init statistic
