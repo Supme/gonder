@@ -83,10 +83,11 @@
 
 
         "Menu": "Меню",
+        "Parameter": "Параметр",
         "Parameters": "Параметры",
         "Editor": "Редактор",
         "Recipients": "Получатели",
-        "Parameter": "Параметр",
+        "Saved": "Сохранено",
         "Value": "Значение",
         "Group": "Группа",
         "Campaign": "Кампания",
@@ -102,7 +103,7 @@
         "End time": "Время окончания",
         "Send unsubscribe": "Слать отписавшимся",
         "Settings": "Настройки",
-        "Status": "Статус"
+        "Result": "Результат"
 
     }
 }

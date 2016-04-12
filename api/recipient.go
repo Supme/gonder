@@ -19,9 +19,10 @@ import (
 )
 
 type Recipient struct {
-	Id   int `json:"recid"`
+	Id   int64 `json:"recid"`
 	Name string `json:"name"`
 	Email string `json:"email"`
+	Result string `json:"result"`
 }
 
 type Recipients struct {
@@ -45,19 +46,24 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 	var js []byte
 
 	if err = r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if r.Form["content"][0] == "recipients" {
 		switch r.Form["cmd"][0] {
 		case "get-records":
-			rs, err := getRecipients( r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
-			js, err = json.Marshal(rs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+			if auth.Right("get-recipients") {
+				rs, err := getRecipients( r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
+				js, err = json.Marshal(rs)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}  else {
+				js = []byte(`{"status": "error", "message": "Forbidden get recipients"}`)
 			}
+
 			break
 		}
 	}
@@ -65,12 +71,17 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 	if r.Form["content"][0] == "parameters" {
 		switch r.Form["cmd"][0] {
 		case "get-records":
-			ps, err := getRecipientParams( r.Form["recipient"][0], r.Form["offset"][0], r.Form["limit"][0])
-			js, err = json.Marshal(ps)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+			if auth.Right("get-recipient-parameters") {
+				ps, err := getRecipientParams( r.Form["recipient"][0], r.Form["offset"][0], r.Form["limit"][0])
+				js, err = json.Marshal(ps)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}  else {
+				js = []byte(`{"status": "error", "message": "Forbidden get recipient parameters"}`)
 			}
+
 			break
 		}
 	}
@@ -86,13 +97,13 @@ func getRecipients(campaign, offset, limit string) (Recipients, error) {
 	var r Recipient
 	var rs Recipients
 	rs.Records = []Recipient{}
-	query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `recipient` WHERE `campaign_id`=?  LIMIT ? OFFSET ?", campaign, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `campaign_id`=?  LIMIT ? OFFSET ?", campaign, limit, offset)
 	if err != nil {
 		return rs, err
 	}
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&r.Id, &r.Name, &r.Email)
+		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result)
 		rs.Records = append(rs.Records, r)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=?", campaign).Scan(&rs.Total)

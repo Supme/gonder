@@ -21,7 +21,7 @@ import (
 )
 
 type Data struct {
-	Id   string `json:"recid"`
+	Id   string `json:"recid"` //ToDo Id is int64
 	Name string `json:"name"`
 	ProfileId int `json:"profileId"`
 	Subject string `json:"subject"`
@@ -35,6 +35,7 @@ type Data struct {
 
 func campaign(w http.ResponseWriter, r *http.Request)  {
 	var err error
+	var js []byte
 	var data Data
 	data = Data{}
 
@@ -45,64 +46,78 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 
 	switch r.Form["cmd"][0] {
 	case "get-data":
-		var start, end mysql.NullTime
-		err = models.Db.QueryRow("SELECT `id`,`name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body` FROM campaign WHERE id=?", r.Form["recid"][0]).Scan(
-			&data.Id,
-			&data.Name,
-			&data.ProfileId,
-			&data.Subject,
-			&data.FromName,
-			&data.FromEmail,
-			&start,
-			&end,
-			&data.SendUnsubscribe,
-			&data.Template,
-		)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if auth.Right("get-campaign") {
+			var start, end mysql.NullTime
+			err = models.Db.QueryRow("SELECT `id`,`name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body` FROM campaign WHERE id=?", r.Form["recid"][0]).Scan(
+				&data.Id,
+				&data.Name,
+				&data.ProfileId,
+				&data.Subject,
+				&data.FromName,
+				&data.FromEmail,
+				&start,
+				&end,
+				&data.SendUnsubscribe,
+				&data.Template,
+			)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			data.StartDate = start.Time.Unix()
+			data.EndDate = end.Time.Unix()
+			data.EndDate = end.Time.Unix()
+
+			js, err = json.Marshal(data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get campaign"}`)
 		}
-		data.StartDate = start.Time.Unix()
-		data.EndDate = end.Time.Unix()
-		data.EndDate = end.Time.Unix()
+
 		break
 
 	case "save-data":
-		decoder := json.NewDecoder(r.Body)
-		err = decoder.Decode(&data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		start := time.Unix(data.StartDate, 0).UTC().Format(time.RFC3339)
-		end := time.Unix(data.EndDate, 0).UTC().Format(time.RFC3339)
+		if auth.Right("save-campaign") {
+			decoder := json.NewDecoder(r.Body)
+			err = decoder.Decode(&data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			start := time.Unix(data.StartDate, 0).UTC().Format(time.RFC3339)
+			end := time.Unix(data.EndDate, 0).UTC().Format(time.RFC3339)
 
-		_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
-			data.Name,
-			data.ProfileId,
-			data.Subject,
-			data.FromName,
-			data.FromEmail,
-			start,
-			end,
-			data.SendUnsubscribe,
-			data.Template,
-			data.Id,
-		)
+			_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
+				data.Name,
+				data.ProfileId,
+				data.Subject,
+				data.FromName,
+				data.FromEmail,
+				start,
+				end,
+				data.SendUnsubscribe,
+				data.Template,
+				data.Id,
+			)
 
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			js, err = json.Marshal(data)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden save campaign"}`)
 		}
 
 		break
-	}
-
-
-	js, err := json.Marshal(data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -11,8 +11,8 @@
     <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
 
     <div id="bottom" style="visibility: hidden">
-        <div id="group" style="position: absolute; left: 0px; width: 39.9%; height: 99%;"></div>
-        <div id="campaign" style="position: absolute; right: 0px; width: 59.9%; height: 99%;"></div>
+        <div id="group" style="position: absolute; left: 0; width: 39.9%; height: 99%;"></div>
+        <div id="campaign" style="position: absolute; right: 0; width: 59.9%; height: 99%;"></div>
     </div>
 
     <div id="formbox" style="visibility: hidden">
@@ -22,7 +22,9 @@
         </div>
         <div id="recipient" style="width: 100%;">
             <div id="campaignRecipient" style="height: 400px;"></div>
-            <div id="recipientUpload"></div>
+            <div id="recipientUpload">
+
+            </div>
         </div>
     </div>
 
@@ -45,17 +47,13 @@
             $.ajax({
                 type: "GET",
                 async: false,
-                dataType: 'json',
                 url: '/api/profiles?cmd=get-list',
                 contentType: "application/json; charset=utf-8",
                 dataType: "json"
             }).done(function(data) {
                 profile = data;
             });
-            w2ui['parameter'].set('campaignProfileId', { options: {
-                items: profile
-            }
-            });
+            w2ui['parameter'].set('campaignProfileId', { options: { items: profile } });
             w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
             w2ui['parameter'].refresh();
         }
@@ -121,9 +119,9 @@
                                 contentType: "application/json; charset=utf-8",
                                 dataType: "json",
                             }).done(function(data) {
-
+                                //ToDo check save status
                             }).complete(function() {
-                                w2ui.layout.lock('main', w2utils.lang('Ok'), false);
+                                w2ui.layout.lock('main', w2utils.lang('Saved'), false);
                                 w2ui['sidebar'].click('parameter');
                                 setTimeout(function(){
                                     w2ui.layout.unlock('main');
@@ -152,7 +150,7 @@
         w2ui.layout.content('main', $('#formbox').html());
         w2ui.layout.content('bottom', $('#bottom').html());
         // --- Parameters form ---
-        $("#parameter").w2form({
+        $('#parameter').w2form({
             header: w2utils.lang("Parameters"),
             name: 'parameter',
             fields: [
@@ -171,13 +169,9 @@
         });
         // --- /Parameters form ---
 
-        w2utils.lock('layout', w2utils.lang('Loading...'), true);
-        setTimeout(function(){
-            $('#template').hide();
-            $('#recipient').hide();
-            $('#parameter').hide();
-            w2utils.unlock('layout');
-        }, 2000);
+        $('#template').hide();
+        $('#recipient').hide();
+        $('#parameter').hide();
 
 /*
          w2ui.parameter.on('*', function (event) {
@@ -201,14 +195,14 @@
             },
             columns: [
                 { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-                { field: 'name', caption: w2utils.lang('Name'), size: '100%',  editable: { type: 'text' }},
+                { field: 'name', caption: w2utils.lang('Name'), size: '100%',  editable: { type: 'text' }}
             ],
             multiSelect: false,
             url: '/api/groups',
             method: 'GET',
             onSelect: function (event) {
                 w2ui['campaign'].clear();
-                var record = this.get(event.recid);
+//                var record = this.get(event.recid);
                 w2ui['campaign'].load('/api/campaigns?group='+event.recid);
             },
             toolbar: {
@@ -220,15 +214,16 @@
                         var id, name
                         $.ajax({
                             type: "POST",
-                            async: false,
                             dataType: 'json',
-                            url: '/api/groups?cmd=add-record',
+                            url: '/api/groups?cmd=add-record'
                         }).done(function(data) {
+                            // ToDo Check add status
                             id = data["recid"];
                             name = data["name"];
+                            w2ui.group.add({recid: id, name: name});
+                            w2ui.group.editField(id, 1);
                         });
-                        w2ui.group.add({recid: id, name: name});
-                        w2ui.group.editField(id, 1);
+
                     }
                 }
             }
@@ -242,9 +237,8 @@
                 header: true,
                 toolbar: true,
                 footer: true,
-                toolbarAdd: true,
-                toolbarDelete: true,
-                toolbarSave: true,
+                toolbarDelete: false,
+                toolbarSave: true
             },
             name: 'campaign',
             columns: [
@@ -254,15 +248,38 @@
             multiSelect: false,
             url: '/api/campaigns',
             method: 'GET',
+            toolbar: {
+                items: [
+                    {id: 'add', type: 'button', caption: w2utils.lang('Add New'), icon: 'w2ui-icon-plus'}
+                ],
+                onClick: function (event) {
+                    if (event.target == 'add') {
+                        var id, name
+                        $.ajax({
+                            type: "POST",
+                            //async: false,
+                            dataType: 'json',
+                            url: '/api/campaigns?cmd=add-record&group='+w2ui['group'].getSelection()
+                        }).done(function(data) {
+                            // ToDo Check add status
+                            id = data["recid"];
+                            name = data["name"];
+                            w2ui.campaign.add({recid: id, name: name});
+                            w2ui.campaign.editField(id, 1);
+                        });
+
+                    }
+                }
+            },
             onSelect: function (event) {
                 w2ui.layout.lock('main', w2utils.lang('Loading...'), true);
                 var record = this.get(event.recid);
                 // --- Get campaign data ---
                 $.ajax({
                     type: "GET",
-                    url: '/api/campaign?cmd=get-data&recid='+event.recid,
+                    url: '/api/campaign?cmd=get-data&recid='+event.recid
                 }).done(function(data) {
-                    refreshProfilesList(data["profileId"])
+                    refreshProfilesList(data["profileId"]);
                     $('#campaignId').val(record.recid);
                     $('#campaignName').val(record.name);
                     $("#campaignSubject").val(data["subject"]);
@@ -299,8 +316,9 @@
             },
             columns: [
                 { field: 'recid', caption: w2utils.lang('Id'), size: '5%' },
-                { field: 'name', caption: w2utils.lang('Name'), size: '30%' },
-                { field: 'email', caption: w2utils.lang('Email'), size: '40%' }
+                { field: 'email', caption: w2utils.lang('Email'), size: '15%' },
+                { field: 'name', caption: w2utils.lang('Name'), size: '20%' },
+                { field: 'result', caption: w2utils.lang('Result'), size: '60%' }
             ],
             multiSelect: false,
             method: 'GET',
@@ -333,9 +351,13 @@
             header: w2utils.lang("Upload recipient"),
             name: 'recipientUpload',
             fields: [
-                { name: 'recipientFile', type: 'file', option: {  }, html: { caption: w2utils.lang('File'), attr: ' size="80" ' }}
+                { name: 'recipientUploadId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
+                { name: 'recipientUploadFiles', type: 'file', html: { label: w2utils.lang('Click to Select') } }
+                //placeholder: w2utils.lang('Recipient file'), max: 2, silent: false  } }
             ]
         });
+
+//        $('#recipientUploadFile').w2field('file', { placeholder: w2utils.lang('Recipient file'), max: 2, silent: false });
 
         // --- /Recipient upload ---
 

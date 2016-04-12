@@ -20,11 +20,11 @@ import (
 
 
 type Campaign struct {
-	Id   int `json:"recid"`
+	Id   int64 `json:"recid"`
 	Name string `json:"name"`
 }
 type Campaigns struct {
-	Total	    int `json:"total"`
+	Total	    int64 `json:"total"`
 	Records		[]Campaign `json:"records"`
 }
 
@@ -32,6 +32,8 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 
 	var campaigns Campaigns
 	var err error
+	var js []byte
+
 	if err = r.ParseForm(); err != nil {
 		//handle error http.Error() for example
 		return
@@ -45,41 +47,80 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 	switch r.Form["cmd"][0] {
 
 	case "get-records":
-		campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if auth.Right("get-campaigns") {
+			campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			js, err = json.Marshal(campaigns)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get campaigns"}`)
 		}
 		break
 
 	case "save-records":
-		arrForm := parseArrayForm(r.Form)
-		err := saveCampaigns(arrForm["changes"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if auth.Right("save-campaigns") {
+			arrForm := parseArrayForm(r.Form)
+			err := saveCampaigns(arrForm["changes"])
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			js, err = json.Marshal(campaigns)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden save campaigns"}`)
 		}
+		break
 
-		campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	case "add-record":
+		if auth.Right("add-campaigns") {
+			campaign, err := addCampaign(r.Form["group"][0])
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			js, err = json.Marshal(campaign)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden add campaigns"}`)
 		}
 		break
 	}
 
-	arrForm := parseArrayForm(r.PostForm)
-
-	_ = arrForm
-
-	js, err := json.Marshal(campaigns)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func addCampaign(groupId string) (Campaign, error) {
+	c := Campaign{}
+	c.Name = "New campaign"
+	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupId, c.Name)
+	if err != nil {
+		return c, err
+	}
+	c.Id, err = row.LastInsertId()
+	if err != nil {
+		return c, err
+	}
+
+	return c, nil
 }
 
 func saveCampaigns(changes map[string]map[string][]string) (err error) {
@@ -94,12 +135,19 @@ func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-//ToDo check right errors
 func getCampaigns(group, offset, limit string) (Campaigns, error) {
 	var c Campaign
 	var cs Campaigns
+	var where string
 	cs.Records = []Campaign{}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? LIMIT ? OFFSET ?", group, limit, offset)
+
+	if auth.IsAdmin() {
+		where = "?"
+	} else {
+		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
+	}
+
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND " + where + " LIMIT ? OFFSET ?", group, auth.userId , limit, offset)
 	if err != nil {
 		return cs, err
 	}
@@ -108,6 +156,6 @@ func getCampaigns(group, offset, limit string) (Campaigns, error) {
 		err = query.Scan(&c.Id, &c.Name)
 		cs.Records = append(cs.Records, c)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=?", campaign).Scan(&cs.Total)
-	return cs, nil
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=? AND " + where, group, auth.userId).Scan(&cs.Total)
+	return cs, err
 }
