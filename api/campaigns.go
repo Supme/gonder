@@ -126,8 +126,16 @@ func addCampaign(groupId string) (Campaign, error) {
 func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	var e error
 	err = nil
+	var where string
+
+	if auth.IsAdmin() {
+		where = "?"
+	} else {
+		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
+	}
+
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=?", change["name"][0], change["recid"][0])
+		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND " + where, change["name"][0], change["recid"][0], auth.userId)
 		if e != nil {
 			err = e
 		}

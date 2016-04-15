@@ -14,7 +14,7 @@ package main
 
 import (
 	"github.com/supme/gonder/statistic"
-	"github.com/supme/gonder/panel"
+//	"github.com/supme/gonder/panel"
 	"github.com/supme/gonder/models"
 	"github.com/supme/gonder/campaign"
 	"fmt"
@@ -30,9 +30,22 @@ import (
 	"syscall"
 	"strconv"
 	"errors"
+	"github.com/supme/gonder/api"
 )
 
 func main() {
+
+	l, err := os.OpenFile("log/gonder.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("error opening log file: %v", err)
+	}
+	defer l.Close()
+
+	ml := io.MultiWriter(l, os.Stdout)
+
+	log.SetFlags(3)
+	log.SetOutput(ml)
+
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -51,8 +64,8 @@ func main() {
 	statisticConfig, err := config.Section("Statistic")
 	checkErr(err)
 
-	panelConfig, err := config.Section("Panel")
-	checkErr(err)
+	//panelConfig, err := config.Section("Panel")
+	//checkErr(err)
 
 	// Init models
 	models.Db, err = sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
@@ -81,17 +94,17 @@ func main() {
 	statistic.Port = statisticConfig.ValueOf("port")
 
 	// Init control panel
-	panel.Port = panelConfig.ValueOf("port")
+	//panel.Port = panelConfig.ValueOf("port")
 
 	// Start
 	if len(os.Args) == 2 {
 		var err error
 		if os.Args[1] == "status" {
-			err = checkPid("panel")
+			err = checkPid("api")
 			if err == nil {
-				fmt.Println("Process panel running")
+				fmt.Println("Process api running")
 			} else {
-				fmt.Println("Process panel stoping")
+				fmt.Println("Process api stoping")
 			}
 			err = checkPid("sender")
 			if err == nil {
@@ -107,7 +120,7 @@ func main() {
 			}
 		}
 		if os.Args[1] == "start" {
-			err = startProcess("panel")
+			err = startProcess("api")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -122,7 +135,7 @@ func main() {
 			os.Exit(0)
 		}
 		if os.Args[1] == "stop" {
-			err = stopProcess("panel")
+			err = stopProcess("api")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -137,11 +150,11 @@ func main() {
 			os.Exit(0)
 		}
 		if os.Args[1] == "restart" {
-			err = stopProcess("panel")
+			err = stopProcess("api")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			err = startProcess("panel")
+			err = startProcess("api")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -167,8 +180,8 @@ func main() {
 
 	if len(os.Args) == 3 {
 		if os.Args[1] == "start" {
-			if os.Args[2] == "panel" {
-				err = startProcess("panel")
+			if os.Args[2] == "api" {
+				err = startProcess("api")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -189,8 +202,8 @@ func main() {
 		}
 
 		if os.Args[1] == "stop" {
-			if os.Args[2] == "panel" {
-				err = stopProcess("panel")
+			if os.Args[2] == "api" {
+				err = stopProcess("api")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -211,12 +224,12 @@ func main() {
 		}
 
 		if os.Args[1] == "restart" {
-			if os.Args[2] == "panel" {
-				err = stopProcess("panel")
+			if os.Args[2] == "api" {
+				err = stopProcess("api")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
-				err = startProcess("panel")
+				err = startProcess("api")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -246,17 +259,17 @@ func main() {
 
 		if os.Args[1] == "daemonize" {
 
-			if os.Args[2] == "panel" {
+			if os.Args[2] == "api" {
 
-				log.Println("Start panel http server")
-				panel.Run()
+				fmt.Println("Start api http server")
+				api.Run()
 
 				for {}
 			}
 
 			if os.Args[2] == "sender" {
 
-				log.Println("Start database mailer")
+				fmt.Println("Start database mailer")
 				campaign.Run()
 
 				for {}
@@ -264,7 +277,7 @@ func main() {
 
 			if os.Args[2] == "stat" {
 
-				log.Println("Start statistics http server")
+				fmt.Println("Start statistics http server")
 				statistic.Run()
 
 				for {}
@@ -275,16 +288,16 @@ func main() {
 	}
 
 	if len(os.Args) == 1 {
-		log.Println("Start panel http server")
-		go panel.Run()
+		fmt.Println("Start api http server")
+		go api.Run()
 
-		log.Println("Start database mailer")
+		fmt.Println("Start database mailer")
 		go campaign.Run()
 
-		log.Println("Start statistics http server")
+		fmt.Println("Start statistics http server")
 		go statistic.Run()
 
-		log.Println("Press Enter for stop")
+		fmt.Println("Press Enter for stop")
 		var input string
 		fmt.Scanln(&input)
 	}

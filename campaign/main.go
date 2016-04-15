@@ -16,7 +16,6 @@ import (
 	"time"
 	"github.com/supme/gonder/models"
 	"log"
-	"github.com/supme/gonder/api"
 )
 
 var (
@@ -26,7 +25,6 @@ var (
 
 func Run()  {
 
-	go api.Run()
 	for {
 		for len(startedCampaign) >= MaxCampaingns {
 			time.Sleep(1 * time.Second)

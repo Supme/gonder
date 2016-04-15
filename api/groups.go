@@ -75,7 +75,7 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 				return
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save group"}`)
+			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
 
 		break
@@ -93,7 +93,7 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 				return
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden add group"}`)
+			js = []byte(`{"status": "error", "message": "Forbidden add groups"}`)
 		}
 
 		break
@@ -120,9 +120,17 @@ func addGroup() (Group, error) {
 
 func saveGroups(changes map[string]map[string][]string) (err error) {
 	var e error
+	var where string
 	err = nil
+
+	if auth.IsAdmin() {
+		where = "?"
+	} else {
+		where = "id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
+	}
+
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=?", change["name"][0], change["recid"][0])
+		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND " + where, change["name"][0], change["recid"][0], auth.userId)
 		if e != nil {
 			err = e
 		}

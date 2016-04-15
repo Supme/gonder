@@ -58,7 +58,8 @@ func Run()  {
 	http.Handle("/files/", http.FileServer(http.Dir("./files/")))
 	http.Handle("/", http.FileServer(http.Dir("./api/http/")))
 
-	log.Println("API listening...")
+	log.Println("API listening on port 3000...")
 	log.Fatal(http.ListenAndServe(":3000", nil))
+
 
 }

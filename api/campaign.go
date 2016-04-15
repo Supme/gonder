@@ -18,6 +18,7 @@ import (
 	"github.com/supme/gonder/models"
 	"github.com/go-sql-driver/mysql"
 	"time"
+	"strconv"
 )
 
 type Data struct {
@@ -43,13 +44,17 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	switch r.Form["cmd"][0] {
 	case "get-data":
-		if auth.Right("get-campaign") {
+		data.Id = r.Form["recid"][0]
+		dataId, err := strconv.ParseInt(data.Id, 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if auth.Right("get-campaign") && auth.CampaignRight(dataId) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `id`,`name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body` FROM campaign WHERE id=?", r.Form["recid"][0]).Scan(
-				&data.Id,
+			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body` FROM campaign WHERE id=?", data.Id).Scan(
 				&data.Name,
 				&data.ProfileId,
 				&data.Subject,
@@ -66,7 +71,6 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 			}
 			data.StartDate = start.Time.Unix()
 			data.EndDate = end.Time.Unix()
-			data.EndDate = end.Time.Unix()
 
 			js, err = json.Marshal(data)
 			if err != nil {
@@ -80,15 +84,20 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		break
 
 	case "save-data":
-		if auth.Right("save-campaign") {
-			decoder := json.NewDecoder(r.Body)
-			err = decoder.Decode(&data)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			start := time.Unix(data.StartDate, 0).UTC().Format(time.RFC3339)
-			end := time.Unix(data.EndDate, 0).UTC().Format(time.RFC3339)
+		decoder := json.NewDecoder(r.Body)
+		err = decoder.Decode(&data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		dataId, err := strconv.ParseInt(data.Id, 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if auth.Right("save-campaign") && auth.CampaignRight(dataId) {
+			start := time.Unix(data.StartDate, 0).Format(time.RFC3339)
+			end := time.Unix(data.EndDate, 0).Format(time.RFC3339)
 
 			_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				data.Name,

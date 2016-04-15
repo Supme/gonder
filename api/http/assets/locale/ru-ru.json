@@ -103,7 +103,13 @@
         "End time": "Время окончания",
         "Send unsubscribe": "Слать отписавшимся",
         "Settings": "Настройки",
-        "Result": "Результат"
+        "Result": "Результат",
+        "Error": "Ошибка",
+        "Forbidden save campaign": "Запрещено сохранять кампанию",
+        "Forbidden add groups": "Запрещено добавлять группы",
+        "Forbidden save groups": "Запрещено сохранять группы",
+        "Forbidden add campaigns": "Запрещено добавлять кампании",
+        "Forbidden save campaigns": "Запрещено сохранять кампании"
 
     }
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/supme/gonder/models"
 	"log"
 	"encoding/hex"
-	"time"
+	"strconv"
 )
 
 type Auth struct {
@@ -30,18 +30,15 @@ type Auth struct {
 func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var authorize bool
-		loging(r)
-
 		user, password, _ := r.BasicAuth()
 		a.userId, a.unitId, authorize = check(user, password)
-
 		if !authorize {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)
 			return
 		}
-
 		a.Name = user
+		loging(r)
 
 		fn(w, r)
 	}
@@ -55,11 +52,40 @@ func (a *Auth) Log(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 func (a *Auth) GroupRight(group int64) bool {
+	if a.IsAdmin() {
+		return true
+	}
 	var r bool
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=?", a.userId, group).Scan(&c)
 	if err != nil {
 		r = false
+	}
+	return r
+}
+
+func (a *Auth) CampaignRightString(campaign string) bool {
+	c, err := strconv.ParseInt(campaign, 10, 64)
+	if err != nil {
+		return false
+	}
+	return a.CampaignRight(c)
+}
+
+func (a *Auth) CampaignRight(campaign int64) bool {
+	if a.IsAdmin() {
+		return true
+	}
+	var r bool
+	var c int
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=(SELECT `group_id` FROM `campaign` WHERE id=?)", a.userId, campaign).Scan(&c)
+	if err != nil {
+		r = false
+	}
+	if c == 0 {
+		r = false
+	} else {
+		r = true
 	}
 
 	return r
@@ -69,7 +95,6 @@ func (a *Auth) Right(right string) bool {
 	var r bool
 
 	if a.IsAdmin() {
-		log.Println("Admin right")
 		return true
 	}
 
@@ -77,7 +102,6 @@ func (a *Auth) Right(right string) bool {
 	if err != nil {
 		return false
 	}
-	log.Println("Right ", r)
 
 	return r
 }
@@ -120,5 +144,5 @@ func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func loging(r *http.Request)  {
-	log.Printf("%s - %s Host: %s URI: %s Client: %v", time.Now().Format("2006-01-02T15:04:05"), r.Method, r.RemoteAddr, r.RequestURI, r.UserAgent())
+	log.Printf("API User: '%s' Host: %s %s %s", auth.Name, r.RemoteAddr, r.Method, r.RequestURI)
 }
