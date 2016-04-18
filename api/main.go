@@ -41,6 +41,8 @@ func Run()  {
 	// ...
 	http.HandleFunc("/api/campaign", auth.Check(campaign))
 
+	http.HandleFunc("/api/profilelist", auth.Check(profilesList))
+
 	// Profiles
 	// Example:
 	// Get list http://host/api/profiles?cmd=get-list

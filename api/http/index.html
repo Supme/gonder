@@ -56,7 +56,7 @@
                 $.ajax({
                     type: "GET",
                     async: false,
-                    url: '/api/profiles?cmd=get-list',
+                    url: '/api/profilelist',
                     contentType: "application/json; charset=utf-8",
                     dataType: "json"
                 }).done(function(data) {
@@ -147,6 +147,7 @@
                                 });
                                 break;
                             case 'profile':
+                                w2ui['profile'].url = '/api/profiles';
                                 w2ui['profile'].reload();
                                 $('#template').hide();
                                 $('#parameter').hide();
@@ -459,43 +460,41 @@
                     toolbar: true,
                     footer: true,
                     toolbarSave: true,
+                    toolbarDelete: true,
+                    toolbarAdd: true
                 },
                 columns: [
                     { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-                    { field: 'name', caption: w2utils.lang('Name'), size: '30%',  editable: { type: 'text' }},
-                    { field: 'host', caption: w2utils.lang('Host'), size: '25%',  editable: { type: 'text' }},
-                    { field: 'iface', caption: w2utils.lang('Interface'), size: '25%',  editable: { type: 'text' }},
-                    { field: 'resend_delay', caption: w2utils.lang('Resend delay'), size: '10%',  editable: { type: 'text' }},
-                    { field: 'resend_count', caption: w2utils.lang('Resend count'), size: '10%',  editable: { type: 'text' }}
+                    { field: 'name', caption: w2utils.lang('Name'), size: '30%', editable: { type: 'text' }},
+                    { field: 'host', caption: w2utils.lang('Host'), size: '20%', editable: { type: 'text' }},
+                    { field: 'iface', caption: w2utils.lang('Interface'), size: '20%',  editable: { type: 'text' }},
+                    { field: 'stream', caption: w2utils.lang('Stream'), render: 'int', size: '10%', editable: { type: 'int' }},
+                    { field: 'resend_delay', caption: w2utils.lang('Resend delay'), render: 'int', size: '10%', editable: { type: 'int' }},
+                    { field: 'resend_count', caption: w2utils.lang('Resend count'), render: 'int', size: '10%', editable: { type: 'int' }}
 
                 ],
-                multiSelect: false,
-                url: '/api/profiles',
+               // multiSelect: false,
+//                url: '/api/profiles',
                 method: 'GET',
-                toolbar: {
-                    items: [
-                        {id: 'add', type: 'button', caption: w2utils.lang('Add New'), icon: 'w2ui-icon-plus'}
-                    ],
-/*                    onClick: function (event) {
-                        if (event.target == 'add') {
-                            var id, name
-                            $.ajax({
-                                type: "POST",
-                                dataType: 'json',
-                                url: '/api/groups?cmd=add-record'
-                            }).done(function(data) {
-                                if (data['status'] == 'error') {
-                                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                                } else {
-                                    id = data["recid"];
-                                    name = data["name"];
-                                    w2ui.group.add({recid: id, name: name});
-                                    w2ui.group.editField(id, 1);
-                                }
-                            });
-
+                onAdd: function(event) {
+                    console.log(event);
+                    $.ajax({
+                        url: "api/profiles",
+                        type: "GET",
+                        data: {
+                            cmd: "add-records",
+                        },
+                        dataType: "json"
+                    }).done(function(data) {
+                        if (data['status'] == 'error') {
+                            w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                        } else {
+                            console.log(data);
+                            w2ui.profile.add({ recid: data.recid });
                         }
-                    }*/
+                    }).complete(function(data) {
+
+                    });
                 }
             });
             // --- /Profile table ---

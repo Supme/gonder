@@ -16,15 +16,14 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/supme/gonder/models"
+	"fmt"
+	"strconv"
 )
 
-type ProfileList struct {
-	Id   int `json:"id"`
-	Name string `json:"text"`
-}
+
 
 type Profile struct {
-	Id   int `json:"recid"`
+	Id   int64 `json:"recid"`
 	Name string `json:"name"`
 	Iface string `json:"iface"`
 	Host string `json:"host"`
@@ -34,13 +33,20 @@ type Profile struct {
 }
 
 type Profiles struct {
+	Status	    string `json:"status"`
+	Message	    string `json:"message"`
 	Total	    int64 `json:"total"`
 	Records		[]Profile `json:"records"`
 }
+
 //ToDo check rights
 func profiles(w http.ResponseWriter, r *http.Request)  {
 	var err error
 	var js []byte
+	var ps Profiles
+	var p Profile
+
+	ps.Status = "Ok"
 
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -49,26 +55,66 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 
 	switch r.Form["cmd"][0] {
 
-	case "get-list":
-		ps, err := getProfilesList()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	case "get-records":
+		if auth.Right("get-profiles") {
+			ps, err = getProfiles()
+			if err != nil {
+				ps.Status = "error"
+				ps.Message = err.Error()
+			}
+			js, err = json.Marshal(ps)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
-		js, err = json.Marshal(ps)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
 		break
 
-	case "get-records":
-		ps, err := getProfiles()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+	case "add-records":
+		if auth.Right("add-profiles") {
+			p, err = addProfile()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			js, err = json.Marshal(p)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
-		js, err = json.Marshal(ps)
+
+		break
+
+	case "delete-records":
+		if auth.Right("delete-profiles") {
+			fmt.Print(r.Form["selected[]"])
+			deleteProfiles(r.Form["selected[]"])
+			js, err = json.Marshal(ps)
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+		}
+
+		break
+
+	case "save-records":
+		if auth.Right("save-profiles") {
+			arrForm := parseArrayForm(r.Form)
+			err = saveProfiles(arrForm["changes"])
+			if err != nil {
+				ps.Status = "error"
+				ps.Message = err.Error()
+			}
+			js, err = json.Marshal(ps)
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+		}
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -78,6 +124,80 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func saveProfiles(changes map[string]map[string][]string) (err error) {
+	var e error
+	err = nil
+	var p Profile
+
+	fmt.Println("changes")
+	fmt.Print(changes)
+	fmt.Println("/changes")
+	for c := range changes {
+		p.Id, e = strconv.ParseInt(changes[c]["recid"][0], 10, 64)
+		if e != nil {
+			err = e
+		}
+		e = models.Db.QueryRow("SELECT `name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile` WHERE `id`=?", p.Id).Scan(&p.Name,&p.Iface,&p.Host,&p.Stream,&p.ResendDelay,&p.ResendCount)
+		if e != nil {
+			err = e
+		}
+
+		for i,n := range changes[c] {
+			fmt.Println("i" ,i)
+			fmt.Println("n" ,n)
+			fmt.Println("changes[c][i][0]", changes[c][i][0])
+			switch i {
+			case "name":
+				p.Name = changes[c][i][0]
+				break
+			case "iface":
+				p.Iface = changes[c][i][0]
+				break
+			case "host":
+				p.Host = changes[c][i][0]
+				break
+			case "stream":
+				p.Stream,_ = strconv.Atoi(changes[c][i][0])
+				break
+			case "resend_delay":
+				p.ResendDelay,_ = strconv.Atoi(changes[c][i][0])
+				break
+			case "resend_count":
+				p.ResendCount,_ = strconv.Atoi(changes[c][i][0])
+				break
+			}
+		}
+
+
+		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name,p.Iface,p.Host,p.Stream,p.ResendDelay,p.ResendCount,p.Id)
+		if e != nil {
+			err = e
+		}
+	}
+
+	return
+}
+
+func deleteProfiles(selected []string) {
+	for s := range selected{
+		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", selected[s])
+	}
+}
+
+func addProfile() (Profile, error) {
+	var p Profile
+	row, err := models.Db.Exec("INSERT INTO `profile` (`name`) VALUES ('')")
+	if err != nil {
+		return p, err
+	}
+	p.Id, err = row.LastInsertId()
+	if err != nil {
+		return p, err
+	}
+
+	return p, nil
 }
 
 func getProfiles() (Profiles, error) {
@@ -99,18 +219,3 @@ func getProfiles() (Profiles, error) {
 	return ps, err
 }
 
-func getProfilesList() ([]ProfileList, error) {
-	var p ProfileList
-	var ps []ProfileList
-	ps = []ProfileList{}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `profile`")
-	if err != nil {
-		return ps, err
-	}
-	defer query.Close()
-	for query.Next() {
-		err = query.Scan(&p.Id, &p.Name)
-		ps = append(ps, p)
-	}
-	return ps, nil
-}
