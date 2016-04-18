@@ -34,10 +34,10 @@ API
 	- Get list http://host/api/profiles?cmd=get-list
 	- ...
 * Recipients from campaign
-    	Example:
-    	- Get list recipients: http://host/api/recipients?content=recipients&campaign=4&cmd=get-records&limit=100&offset=0
-    	- Get recipient parameters: http://host/api/recipients?content=parameters&recipient=149358&cmd=get-records&limit=100&offset=0
-    	- ...
+    - Example:
+    - Get list recipients: http://host/api/recipients?content=recipients&campaign=4&cmd=get-records&limit=100&offset=0
+    - Get recipient parameters: http://host/api/recipients?content=parameters&recipient=149358&cmd=get-records&limit=100&offset=0
+    - ...
 
 License
 -------
