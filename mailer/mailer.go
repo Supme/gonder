@@ -80,7 +80,11 @@ func (m *MailData) Send() error {
 	// trim space
 	m.To = strings.TrimSpace(m.To)
 	// punycode convert
-	domain, err := idna.ToASCII(strings.Split(m.To, "@")[1])
+	splitEmail := strings.Split(m.To, "@")
+	if len(splitEmail) != 2 {
+		return errors.New(fmt.Sprintf("Bad email"))
+	}
+	domain, err := idna.ToASCII(splitEmail[1])
 	if err != nil {
 		return errors.New(fmt.Sprintf("Domain name failed: %v\r\n", err))
 	}
