@@ -76,7 +76,7 @@ func main() {
 	models.Db.SetMaxIdleConns(10)
 	models.Db.SetMaxOpenConns(10)
 
-	models.Version = "Gonder 0.5"
+	models.Version = "Gonder 0.6"
 	models.StatUrl = "http://" + mainConfig.ValueOf("host")
 
 	// Init mailer

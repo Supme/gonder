@@ -71,7 +71,7 @@
             var config = {
                 sidebar: {
                     name: 'sidebar',
-                    topHTML    : '<div style="padding: 10px 5px; border-bottom: 1px solid #99bbe8";><span style="text-transform: uppercase;">'+w2utils.lang("Menu")+'</span></div>',
+                    topHTML: '<div style="padding: 10px 5px; border-bottom: 1px solid #99bbe8";><span style="text-transform: uppercase;">'+w2utils.lang("Menu")+'</span></div>',
                     nodes: [
                         {
                             id: 'campaign', text: w2utils.lang('Campaign'), group: true, expanded: true, nodes:
@@ -473,8 +473,6 @@
                     { field: 'resend_count', caption: w2utils.lang('Resend count'), render: 'int', size: '10%', editable: { type: 'int' }}
 
                 ],
-               // multiSelect: false,
-//                url: '/api/profiles',
                 method: 'GET',
                 onAdd: function(event) {
                     console.log(event);

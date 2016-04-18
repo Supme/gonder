@@ -15,6 +15,8 @@ package api
 import (
 	"log"
 	"net/http"
+	"io/ioutil"
+	"encoding/base64"
 )
 
 var auth Auth
@@ -56,9 +58,23 @@ func Run()  {
 	// ...
 	http.HandleFunc("/api/recipients", auth.Check(recipients))
 
+	http.HandleFunc("/filemanager", auth.Check(filemanager))
+
 	// Static dirs
-	http.Handle("/files/", http.FileServer(http.Dir("./files/")))
-	http.Handle("/", http.FileServer(http.Dir("./api/http/")))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./api/http/assets/"))))
+	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+	http.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
+		blank, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
+		w.Write(blank)
+	})
+
+	http.HandleFunc("/panel", auth.Check(func (w http.ResponseWriter, r *http.Request)  {
+		if f, err := ioutil.ReadFile("./api/http/index.html"); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else{
+			w.Write(f)
+		}
+	}))
 
 	log.Println("API listening on port 3000...")
 	log.Fatal(http.ListenAndServe(":3000", nil))
