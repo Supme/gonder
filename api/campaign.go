@@ -31,6 +31,7 @@ type Data struct {
 	StartDate int64 `json:"startDate"`
 	EndDate int64 `json:"endDate"`
 	SendUnsubscribe string `json:"sendUnsubscribe"`
+	Accepted bool `json:"accepted"`
 	Template string `json:"template"`
 }
 
@@ -54,7 +55,7 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		}
 		if auth.Right("get-campaign") && auth.CampaignRight(dataId) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body` FROM campaign WHERE id=?", data.Id).Scan(
+			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", data.Id).Scan(
 				&data.Name,
 				&data.ProfileId,
 				&data.Subject,
@@ -64,6 +65,7 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 				&end,
 				&data.SendUnsubscribe,
 				&data.Template,
+				&data.Accepted,
 			)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -126,6 +128,40 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden save campaign"}`)
 		}
 
+		break
+//ALTER TABLE `campaign` ADD `accepted` TINYINT(1) NOT NULL DEFAULT '0' ;
+	case "accept":
+		decoder := json.NewDecoder(r.Body)
+		err = decoder.Decode(&data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		dataId, err := strconv.ParseInt(data.Id, 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if auth.Right("accept-campaign") && auth.CampaignRight(dataId) {
+			var accepted int
+			if data.Accepted {
+				accepted = 1
+			} else {
+				accepted = 0
+			}
+
+			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, data.Id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			js = []byte(`{"status": "ok", "message": ""}`)
+
+		} else {
+			js = []byte(`{"status": "error", "message": "Forbidden accept campaign"}`)
+		}
 		break
 	}
 

@@ -24,15 +24,20 @@ type ProfileList struct {
 }
 
 func profilesList(w http.ResponseWriter, r *http.Request)  {
-	psl, err := getProfilesList()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	js, err := json.Marshal(psl)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	var js []byte
+	if auth.Right("get-campaign") {
+		psl, err := getProfilesList()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		js, err = json.Marshal(psl)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		js = []byte(`{"status": "error", "message": "Forbidden get campaign"}`)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

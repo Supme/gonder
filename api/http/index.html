@@ -107,6 +107,8 @@
                                 $('#status').hide();
                                 break;
                             case 'recipient':
+                                w2ui['recipient'].url = '/api/recipients?content=recipients&campaign=' + $('#campaignId').val();
+                                w2ui['recipient'].reload();
                                 $('#template').hide();
                                 $('#parameter').hide();
                                 $('#recipient').show();
@@ -200,8 +202,29 @@
                     { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
                     { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' } },
                     { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
+                    { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } },
                 ]
             });
+
+            //console.log('Event: '+ event.type, 'Target: '+ event.target, event);
+            $('#campaignAcceptSend').click(function(data) {
+                $.ajax({
+                    type: "POST",
+                    url: '/api/campaign?cmd=accept',
+                    data: JSON.stringify({
+                        recid: $('#campaignId').val(),
+                        accepted: $('#campaignAcceptSend').is(':checked')
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json"
+                }).done(function(data) {
+                    if (data['status'] == 'error') {
+                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                        $('#campaignAcceptSend').prop('checked', !$('#campaignAcceptSend').is(':checked'));
+                    }
+                })
+            });
+
             // --- /Parameters form ---
 
             $('#template').hide();
@@ -335,9 +358,7 @@
                         $("#campaignEndTime").val(w2utils.formatTime((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.timeFormat));
                         $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"] == "y" ? true : false);
                         $("#campaignTemplate").val(data["template"]);
-
-                        w2ui['recipient'].url = '/api/recipients?content=recipients&campaign=' + event.recid;
-                        w2ui['recipient'].reload();
+                        $('#campaignAcceptSend').prop('checked', data["accepted"]);
 
                         CKEDITOR.instances.campaignTemplate.setData(data["template"]);
                     }).complete(function() {
@@ -345,6 +366,9 @@
                     });
                     // --- /Get campaign data ---
                     w2ui['sidebar'].click('parameter');
+                },
+                onSave: function(event) {
+                    console.log(event);
                 }
             });
             // --- /Campaign table ---

@@ -28,6 +28,7 @@ import (
     "time"
     "net/http"
     "encoding/json"
+    "fmt"
 )
 
 var filemanagerRootPath string
@@ -62,36 +63,58 @@ func filemanager(w http.ResponseWriter, r *http.Request)  {
     var js []byte
 
     if auth.Right("filemanager") {
-        if err = r.ParseForm(); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
         var mode, path, name, old, new, height, width string
-        if r.Form["mode"] != nil { mode = r.Form["mode"][0] }
-        if r.Form["path"] != nil { path = r.Form["path"][0] }
-        if r.Form["name"] != nil { name = r.Form["name"][0] }
-        if r.Form["old"] != nil { old = r.Form["old"][0] }
-        if r.Form["new"] != nil { new = r.Form["new"][0] }
-        if r.Form["height"] != nil { height = r.Form["height"][0] }
-        if r.Form["width"] != nil { width = r.Form["width"][0] }
-
-        if r.Form["mode"][0] == "download" {
-            var n string
-            var d []byte
-
-            if width != "" && height != "" {
-                // Download resized
-                d = filemanagerResize(path, width, height)
-            } else {
-                // Download file
-                n, d = filemanagerDownload(path)
-                w.Header().Set("Content-Disposition","attachment; filename='" + n + "'")
+        if r.Method == "GET" {
+            if err = r.ParseForm(); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
             }
-            w.Write(d)
+            if r.Form["mode"] != nil { mode = r.Form["mode"][0] }
+            if r.Form["path"] != nil { path = r.Form["path"][0] }
+            if r.Form["name"] != nil { name = r.Form["name"][0] }
+            if r.Form["old"] != nil { old = r.Form["old"][0] }
+            if r.Form["new"] != nil { new = r.Form["new"][0] }
+            if r.Form["height"] != nil { height = r.Form["height"][0] }
+            if r.Form["width"] != nil { width = r.Form["width"][0] }
+
+            fmt.Println("fv = ",r.Form)
+            fmt.Println("pfv = ",r.PostForm)
+            if mode == "download" {
+                var n string
+                var d []byte
+
+                if width != "" && height != "" {
+                    // Download resized
+                    d = filemanagerResize(path, width, height)
+                } else {
+                    // Download file
+                    n, d = filemanagerDownload(path)
+                    w.Header().Set("Content-Disposition","attachment; filename='" + n + "'")
+                }
+                w.Write(d)
+            } else {
+                js, err = json.Marshal(filemanagerAction(mode, path, name, old, new))
+                if err != nil {
+                    log.Println(err)
+                }
+            }
         } else {
-            js, err = json.Marshal(filemanagerAction(mode, path, name, old, new))
-            if err != nil {
-                log.Println(err)
+            if err = r.ParseMultipartForm(32 << 20); err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+            if r.Form["mode"] != nil { mode = r.Form["mode"][0] }
+            if mode == "add" {
+                file, head, err := r.FormFile("newfile")
+                if err != nil {
+                    http.Error(w, err.Error(), http.StatusInternalServerError)
+                    return
+                }
+                js, err = json.Marshal(filemanagerAdd(r.Form["currentpath"][0], head.Filename, file))
+                if err != nil {
+                    http.Error(w, err.Error(), http.StatusInternalServerError)
+                    return
+                }
             }
         }
     } else {
