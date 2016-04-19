@@ -30,7 +30,7 @@ type Data struct {
 	FromEmail string `json:"fromEmail"`
 	StartDate int64 `json:"startDate"`
 	EndDate int64 `json:"endDate"`
-	SendUnsubscribe string `json:"sendUnsubscribe"`
+	SendUnsubscribe bool `json:"sendUnsubscribe"`
 	Accepted bool `json:"accepted"`
 	Template string `json:"template"`
 }
@@ -129,7 +129,7 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		}
 
 		break
-//ALTER TABLE `campaign` ADD `accepted` TINYINT(1) NOT NULL DEFAULT '0' ;
+
 	case "accept":
 		decoder := json.NewDecoder(r.Body)
 		err = decoder.Decode(&data)

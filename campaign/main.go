@@ -82,10 +82,9 @@ func remove_started_campaign(id string) {
 }
 
 func run_campaign(c campaign) {
-	log.Println("Start campaign ", c.id)
 	c.get_attachments()
 	c.send()
 	c.resend_soft_bounce()
 	remove_started_campaign(c.id)
-	log.Println("Finish campaign id", c.id)
+	log.Println("SENDER Finish campaign id", c.id)
 }

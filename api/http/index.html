@@ -2,7 +2,7 @@
 <html>
 <head>
     <link rel="stylesheet" type="text/css" href="assets/w3ui/w2ui-1.4.3.min.css" />
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="assets/jquery/jquery-2.2.3.min.js"></script>
     <script type="text/javascript" src="assets/w3ui/w2ui-1.4.3.js"></script>
     <script src="assets/ckeditor/ckeditor.js"></script>
 </head>
@@ -127,7 +127,7 @@
                                     "fromName": $("#campaignFromName").val(),
                                     "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime()/1000,
                                     "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime()/1000,
-                                    "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked")?"y":"n",
+                                    "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
                                     "template": CKEDITOR.instances.campaignTemplate.getData() == ''?$("#campaignTemplate").val():CKEDITOR.instances.campaignTemplate.getData(),
                                 };
                                 $.ajax({
@@ -202,7 +202,7 @@
                     { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
                     { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' } },
                     { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
-                    { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } },
+                    { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }
                 ]
             });
 
@@ -356,7 +356,7 @@
                         $("#campaignStartTime").val(w2utils.formatTime((new Date((data["startDate"] + zone) * 1000)), w2utils.settings.timeFormat));
                         $("#campaignEndDate").val(w2utils.formatDate((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.dateFormat));
                         $("#campaignEndTime").val(w2utils.formatTime((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.timeFormat));
-                        $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"] == "y" ? true : false);
+                        $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"]);
                         $("#campaignTemplate").val(data["template"]);
                         $('#campaignAcceptSend').prop('checked', data["accepted"]);
 

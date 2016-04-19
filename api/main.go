@@ -19,7 +19,10 @@ import (
 	"encoding/base64"
 )
 
-var auth Auth
+var (
+	auth Auth
+	Port string
+)
 
 func Run()  {
 
@@ -76,8 +79,7 @@ func Run()  {
 		}
 	}))
 
-	log.Println("API listening on port 3000...")
-	log.Fatal(http.ListenAndServe(":3000", nil))
-
+	log.Println("API listening on port " + Port + "...")
+	log.Fatal(http.ListenAndServeTLS(":" + Port, "./cert/server.pem", "./cert/server.key", nil))
 
 }

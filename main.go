@@ -64,8 +64,8 @@ func main() {
 	statisticConfig, err := config.Section("Statistic")
 	checkErr(err)
 
-	//panelConfig, err := config.Section("Panel")
-	//checkErr(err)
+	apiConfig, err := config.Section("API")
+	checkErr(err)
 
 	// Init models
 	models.Db, err = sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
@@ -93,8 +93,8 @@ func main() {
 	// Init statistic
 	statistic.Port = statisticConfig.ValueOf("port")
 
-	// Init control panel
-	//panel.Port = panelConfig.ValueOf("port")
+	// Init api
+	api.Port = apiConfig.ValueOf("port")
 
 	// Start
 	if len(os.Args) == 2 {
