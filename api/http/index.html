@@ -76,7 +76,7 @@
                         {
                             id: 'campaign', text: w2utils.lang('Campaign'), group: true, expanded: true, nodes:
                                 [
-                                    {id: 'parameter', text: w2utils.lang('Parameters'), img: 'icon-page', selected: true},
+                                    {id: 'parameter', text: w2utils.lang('Parameters'), img: 'icon-page'},
                                     {id: 'editor', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil'},
                                     {id: 'recipient', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns'},
                                     {id: 'save', text: w2utils.lang('Save'), img: 'w2ui-icon-check'}
@@ -91,81 +91,91 @@
                         }
                     ],
                     onClick: function (event) {
-                        switch (event.target) {
-                            case 'parameter':
-                                $('#template').hide();
-                                $('#recipient').hide();
-                                $('#parameter').show();
-                                $('#profile').hide();
-                                $('#status').hide();
-                                break;
-                            case 'editor':
-                                $('#parameter').hide();
-                                $('#recipient').hide();
-                                $('#template').show();
-                                $('#profile').hide();
-                                $('#status').hide();
-                                break;
-                            case 'recipient':
-                                w2ui['recipient'].url = '/api/recipients?content=recipients&campaign=' + $('#campaignId').val();
-                                w2ui['recipient'].reload();
-                                $('#template').hide();
-                                $('#parameter').hide();
-                                $('#recipient').show();
-                                $('#profile').hide();
-                                $('#status').hide();
-                                break;
-                            case 'save':
-                                // --- Get campaign data ---
-                                w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
-                                data = {
-                                    "recid": $('#campaignId').val(),
-                                    "profileId": $('#campaignProfileId').data('selected').id,
-                                    "name": $('#campaignName').val(),
-                                    "subject": $("#campaignSubject").val(),
-                                    "fromEmail": $("#campaignFromEmail").val(),
-                                    "fromName": $("#campaignFromName").val(),
-                                    "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime()/1000,
-                                    "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime()/1000,
-                                    "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                    "template": CKEDITOR.instances.campaignTemplate.getData() == ''?$("#campaignTemplate").val():CKEDITOR.instances.campaignTemplate.getData(),
-                                };
-                                $.ajax({
-                                    type: "POST",
-                                    url: '/api/campaign?cmd=save-data',
-                                    data: JSON.stringify(data),
-                                    contentType: "application/json; charset=utf-8",
-                                    dataType: "json"
-                                }).done(function(data) {
-                                    if (data['status'] == 'error') {
-                                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                                    }
-                                }).complete(function() {
-                                    w2ui.layout.lock('main', w2utils.lang('Saved'), false);
-                                    w2ui['sidebar'].click('parameter');
-                                    setTimeout(function(){
-                                        w2ui.layout.unlock('main');
-                                    }, 1500);
-                                });
-                                break;
-                            case 'profile':
-                                w2ui['profile'].url = '/api/profiles';
-                                w2ui['profile'].reload();
-                                $('#template').hide();
-                                $('#parameter').hide();
-                                $('#recipient').hide();
-                                $('#profile').show();
-                                $('#status').hide();
-                                break;
-                            case 'status':
-                                $('#template').hide();
-                                $('#parameter').hide();
-                                $('#recipient').hide();
-                                $('#profile').hide();
-                                $('#status').show();
-                                break;
+                        if ($('#campaignId').val() == '') {
+                            w2ui['sidebar'].unselect(event.target);
+                            w2alert(w2utils.lang('Select group and campaign, before select action.'));
+                        } else {
+                            switch (event.target) {
+                                case 'parameter':
+                                    $('#template').hide();
+                                    $('#recipient').hide();
+                                    $('#parameter').show();
+                                    $('#profile').hide();
+                                    $('#status').hide();
+                                    break;
+                                case 'editor':
+                                    $('#parameter').hide();
+                                    $('#recipient').hide();
+                                    $('#template').show();
+                                    $('#profile').hide();
+                                    $('#status').hide();
+                                    break;
+                                case 'recipient':
+                                    w2ui['recipient'].url = '/api/recipients?content=recipients&campaign=' + $('#campaignId').val();
+                                    w2ui['recipient'].reload();
+                                    $('#template').hide();
+                                    $('#parameter').hide();
+                                    $('#recipient').show();
+                                    $('#profile').hide();
+                                    $('#status').hide();
+                                    break;
+                                case 'save':
+                                    w2confirm(w2utils.lang('Save changes in campaign?'), function (btn) {
+                                        if ( btn == 'Yes') {
+                                            // ---Save campaign data ---
+                                            w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
+                                            data = {
+                                                "recid": $('#campaignId').val(),
+                                                "profileId": $('#campaignProfileId').data('selected').id,
+                                                "name": $('#campaignName').val(),
+                                                "subject": $("#campaignSubject").val(),
+                                                "fromEmail": $("#campaignFromEmail").val(),
+                                                "fromName": $("#campaignFromName").val(),
+                                                "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime()/1000,
+                                                "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime()/1000,
+                                                "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
+                                                "template": CKEDITOR.instances.campaignTemplate.getData() == ''?$("#campaignTemplate").val():CKEDITOR.instances.campaignTemplate.getData(),
+                                            };
+                                            $.ajax({
+                                                type: "POST",
+                                                url: '/api/campaign?cmd=save-data',
+                                                data: JSON.stringify(data),
+                                                contentType: "application/json; charset=utf-8",
+                                                dataType: "json"
+                                            }).done(function(data) {
+                                                if (data['status'] == 'error') {
+                                                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                                                }
+                                            }).complete(function() {
+                                                w2ui.layout.lock('main', w2utils.lang('Saved'), false);
+                                                w2ui['sidebar'].click('parameter');
+                                                setTimeout(function(){
+                                                    w2ui.layout.unlock('main');
+                                                }, 1500);
+                                            });
+                                        }
+                                    });
+                                    break;
+
+                                case 'profile':
+                                    w2ui['profile'].url = '/api/profiles';
+                                    w2ui['profile'].reload();
+                                    $('#template').hide();
+                                    $('#parameter').hide();
+                                    $('#recipient').hide();
+                                    $('#profile').show();
+                                    $('#status').hide();
+                                    break;
+                                case 'status':
+                                    $('#template').hide();
+                                    $('#parameter').hide();
+                                    $('#recipient').hide();
+                                    $('#profile').hide();
+                                    $('#status').show();
+                                    break;
+                            }
+                            w2ui['layout'].resize();
                         }
-                        w2ui['layout'].resize();
                     }
                 }
             };
@@ -319,7 +329,7 @@
                     ],
                     onClick: function (event) {
                         if (event.target == 'add') {
-                            var id, name
+                            var id, name;
                             $.ajax({
                                 type: "POST",
                                 //async: false,
@@ -365,9 +375,10 @@
                         CKEDITOR.instances.campaignTemplate.setData(data["template"]);
                     }).complete(function() {
                         w2ui.layout.unlock('main');
+                        w2ui['sidebar'].click('parameter');
                     });
                     // --- /Get campaign data ---
-                    w2ui['sidebar'].click('parameter');
+
                 },
                 onSave: function(event) {
                     console.log(event);

@@ -46,7 +46,7 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 	var ps Profiles
 	var p Profile
 
-	ps.Status = "Ok"
+	ps.Status = "success"
 
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

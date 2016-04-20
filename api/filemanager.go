@@ -28,7 +28,6 @@ import (
     "time"
     "net/http"
     "encoding/json"
-    "fmt"
 )
 
 var filemanagerRootPath string
@@ -77,8 +76,6 @@ func filemanager(w http.ResponseWriter, r *http.Request)  {
             if r.Form["height"] != nil { height = r.Form["height"][0] }
             if r.Form["width"] != nil { width = r.Form["width"][0] }
 
-            fmt.Println("fv = ",r.Form)
-            fmt.Println("pfv = ",r.PostForm)
             if mode == "download" {
                 var n string
                 var d []byte
