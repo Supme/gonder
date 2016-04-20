@@ -1,3 +1,6 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
 ALTER TABLE `campaign` CHANGE `send_unsubscribe` `send_unsubscribe` TINYINT(1) NOT NULL DEFAULT '0';
 ALTER TABLE `campaign` ADD `accepted` TINYINT(1) NOT NULL DEFAULT '0' ;
 
@@ -77,6 +80,7 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (17, 'accept-campaign');
 
 INSERT INTO `auth_unit` (`id`, `name`) VALUES
+  (0, 'administrator'),
   (1, 'accepter');
 
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES

@@ -225,6 +225,7 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (17, 'accept-campaign');
 
 INSERT INTO `auth_unit` (`id`, `name`) VALUES
+  (0, 'administrator'),
   (1, 'accepter');
 
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
