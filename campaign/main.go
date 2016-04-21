@@ -16,14 +16,26 @@ import (
 	"time"
 	"github.com/supme/gonder/models"
 	"log"
+	"os"
+	"io"
 )
 
 var (
 	MaxCampaingns int
 	startedCampaign []string
+	camplog *log.Logger
 )
 
 func Run()  {
+	l, err := os.OpenFile("log/campaign.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("error opening campaign log file: %v", err)
+	}
+	defer l.Close()
+
+	multi := io.MultiWriter(l, os.Stdout)
+
+	camplog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	for {
 		for len(startedCampaign) >= MaxCampaingns {
@@ -86,5 +98,5 @@ func run_campaign(c campaign) {
 	c.send()
 	c.resend_soft_bounce()
 	remove_started_campaign(c.id)
-	log.Println("SENDER Finish campaign id", c.id)
+	camplog.Println("Finish campaign id", c.id)
 }

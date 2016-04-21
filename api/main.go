@@ -17,14 +17,31 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/base64"
+	"os"
+	"io"
 )
 
 var (
 	auth Auth
 	Port string
+	apilog *log.Logger
 )
 
+func init()  {
+
+
+}
+
 func Run()  {
+	l, err := os.OpenFile("log/api.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("error opening api log file: %v", err)
+	}
+	defer l.Close()
+
+	multi := io.MultiWriter(l, os.Stdout)
+
+	apilog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	// Groups
 	// Example:
@@ -79,7 +96,12 @@ func Run()  {
 		}
 	}))
 
-	log.Println("API listening on port " + Port + "...")
-	log.Fatal(http.ListenAndServeTLS(":" + Port, "./cert/server.pem", "./cert/server.key", nil))
+	/*	http.Handle("/echo", websocket.Handler(func (ws *websocket.Conn) {
+			io.Copy(ws, ws)
+		}))
+	*/
+
+	apilog.Println("API listening on port " + Port + "...")
+	apilog.Fatal(http.ListenAndServeTLS(":" + Port, "./cert/server.pem", "./cert/server.key", nil))
 
 }

@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"crypto/sha256"
 	"github.com/supme/gonder/models"
-	"log"
 	"encoding/hex"
 	"strconv"
 )
@@ -144,5 +143,5 @@ func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func loging(r *http.Request)  {
-	log.Printf("API User: '%s' Host: %s %s %s", auth.Name, r.RemoteAddr, r.Method, r.RequestURI)
+	apilog.Printf("user: '%s' host: %s %s %s", auth.Name, r.RemoteAddr, r.Method, r.RequestURI)
 }

@@ -19,6 +19,7 @@
         <div id="parameter"></div>
         <div id="template">
             <textarea id="campaignTemplate" name="campaignTemplate"></textarea>
+            <h4>System variables:</h4> {{.UnsubscribeUrl}} {{.WebUrl}} {{.StatPng}}
         </div>
         <div id="recipient" style="width: 100%;">
             <div id="campaignRecipient" style="height: 400px;"></div>
@@ -155,6 +156,9 @@
                                             });
                                         }
                                     });
+                                        // ToDo this
+                                    w2ui['sidebar'].select(w2ui['sidebar'].selected);
+                                    w2ui['sidebar'].unselect('save');
                                     break;
 
                                 case 'profile':

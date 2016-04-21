@@ -92,7 +92,7 @@ func filemanager(w http.ResponseWriter, r *http.Request)  {
             } else {
                 js, err = json.Marshal(filemanagerAction(mode, path, name, old, new))
                 if err != nil {
-                    log.Println(err)
+                    apilog.Println(err)
                 }
             }
         } else {
@@ -117,7 +117,7 @@ func filemanager(w http.ResponseWriter, r *http.Request)  {
     } else {
         js, err = json.Marshal(info{Error: "Filemanager forbidden", Code: 1,})
         if err != nil {
-            log.Println(err)
+            apilog.Println(err)
         }
     }
 
@@ -139,7 +139,6 @@ func filemanagerAction(mode string, path string, name string, old string, new st
 }
 
 func filemanagerAdd(path string, name string, file multipart.File) info {
-    log.Println("path:" + path + " name: " + name + " full: " + filemanagerRootPath + path + name)
     out, err :=os.Create(filemanagerRootPath + path + name)
     if err != nil {
         return info{Error: "Can not create file", Code: 1,}
@@ -170,19 +169,19 @@ func filemanagerResize(path string, width string, height string) []byte {
 
         f, err := os.Open(filemanagerRootPath + path)
         if err != nil {
-            log.Println(err)
+            apilog.Println(err)
         }
 
         img, _, err := image.Decode(f)
         if err != nil {
-            log.Println(err)
+            apilog.Println(err)
         }
 
         m := resize.Resize(uint(w), uint(h), img, resize.Lanczos3)
 
         out, err := os.Create(resized)
         if err != nil {
-            log.Println(err)
+            apilog.Println(err)
         }
         defer out.Close()
 
@@ -191,7 +190,7 @@ func filemanagerResize(path string, width string, height string) []byte {
 
     d, err := ioutil.ReadFile(resized)
     if err != nil {
-        log.Println(err)
+        apilog.Println(err)
     }
 
     return  d

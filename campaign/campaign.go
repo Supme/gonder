@@ -17,8 +17,6 @@ import (
 	"github.com/supme/gonder/models"
 	"errors"
 //	_ "github.com/eaigner/dkim"
-	"log"
-//	"sync"
 	"time"
 	"strconv"
 	"math/rand"
@@ -126,7 +124,7 @@ func (r recipient) send(c *campaign) string {
 		rs = e.Error()
 	}
 
-	log.Printf("SENDER Campaign %s for recipient id %s email %s is %s", c.id, r.id, data.To, rs)
+	camplog.Printf("Campaign %s for recipient id %s email %s is %s", c.id, r.id, data.To, rs)
 	return rs
 }
 
@@ -171,7 +169,7 @@ func (c campaign) send() {
 	next := make(chan bool)
 
 	c.get_null_recipients()
-	log.Printf("SENDER Start campaign %s. Count recipients %d", c.id, len(c.recipients))
+	camplog.Printf("Start campaign %s. Count recipients %d", c.id, len(c.recipients))
 
 	for _, r := range c.recipients {
 		count += 1
@@ -189,7 +187,7 @@ func (c campaign) send() {
 			}(r)
 		} else {
 			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-			log.Printf("SENDER Recipient id %s email %s is unsubscribed", r.id, r.to)
+			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
 		}
 	}
 
@@ -199,13 +197,13 @@ func (c campaign) send() {
 	}
 	close(next)
 
-	log.Printf("SENDER Done campaign %s. Count %d", c.id, count)
+	camplog.Printf("Done campaign %s. Count %d", c.id, count)
 }
 
 func (c campaign) resend_soft_bounce() {
 	c.get_soft_bounce_recipients()
 	if c.resend_count != 0 {
-		log.Printf("SENDER Start %d resend by campaign id %s ", len(c.recipients), c.id)
+		camplog.Printf("Start %d resend by campaign id %s ", len(c.recipients), c.id)
 	}
 	if len(c.recipients) == 0 {
 		return
@@ -224,7 +222,7 @@ func (c campaign) resend_soft_bounce() {
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
 			} else {
 				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-				log.Printf("SENDER Recipient id %s email %s is unsubscribed", r.id, r.to)
+				camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
 			}
 		}
 	}
@@ -232,6 +230,6 @@ func (c campaign) resend_soft_bounce() {
 
 func checkErr(err error) {
 	if err != nil {
-		log.Println("SENDER", err)
+		camplog.Println(err)
 	}
 }
