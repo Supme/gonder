@@ -264,6 +264,26 @@ ADD CONSTRAINT `statusTranscript_ibfk_3` FOREIGN KEY (`bounce_id`) REFERENCES `s
 ALTER TABLE `unsubscribe`
 ADD CONSTRAINT `unsubscribe_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+INSERT INTO `auth_right` (`id`, `name`) VALUES
+  (1, 'get-groups'),
+  (2, 'save-groups'),
+  (3, 'add-groups'),
+  (4, 'get-campaigns'),
+  (5, 'save-campaigns'),
+  (6, 'add-campaigns'),
+  (7, 'get-campaign'),
+  (8, 'save-campaign'),
+  (9, 'get-recipients'),
+  (10, 'get-recipient-parameters'),
+  (11, 'upload-recipients'),
+  (12, 'delete-recipients'),
+  (13, 'get-profiles'),
+  (14, 'add-profiles'),
+  (15, 'delete-profiles'),
+  (16, 'save-profiles'),
+  (17, 'accept-campaign');
+
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
   (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
   (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
