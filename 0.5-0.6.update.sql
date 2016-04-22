@@ -40,25 +40,40 @@ ALTER TABLE `auth_unit`
 ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `auth_unit_right`
-ADD PRIMARY KEY (`id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `auth_unit_id` (`auth_unit_id`),
+ADD KEY `auth_right_id` (`auth_right_id`);
 
 ALTER TABLE `auth_user`
 ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `auth_user_group`
-ADD PRIMARY KEY (`id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `auth_user_id` (`auth_user_id`),
+ADD KEY `group_id` (`group_id`);
 
 ALTER TABLE `auth_right`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+
 ALTER TABLE `auth_unit`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+
 ALTER TABLE `auth_unit_right`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+
+ALTER TABLE `auth_unit_right`
+ADD CONSTRAINT `auth_unit_right_ibfk_1` FOREIGN KEY (`auth_unit_id`) REFERENCES `auth_unit` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `auth_unit_right_ibfk_2` FOREIGN KEY (`auth_right_id`) REFERENCES `auth_right` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 ALTER TABLE `auth_user`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+
 ALTER TABLE `auth_user_group`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
 
+ALTER TABLE `auth_user_group`
+ADD CONSTRAINT `auth_user_group_ibfk_1` FOREIGN KEY (`auth_user_id`) REFERENCES `auth_user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `auth_user_group_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 INSERT INTO `auth_right` (`id`, `name`) VALUES
   (1, 'get-groups'),

@@ -435,9 +435,7 @@
 
             $('#recipientUploadButton').click(
                     function () {
-                        if ($('#recipientUploadFile').data('selected').lenght > 0) {
-                            w2ui.layout.lock('main', w2utils.lang('Uploading...'), true);
-                        }
+                        w2ui.layout.lock('main', w2utils.lang('Uploading...'), true);
                         $.each($('#recipientUploadFile').data('selected'), function(index, file){
                             $.ajax({
                                 url: "api/recipients",
@@ -454,8 +452,7 @@
                                 if (data['status'] == 'error') {
                                     w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                                 }
-                            }).complete(function(data) {
-                                console.log(data);
+                            }).complete(function() {
                                 $('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false});
                                 w2ui['recipient'].reload();
                                 w2ui.layout.unlock('main');
@@ -483,8 +480,7 @@
                             if (data['status'] == 'error') {
                                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                             }
-                        }).complete(function(data) {
-                            console.log(data);
+                        }).complete(function() {
                             w2ui['recipient'].reload();
                             w2ui.layout.unlock('main');
                         })

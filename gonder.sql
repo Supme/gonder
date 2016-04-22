@@ -1,43 +1,43 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
-CREATE TABLE IF NOT EXISTS `attachment` (
+CREATE TABLE `attachment` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `path` text NOT NULL,
   `file` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `auth_right` (
+CREATE TABLE `auth_right` (
   `id` int(11) NOT NULL,
   `name` varchar(32) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `auth_unit` (
+CREATE TABLE `auth_unit` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `auth_unit_right` (
+CREATE TABLE `auth_unit_right` (
   `id` int(11) NOT NULL,
   `auth_unit_id` int(11) NOT NULL,
   `auth_right_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `auth_user` (
+CREATE TABLE `auth_user` (
   `id` int(11) NOT NULL,
   `auth_unit_id` int(11) NOT NULL,
   `name` text NOT NULL,
   `password` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `auth_user_group` (
+CREATE TABLE `auth_user_group` (
   `id` int(11) NOT NULL,
   `auth_user_id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `campaign` (
+CREATE TABLE `campaign` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `profile_id` int(11) NOT NULL,
@@ -48,17 +48,17 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `body` text NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
-  `send_unsubscribe` varchar(1) NOT NULL DEFAULT 'n',
+  `send_unsubscribe` tinyint(1) NOT NULL DEFAULT '0',
   `accepted` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `group` (
+CREATE TABLE `group` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL,
   `template` text
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `jumping` (
+CREATE TABLE `jumping` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `recipient_id` int(11) NOT NULL,
@@ -66,14 +66,14 @@ CREATE TABLE IF NOT EXISTS `jumping` (
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `parameter` (
+CREATE TABLE `parameter` (
   `id` int(11) NOT NULL,
   `recipient_id` int(11) NOT NULL,
   `key` text NOT NULL,
   `value` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=206285 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `profile` (
+CREATE TABLE `profile` (
   `id` int(11) NOT NULL,
   `name` text NOT NULL,
   `iface` text NOT NULL COMMENT 'Example: xx.xx.xx.xx or socks://ip:port for socks5. Blank for default interface.',
@@ -81,9 +81,9 @@ CREATE TABLE IF NOT EXISTS `profile` (
   `stream` int(11) NOT NULL COMMENT 'Number of concurrent streams',
   `resend_delay` int(11) NOT NULL,
   `resend_count` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `recipient` (
+CREATE TABLE `recipient` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `email` text NOT NULL,
@@ -93,102 +93,152 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `client_agent` text,
   `web_agent` text,
   `removed` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=168848 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `status` (
+CREATE TABLE `status` (
   `id` int(3) NOT NULL,
   `pattern` varchar(250) NOT NULL,
   `bounce_id` int(1) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=264 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `unsubscribe` (
+CREATE TABLE `unsubscribe` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `email` text NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
-
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE `attachment`
-ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `campaign_id` (`campaign_id`);
 
 ALTER TABLE `auth_right`
-ADD PRIMARY KEY (`id`), ADD UNIQUE KEY `id` (`id`), ADD KEY `id_2` (`id`);
+ADD PRIMARY KEY (`id`),
+ADD UNIQUE KEY `id` (`id`),
+ADD KEY `id_2` (`id`);
 
 ALTER TABLE `auth_unit`
 ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `auth_unit_right`
-ADD PRIMARY KEY (`id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `auth_unit_id` (`auth_unit_id`),
+ADD KEY `auth_right_id` (`auth_right_id`);
 
 ALTER TABLE `auth_user`
 ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `auth_user_group`
-ADD PRIMARY KEY (`id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `auth_user_id` (`auth_user_id`),
+ADD KEY `group_id` (`group_id`);
 
 ALTER TABLE `campaign`
-ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`), ADD KEY `profile_id` (`profile_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `group_id` (`group_id`),
+ADD KEY `profile_id` (`profile_id`);
 
 ALTER TABLE `group`
 ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `jumping`
-ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`), ADD KEY `recipient_id` (`recipient_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `campaign_id` (`campaign_id`),
+ADD KEY `recipient_id` (`recipient_id`);
 
 ALTER TABLE `parameter`
-ADD PRIMARY KEY (`id`), ADD KEY `recipient_id` (`recipient_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `recipient_id` (`recipient_id`);
 
 ALTER TABLE `profile`
-ADD PRIMARY KEY (`id`), ADD KEY `id` (`id`);
+ADD PRIMARY KEY (`id`);
 
 ALTER TABLE `recipient`
-ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `campaign_id` (`campaign_id`);
 
 ALTER TABLE `status`
 ADD PRIMARY KEY (`id`);
 
+ALTER TABLE `statusBounces`
+ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `statusMapping`
+ADD PRIMARY KEY (`id`),
+ADD KEY `transcript_id` (`transcript_id`);
+
+ALTER TABLE `statusNames`
+ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `statusSmtpRules`
+ADD PRIMARY KEY (`id`),
+ADD KEY `transcript_id` (`transcript_id`);
+
+ALTER TABLE `statusTranscript`
+ADD PRIMARY KEY (`id`),
+ADD KEY `status_id` (`status_id`),
+ADD KEY `sounce_id` (`sounce_id`),
+ADD KEY `bounce_id` (`bounce_id`);
+
 ALTER TABLE `unsubscribe`
-ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`), ADD KEY `campaign_id` (`campaign_id`);
+ADD PRIMARY KEY (`id`),
+ADD KEY `group_id` (`group_id`),
+ADD KEY `campaign_id` (`campaign_id`);
 
 
 ALTER TABLE `attachment`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `auth_right`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `auth_unit`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `auth_unit_right`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `auth_user`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `auth_user_group`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `campaign`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `group`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
-ALTER TABLE `jumping`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `auth_right`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `auth_unit`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `auth_unit_right`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `auth_user`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `auth_user_group`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `campaign`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `group`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `jumping`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `parameter`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `profile`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `recipient`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `status`
-MODIFY `id` int(3) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+MODIFY `id` int(3) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `statusBounces`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `statusMapping`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `statusNames`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `statusSmtpRules`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+ALTER TABLE `statusTranscript`
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `unsubscribe`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 ALTER TABLE `attachment`
 ADD CONSTRAINT `attachment_ibfk_1` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE `auth_unit_right`
+ADD CONSTRAINT `auth_unit_right_ibfk_1` FOREIGN KEY (`auth_unit_id`) REFERENCES `auth_unit` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `auth_unit_right_ibfk_2` FOREIGN KEY (`auth_right_id`) REFERENCES `auth_right` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `auth_user_group`
+ADD CONSTRAINT `auth_user_group_ibfk_1` FOREIGN KEY (`auth_user_id`) REFERENCES `auth_user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `auth_user_group_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 ALTER TABLE `campaign`
-ADD CONSTRAINT `campaign_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT `campaign_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-ADD CONSTRAINT `campaign_ibfk_3` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT `campaign_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `jumping`
 ADD CONSTRAINT `jumping_ibfk_1` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -200,33 +250,19 @@ ADD CONSTRAINT `parameter_ibfk_1` FOREIGN KEY (`recipient_id`) REFERENCES `recip
 ALTER TABLE `recipient`
 ADD CONSTRAINT `recipient_ibfk_1` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE `statusMapping`
+ADD CONSTRAINT `statusMapping_ibfk_1` FOREIGN KEY (`transcript_id`) REFERENCES `statusTranscript` (`id`);
+
+ALTER TABLE `statusSmtpRules`
+ADD CONSTRAINT `statusSmtpRules_ibfk_1` FOREIGN KEY (`transcript_id`) REFERENCES `statusTranscript` (`id`);
+
+ALTER TABLE `statusTranscript`
+ADD CONSTRAINT `statusTranscript_ibfk_1` FOREIGN KEY (`status_id`) REFERENCES `statusNames` (`id`),
+ADD CONSTRAINT `statusTranscript_ibfk_2` FOREIGN KEY (`sounce_id`) REFERENCES `statusBounces` (`id`),
+ADD CONSTRAINT `statusTranscript_ibfk_3` FOREIGN KEY (`bounce_id`) REFERENCES `statusBounces` (`id`);
+
 ALTER TABLE `unsubscribe`
 ADD CONSTRAINT `unsubscribe_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
-
-
-INSERT INTO `auth_right` (`id`, `name`) VALUES
-  (1, 'get-groups'),
-  (2, 'save-groups'),
-  (3, 'add-groups'),
-  (4, 'get-campaigns'),
-  (5, 'save-campaigns'),
-  (6, 'add-campaigns'),
-  (7, 'get-campaign'),
-  (8, 'save-campaign'),
-  (9, 'get-recipients'),
-  (10, 'get-recipient-parameters'),
-  (11, 'upload-recipients'),
-  (12, 'delete-recipients'),
-  (13, 'get-profiles'),
-  (14, 'add-profiles'),
-  (15, 'delete-profiles'),
-  (16, 'save-profiles'),
-  (17, 'accept-campaign');
-
-INSERT INTO `auth_unit` (`id`, `name`) VALUES
-  (0, 'administrator'),
-  (1, 'accepter');
 
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
   (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),

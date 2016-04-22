@@ -24,7 +24,6 @@ import (
     "strings"
     "io"
     "mime/multipart"
-    "log"
     "time"
     "net/http"
     "encoding/json"

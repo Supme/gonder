@@ -33,7 +33,14 @@ func Run() {
 
 	gin.SetMode(gin.ReleaseMode)
 
+	l, err := os.OpenFile("log/statistic.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Println("error opening api log file: %v", err)
+	}
+	defer l.Close()
+	gin.Logger()
 	router := gin.Default()
+	router.Use(gin.LoggerWithWriter(l))
 
 	router.GET("/", func(c *gin.Context) {
 		mem := new(runtime.MemStats)

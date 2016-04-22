@@ -21,6 +21,9 @@ import (
 	"time"
 	"os"
 	"encoding/csv"
+	"path"
+	"fmt"
+	"github.com/tealeg/xlsx"
 )
 
 type Recipient struct {
@@ -74,18 +77,31 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			if auth.Right("upload-recipients") && auth.CampaignRightString(r.Form["campaign"][0]) {
 				content, err := base64.StdEncoding.DecodeString(r.FormValue("base64"))
 				if err != nil {
-					js = []byte(`{"status": "Error", "message": "Base64 decode"}`)
+					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
 				}
 				file := "./tmp/" + time.Now().String()
 				err = ioutil.WriteFile(file, content, 0644)
 				if err != nil {
-					js = []byte(`{"status": "Error", "message": "Write file"}`)
+					js = []byte(`{"status": "error", "message": "Write file"}`)
 				}
 
-				err = recipientCsv(r.FormValue("campaign"), file)
-				if err != nil {
-					js = []byte(`{"status": "Error", "message": "Add recipients csv"}`)
+				if path.Ext(r.Form["name"][0]) == ".csv" {
+					fmt.Println("this csv file")
+					err = recipientCsv(r.FormValue("campaign"), file)
+					if err != nil {
+						js = []byte(`{"status": "error", "message": "Add recipients csv"}`)
+					}
+				} else if path.Ext(r.Form["name"][0]) == ".xlsx" {
+					fmt.Println("this xlsx file")
+					err = recipientXlsx(r.FormValue("campaign"), file)
+					if err != nil {
+						js = []byte(`{"status": "error", "message": "Add recipients xlsx"}`)
+					}
+				} else {
+					fmt.Println("this other file")
+					js = []byte(`{"status": "error", "message": "This not csv or xlsx file"}`)
 				}
+
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden upload recipients"}`)
 			}
@@ -95,7 +111,7 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			if auth.Right("delete-recipients") && auth.CampaignRightString(r.Form["campaign"][0]) {
 				err = delRecipients(r.Form["campaign"][0])
 				if err != nil {
-					js = []byte(`{"status": "Error", "message": "Can't delete all recipients"}`)
+					js = []byte(`{"status": "error", "message": "Can't delete all recipients"}`)
 				}
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden delete recipients"}`)
@@ -182,6 +198,7 @@ func delRecipients(campaignId string) error {
 }
 
 
+
 // ToDo optimize this
 func recipientCsv(campaignId string, file string) error {
 //	var groupId string
@@ -248,5 +265,62 @@ func recipientCsv(campaignId string, file string) error {
 
 	os.Remove(file)
 
+	return err
+}
+
+func recipientXlsx(campaignId string, file string) error {
+	//	var groupId string
+	//	models.Db.QueryRow("SELECT `group_id` FROM `campaign` WHERE `id`=? ", campaignId).Scan(&groupId)
+
+	title := make(map[int]string)
+	data := make(map[string]string)
+	var email, name string
+
+	xlFile, err := xlsx.OpenFile(file)
+	if err != nil {
+		return err
+	}
+
+	if xlFile.Sheets[0] != nil {
+		for k, v := range xlFile.Sheets[0].Rows {
+			if k == 0 {
+				for i, cell := range v.Cells {
+					t, _ := cell.String()
+					title[i] = t
+				}
+			} else {
+				for i, cell := range v.Cells {
+					t, _ := cell.String()
+					if i == 0 {
+						email = t
+					} else if i == 1 {
+						name = t
+					} else {
+						data[title[i]] = t
+					}
+				}
+
+				sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
+
+				res, err := models.Db.Exec(sql, campaignId, email, name)
+				if err != nil {
+					return err
+				}
+				id, err := res.LastInsertId()
+				if err != nil {
+					return err
+				}
+				for i, t := range data {
+					_, err := models.Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
+					if err != nil {
+						return err
+					}
+				}
+
+			}
+		}
+	}
+
+	os.Remove(file)
 	return err
 }
