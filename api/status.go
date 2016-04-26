@@ -13,29 +13,69 @@
 package api
 
 import (
+	"github.com/gorilla/websocket"
+	"net/http"
 	"github.com/hpcloud/tail"
-	"golang.org/x/net/websocket"
 	"os"
 )
 
-func CampaignLog(ws *websocket.Conn) {
-	statusLog(ws, "./log/campaign.log")
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 }
 
-func ApiLog(ws *websocket.Conn) {
-	statusLog(ws, "./log/api.log")
+func campaignLog(w http.ResponseWriter, r *http.Request) {
+	if auth.Right("get-log-campaign") {
+		logHandler(w, r, "./log/campaign.log")
+	} else {
+		http.Error(w, "Forbidden get log campaign", http.StatusForbidden)
+		return
+	}
 }
 
-func StatisticLog(ws *websocket.Conn) {
-	statusLog(ws, "./log/statistic.log")
+func apiLog(w http.ResponseWriter, r *http.Request) {
+	if auth.Right("get-log-api") {
+		logHandler(w, r, "./log/api.log")
+	} else {
+		http.Error(w, "Forbidden get log api", http.StatusForbidden)
+		return
+	}
 }
 
-func MainLog(ws *websocket.Conn) {
-	statusLog(ws, "./log/main.log")
+func statisticLog(w http.ResponseWriter, r *http.Request) {
+	if auth.Right("get-log-statistic") {
+		logHandler(w, r, "./log/statistic.log")
+	} else {
+		http.Error(w, "Forbidden get log statistic", http.StatusForbidden)
+		return
+	}
 }
 
-func statusLog(ws *websocket.Conn, file string) {
-	var err error
+func mainLog(w http.ResponseWriter, r *http.Request) {
+	if auth.Right("get-log-main") {
+		logHandler(w, r, "./log/main.log")
+	} else {
+		http.Error(w, "Forbidden get log main", http.StatusForbidden)
+		return
+	}
+}
+
+func logHandler(w http.ResponseWriter, r *http.Request, file string) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		apilog.Println(err)
+		return
+	}
+
+	defer conn.Close()
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte("..."));
+	if  err != nil {
+		apilog.Println(err)
+		return
+	}
+
 	var offset tail.SeekInfo
 	offset.Whence = 2
 	fi, err := os.Open(file)
@@ -64,55 +104,11 @@ func statusLog(ws *websocket.Conn, file string) {
 		apilog.Println(err)
 	}
 
-	go func() {
-		if err = websocket.Message.Send(ws, "..."); err != nil {
-			apilog.Println("Can't send websocket message", err)
+	for line := range t.Lines {
+		err = conn.WriteMessage(websocket.TextMessage, []byte(line.Text));
+		if  err != nil {
+			apilog.Println(err)
+			return
 		}
-		for line := range t.Lines {
-			if err = websocket.Message.Send(ws, line.Text); err != nil {
-				apilog.Println("Can't send websocket message", err)
-				break
-			}
-		}
-	}()
-
-	for {
-		var reply string
-
-		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			apilog.Println("Can't receive")
-			break
-		}
-
-		if reply == "ping" {
-			if err = websocket.Message.Send(ws, "pong"); err != nil {
-				apilog.Println("Can't send")
-				break
-			}
-		}
-
 	}
 }
-
-/*
-	for {
-		var reply string
-
-		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			fmt.Println("Can't receive")
-			break
-		}
-
-		fmt.Println("Received back from client: " + reply)
-
-		msg := "Received:  " + reply
-		fmt.Println("Sending to client: " + msg)
-
-		if err = websocket.Message.Send(ws, msg); err != nil {
-			fmt.Println("Can't send")
-			break
-		}
-
-	}
-
- */

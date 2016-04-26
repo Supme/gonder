@@ -88,7 +88,11 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (14, 'add-profiles'),
   (15, 'delete-profiles'),
   (16, 'save-profiles'),
-  (17, 'accept-campaign');
+  (17, 'accept-campaign'),
+  (18, 'get-log-main'),
+  (19, 'get-log-api'),
+  (20, 'get-log-campaign'),
+  (21, 'get-log-statistic');
 
 INSERT INTO `auth_unit` (`id`, `name`) VALUES
   (0, 'administrator'),

@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"os"
 	"io"
-	"golang.org/x/net/websocket"
 )
 
 var (
@@ -92,10 +91,10 @@ func Run()  {
 		}
 	}))
 
-	http.Handle("/status/ws/campaign.log", websocket.Handler(CampaignLog))
-	http.Handle("/status/ws/api.log", websocket.Handler(ApiLog))
-	http.Handle("/status/ws/statistic.log", websocket.Handler(StatisticLog))
-	http.Handle("/status/ws/main.log", websocket.Handler(MainLog))
+	http.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
+	http.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
+	http.HandleFunc("/status/ws/statistic.log", auth.Check(statisticLog))
+	http.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + Port + "...")
 	apilog.Fatal(http.ListenAndServeTLS(":" + Port, "./cert/server.pem", "./cert/server.key", nil))
