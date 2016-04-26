@@ -45,29 +45,36 @@
 
     <script type="text/javascript">
 
-        var sock = null;
+        var ws = null;
 
         function startStatusLog(file){
-            statusLog = $("#statusLog")
-            statusLog.empty();
+            var statusLog = $("#statusLog");
             p = window.location.port==""?"":":"+window.location.port
             var wsuri = "wss://" + window.location.hostname + p + "/status/ws/" + file;
+            if (ws == null) {
+                ws = new WebSocket(wsuri);
+            } else {
+                ws.close();
+                setTimeout(function(){}, 2000);
+                ws = new WebSocket(wsuri);
+            }
 
-            sock = new WebSocket(wsuri);
+            statusLog.empty();
 
-            sock.onopen = function() {
+//            sock = new WebSocket();
+
+            ws.onopen = function() {
                 console.log("connected to " + wsuri);
             };
 
-            sock.onclose = function(e) {
+            ws.onclose = function(e) {
                 console.log("connection closed (" + e.code + ")");
             };
 
-            sock.onmessage = function(e) {
-                if (e.data != 'pong') {
+            ws.onmessage = function(e) {
+//                console.log(e.data);
                 statusLog.append(e.data + "<br/>");
                 statusLog.scrollTop(statusLog.prop("scrollHeight"));
-                }
             };
         }
 
