@@ -33,12 +33,60 @@
             </div>
         </div>
         <div id="profile" style="height: 100%"></div>
-        <div id="status"></div>
+        <div id="status">
+            <div id="statusLog" style="overflow-y: auto; height:300px; border:1px solid; background: #fff; padding: 2px; font-size: 12px;"></div>
+            <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
+            <input id="statusLogStatistic" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('statistic.log');"> Statistic
+            <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
+            <input id="statusLogMain"type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
+        </div>
     </div>
 
 
     <script type="text/javascript">
+
+        var sock = null;
+
+        function startStatusLog(file){
+            statusLog = $("#statusLog")
+            statusLog.empty();
+            p = window.location.port==""?"":":"+window.location.port
+            var wsuri = "wss://" + window.location.hostname + p + "/status/ws/" + file;
+
+            sock = new WebSocket(wsuri);
+
+            sock.onopen = function() {
+                console.log("connected to " + wsuri);
+            };
+
+            sock.onclose = function(e) {
+                console.log("connection closed (" + e.code + ")");
+                sock = new WebSocket(wsuri);
+            };
+
+            sock.onmessage = function(e) {
+                if (e.data != 'pong') {
+//                    console.log("New log: " + e.data);
+                statusLog.append(e.data + "<br/>");
+                statusLog.scrollTop(statusLog.prop("scrollHeight"));
+                }
+            };
+
+            setTimeout(function(){
+                sock.send("ping");
+            }, 1000);
+
+
+        }
+
         $(function () {
+
+/*
+            setTimeout(function(){
+                sock.send("Hi!");
+            }, 1000);
+*/
+
             w2utils.locale('/assets/locale/ru-ru.json');
 
             $("#recipientUploadButton").html(w2utils.lang('Upload'));
@@ -92,10 +140,7 @@
                         }
                     ],
                     onClick: function (event) {
-                        if ($('#campaignId').val() == '') {
-                            w2ui['sidebar'].unselect(event.target);
-                            w2alert(w2utils.lang('Select group and campaign, before select action.'));
-                        } else {
+                        if ($('#campaignId').val() != '' || event.target =='profile'  || event.target =='status') {
                             switch (event.target) {
                                 case 'parameter':
                                     $('#template').hide();
@@ -156,7 +201,7 @@
                                             });
                                         }
                                     });
-                                        // ToDo this
+                                    // ToDo this
                                     w2ui['sidebar'].select(w2ui['sidebar'].selected);
                                     w2ui['sidebar'].unselect('save');
                                     break;
@@ -179,6 +224,9 @@
                                     break;
                             }
                             w2ui['layout'].resize();
+                        } else {
+                            w2ui['sidebar'].unselect(event.target);
+                            w2alert(w2utils.lang('Select group and campaign, before select action.'));
                         }
                     }
                 }

@@ -264,7 +264,6 @@ ADD CONSTRAINT `statusTranscript_ibfk_3` FOREIGN KEY (`bounce_id`) REFERENCES `s
 ALTER TABLE `unsubscribe`
 ADD CONSTRAINT `unsubscribe_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-
 INSERT INTO `auth_right` (`id`, `name`) VALUES
   (1, 'get-groups'),
   (2, 'save-groups'),

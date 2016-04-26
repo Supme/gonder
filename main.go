@@ -35,7 +35,7 @@ import (
 
 func main() {
 
-	l, err := os.OpenFile("log/gonder.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	l, err := os.OpenFile("log/main.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening log file: %v", err)
 	}
