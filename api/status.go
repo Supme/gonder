@@ -19,12 +19,6 @@ import (
 	"os"
 )
 
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 func campaignLog(w http.ResponseWriter, r *http.Request) {
 	if auth.Right("get-log-campaign") {
 		logHandler(w, r, "./log/campaign.log")
@@ -61,6 +55,11 @@ func mainLog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
 func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -70,12 +69,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 
 	defer conn.Close()
 
-	err = conn.WriteMessage(websocket.TextMessage, []byte("..."));
-	if  err != nil {
-		apilog.Println(err)
-		return
-	}
-
+	var more string
 	var offset tail.SeekInfo
 	offset.Whence = 2
 	fi, err := os.Open(file)
@@ -86,10 +80,11 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	if err != nil {
 		apilog.Println(err)
 	}
-	if f.Size() < 2000 {
+	if f.Size() < 10000 {
 		offset.Offset = f.Size() * (-1)
 	} else {
-		offset.Offset = -2000
+		offset.Offset = -10000
+		more = "... "
 	}
 	fi.Close()
 
@@ -99,16 +94,32 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 		Location: &offset,
 		Logger: tail.DiscardingLogger,
 	}
+
 	t, err := tail.TailFile(file, conf)
 	if err != nil {
 		apilog.Println(err)
 	}
-
-	for line := range t.Lines {
-		err = conn.WriteMessage(websocket.TextMessage, []byte(line.Text));
-		if  err != nil {
-			apilog.Println(err)
-			return
+/*
+	go func() {
+		for {
+			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				apilog.Println(err)
+				return
+			}
+			time.Sleep(1 * time.Second)
 		}
+	}()
+*/
+	for line := range t.Lines {
+		if line.Err == nil {
+			if err = conn.WriteMessage(websocket.TextMessage, []byte(more + line.Text)); err != nil {
+				apilog.Println(err)
+				return
+			}
+			more = ""
+		} else {
+			apilog.Println(err)
+		}
+
 	}
 }

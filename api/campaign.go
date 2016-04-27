@@ -19,6 +19,8 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"time"
 	"strconv"
+	"regexp"
+	"strings"
 )
 
 type Data struct {
@@ -92,6 +94,7 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		dataId, err := strconv.ParseInt(data.Id, 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -100,6 +103,11 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		if auth.Right("save-campaign") && auth.CampaignRight(dataId) {
 			start := time.Unix(data.StartDate, 0).Format(time.RFC3339)
 			end := time.Unix(data.EndDate, 0).Format(time.RFC3339)
+
+			r := regexp.MustCompile(`href=["'](.*?)["']`)
+			data.Template = r.ReplaceAllStringFunc(data.Template, func(str string) string {
+				return strings.Replace(str, "&amp;", "&", -1)
+			})
 
 			_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				data.Name,

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Gonder panel</title>
     <link rel="stylesheet" type="text/css" href="assets/w3ui/w2ui-1.4.3.min.css" />
     <script src="assets/jquery/jquery-2.2.3.min.js"></script>
     <script type="text/javascript" src="assets/w3ui/w2ui-1.4.3.js"></script>
@@ -19,7 +21,7 @@
         <div id="parameter"></div>
         <div id="template">
             <textarea id="campaignTemplate" name="campaignTemplate"></textarea>
-            <h4>System variables:</h4> {{.UnsubscribeUrl}} {{.WebUrl}} {{.StatPng}}
+            <strong>System variables:</strong> {{.UnsubscribeUrl}} {{.WebUrl}} {{.StatPng}}
         </div>
         <div id="recipient" style="width: 100%;">
             <div id="campaignRecipient" style="height: 400px;"></div>
@@ -33,12 +35,14 @@
             </div>
         </div>
         <div id="profile" style="height: 100%"></div>
-        <div id="status">
-            <div id="statusLog" style="overflow-y: auto; height:400px; border:1px solid; background: #fff; padding: 5px; font-size: 12px;"></div>
-            <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
-            <input id="statusLogStatistic" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('statistic.log');"> Statistic
-            <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
-            <input id="statusLogMain"type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
+        <div id="status" style="height: 100%">
+            <div>
+                <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
+                <input id="statusLogStatistic" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('statistic.log');"> Statistic
+                <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
+                <input id="statusLogMain"type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
+            </div>
+            <div id="statusLog" style="overflow-y: auto; height:95%; border:1px solid rgb(223, 223, 223); background: #fff; padding: 5px; font-size: 12px;">Select log</div>
         </div>
     </div>
 
@@ -49,8 +53,11 @@
 
         function startStatusLog(file){
             var statusLog = $("#statusLog");
-            p = window.location.port==""?"":":"+window.location.port
-            var wsuri = "wss://" + window.location.hostname + p + "/status/ws/" + file;
+            var wsuri = window.location.protocol=="https:"?"wss://":"ws://";
+            wsuri += window.location.hostname;
+            wsuri += window.location.port==""?"":":"+window.location.port;
+            wsuri += "/status/ws/" + file;
+
             if (ws == null) {
                 ws = new WebSocket(wsuri);
             } else {
@@ -61,21 +68,23 @@
 
             statusLog.empty();
 
-//            sock = new WebSocket();
-
             ws.onopen = function() {
                 console.log("connected to " + wsuri);
             };
 
             ws.onclose = function(e) {
-                console.log("connection closed (" + e.code + ")");
+                console.log("connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
             };
 
             ws.onmessage = function(e) {
-//                console.log(e.data);
                 statusLog.append(e.data + "<br/>");
                 statusLog.scrollTop(statusLog.prop("scrollHeight"));
             };
+/*
+            setInterval(function() {
+                ws.send("ping");
+            }, 1000)
+*/
         }
 
         $(function () {
