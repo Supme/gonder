@@ -4,13 +4,8 @@
 	"package": [
 		{
 			"path": "github.com/alyu/configparser",
-			"revision": "ec0ca511e9c94350fbc078aa5560c6767c2b2297",
-			"revisionTime": "2015-08-08T07:57:08+02:00"
-		},
-		{
-			"path": "github.com/eaigner/dkim",
-			"revision": "6fe4a7ee9cfbd7eabb09b88c9fa4a9885dd3a628",
-			"revisionTime": "2015-03-01T13:08:08+01:00"
+			"revision": "26b2fe18bee125de2a3090d6fadb7e280e63eba6",
+			"revisionTime": "2015-11-25T11:12:32+09:00"
 		},
 		{
 			"path": "github.com/gin-gonic/gin",
@@ -94,18 +89,18 @@
 		},
 		{
 			"path": "golang.org/x/net/context",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
-			"revisionTime": "2016-01-20T20:16:54Z"
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
+			"revisionTime": "2016-01-21T16:20:05Z"
 		},
 		{
 			"path": "golang.org/x/net/idna",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
-			"revisionTime": "2016-01-20T20:16:54Z"
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
+			"revisionTime": "2016-01-21T16:20:05Z"
 		},
 		{
 			"path": "golang.org/x/net/proxy",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
-			"revisionTime": "2016-01-20T20:16:54Z"
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
+			"revisionTime": "2016-01-21T16:20:05Z"
 		},
 		{
 			"path": "gopkg.in/bluesuncorp/validator.v5",
@@ -117,11 +112,6 @@
 			"path": "gopkg.in/fsnotify.v1",
 			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
 			"revisionTime": "2016-01-25T14:19:23+08:00"
-		},
-		{
-			"path": "gopkg.in/go-playground/validator.v5",
-			"revision": "d5acf1dac43705f8bfbb71d878e290e2bed3950b",
-			"revisionTime": "2015-09-24T07:44:28-04:00"
 		},
 		{
 			"origin": "github.com/hpcloud/tail/vendor/gopkg.in/tomb.v1",

@@ -1,29 +1,6 @@
-/*
-Copyright (c) 2013, Alex Yu <alex@alexyu.se>
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of the <organization> nor the
-      names of its contributors may be used to endorse or promote products
-      derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// Copyright (c) 2013 - Alex Yu <alex@alexyu.se>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
 // Package configparser provides a simple parser for reading/writing configuration (INI) files.
 //
@@ -71,7 +48,7 @@ func NewConfiguration() *Configuration {
 	return newConfiguration("")
 }
 
-// ReadFile parses a specified configuration file and returns a Configuration instance.
+// Read parses a specified configuration file and returns a Configuration instance.
 func Read(filePath string) (*Configuration, error) {
 	filePath = path.Clean(filePath)
 
@@ -95,6 +72,9 @@ func Read(filePath string) (*Configuration, error) {
 			} else {
 				addOption(activeSection, line)
 			}
+		} else {
+			// save comments
+			addOption(activeSection, line)
 		}
 	}
 
@@ -141,7 +121,6 @@ func Save(c *Configuration, filePath string) (err error) {
 
 	for _, v := range s {
 		w.WriteString(v.String())
-		w.WriteString("\n")
 	}
 
 	return err
@@ -152,7 +131,7 @@ func (c *Configuration) NewSection(fqn string) *Section {
 	return c.addSection(fqn)
 }
 
-// Filepath returns the configuration file path.
+// FilePath returns the configuration file path.
 func (c *Configuration) FilePath() string {
 	return c.filePath
 }
@@ -175,7 +154,7 @@ func (c *Configuration) StringValue(section, option string) (value string, err e
 	return
 }
 
-// DeleteSection deletes the specified sections matched by a regex name and returns the deleted sections.
+// Delete deletes the specified sections matched by a regex name and returns the deleted sections.
 func (c *Configuration) Delete(regex string) (sections []*Section, err error) {
 	sections, err = c.Find(regex)
 	c.mutex.Lock()
@@ -384,11 +363,11 @@ func (s *Section) String() string {
 	defer s.mutex.RUnlock()
 
 	var parts []string
-	s_name := "[" + s.fqn + "]\n"
+	sName := "[" + s.fqn + "]\n"
 	if s.fqn == "global" {
-		s_name = ""
+		sName = ""
 	}
-	parts = append(parts, s_name)
+	parts = append(parts, sName)
 
 	for _, opt := range s.orderedOptions {
 		value := s.options[opt]
