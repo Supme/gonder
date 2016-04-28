@@ -1,6 +1,6 @@
 {
 	"comment": "",
-	"ignore": "",
+	"ignore": "test",
 	"package": [
 		{
 			"path": "github.com/alyu/configparser",
@@ -33,6 +33,41 @@
 			"revisionTime": "2016-01-20T15:54:18+01:00"
 		},
 		{
+			"path": "github.com/gorilla/websocket",
+			"revision": "a724ba452858d5b6d30c22d2d13ae77e1ed67cad",
+			"revisionTime": "2016-04-25T08:42:53-07:00"
+		},
+		{
+			"path": "github.com/hpcloud/tail",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
+			"path": "github.com/hpcloud/tail/ratelimiter",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
+			"path": "github.com/hpcloud/tail/util",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
+			"path": "github.com/hpcloud/tail/watch",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
+			"path": "github.com/hpcloud/tail/winfile",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
+			"path": "github.com/kardianos/osext",
+			"revision": "345163ffe35aa66560a4cd7dddf00f3ae21c9fda",
+			"revisionTime": "2015-11-17T17:25:50-08:00"
+		},
+		{
 			"path": "github.com/manucorporat/sse",
 			"revision": "fe6ea2c8e398672518ef204bf0fbd9af858d0e15",
 			"revisionTime": "2015-07-15T20:48:05+02:00"
@@ -51,6 +86,11 @@
 			"path": "github.com/nfnt/resize",
 			"revision": "4d93a29130b1b6aba503e2aa8b50f516213ea80e",
 			"revisionTime": "2016-01-09T12:18:50+01:00"
+		},
+		{
+			"path": "github.com/tealeg/xlsx",
+			"revision": "2b59b97479d67bfd7c2b5c10397de54ae049c107",
+			"revisionTime": "2016-04-01T09:45:38+02:00"
 		},
 		{
 			"path": "golang.org/x/net/context",
@@ -73,9 +113,21 @@
 			"revisionTime": "2015-09-24T07:44:28-04:00"
 		},
 		{
+			"origin": "github.com/hpcloud/tail/vendor/gopkg.in/fsnotify.v1",
+			"path": "gopkg.in/fsnotify.v1",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
+		},
+		{
 			"path": "gopkg.in/go-playground/validator.v5",
 			"revision": "d5acf1dac43705f8bfbb71d878e290e2bed3950b",
 			"revisionTime": "2015-09-24T07:44:28-04:00"
+		},
+		{
+			"origin": "github.com/hpcloud/tail/vendor/gopkg.in/tomb.v1",
+			"path": "gopkg.in/tomb.v1",
+			"revision": "b2940955ab8b26e19d43a43c4da0475dd81bdb56",
+			"revisionTime": "2016-01-25T14:19:23+08:00"
 		}
 	]
 }

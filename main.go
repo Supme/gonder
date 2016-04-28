@@ -14,28 +14,25 @@ package main
 
 import (
 	"github.com/supme/gonder/statistic"
-//	"github.com/supme/gonder/panel"
 	"github.com/supme/gonder/models"
 	"github.com/supme/gonder/campaign"
+	"github.com/supme/gonder/api"
 	"fmt"
-	"github.com/alyu/configparser"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"os"
 	"os/exec"
 	"runtime"
-	"database/sql"
 	"io"
 	"bufio"
 	"syscall"
 	"strconv"
 	"errors"
-	"github.com/supme/gonder/api"
 )
 
 func main() {
 
-	l, err := os.OpenFile("log/main.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.FromRootDir("log/main.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening log file: %v", err)
 	}
@@ -46,55 +43,10 @@ func main() {
 	log.SetFlags(3)
 	log.SetOutput(ml)
 
-
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	config, err := configparser.Read("./config.ini")
-	checkErr(err)
-
-	mainConfig, err := config.Section("Main")
-	checkErr(err)
-
-	dbConfig, err := config.Section("Database")
-	checkErr(err)
-
-	mailerConfig, err := config.Section("Mailer")
-	checkErr(err)
-
-	statisticConfig, err := config.Section("Statistic")
-	checkErr(err)
-
-	apiConfig, err := config.Section("API")
-	checkErr(err)
-
-	// Init models
-	models.Db, err = sql.Open(dbConfig.ValueOf("type"), dbConfig.ValueOf("string"))
-	checkErr(err)
-	defer models.Db.Close()
-	checkErr(models.Db.Ping())
-
-	models.Db.SetMaxIdleConns(10)
-	models.Db.SetMaxOpenConns(10)
-
-	models.Version = "Gonder 0.6"
-	models.StatUrl = "http://" + mainConfig.ValueOf("host")
-
-	// Init mailer
-	if mailerConfig.ValueOf("send") == "yes" {
-		campaign.Send = true
-	} else {
-		campaign.Send = false
-	}
-	campaign.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
-	if err != nil {
-		panic("Error parse config parametr 'maxcampaign'")
-	}
-
-	// Init statistic
-	statistic.Port = statisticConfig.ValueOf("port")
-
-	// Init api
-	api.Port = apiConfig.ValueOf("port")
+	models.Config.Get()
+	defer models.Config.Close()
 
 	// Start
 	if len(os.Args) == 2 {
@@ -328,7 +280,7 @@ func stopProcess(name string) error {
 		fmt.Println("Process " + name + " not found:")
 		return err
 	} else {
-		file, err := os.Open("pid/" + name + ".pid")
+		file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
 		if err != nil {
 			return err
 		}
@@ -343,7 +295,7 @@ func stopProcess(name string) error {
 		if err != nil {
 			return err
 		}
-		os.Remove("pid/" + name + ".pid")
+		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
 	}
 	fmt.Println("Process " + name + " stoped")
 	return nil
@@ -351,7 +303,7 @@ func stopProcess(name string) error {
 
 func setPid(name string, pid int) error {
 	p := strconv.Itoa(pid)
-	file, err := os.Create("pid/" + name + ".pid")
+	file, err := os.Create(models.FromRootDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
 	}
@@ -364,7 +316,7 @@ func setPid(name string, pid int) error {
 }
 
 func checkPid(name string) error {
-	file, err := os.Open("pid/" + name + ".pid")
+	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
 	}
@@ -377,12 +329,12 @@ func checkPid(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		os.Remove("pid/" + name + ".pid")
+		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
 		return errors.New("Failed to find process")
 	} else {
 		err := process.Signal(syscall.Signal(0))
 		if err != nil {
-			os.Remove("pid/" + name + ".pid")
+			os.Remove(models.FromRootDir("pid/" + name + ".pid"))
 			return errors.New("Process not response to signal.")
 		}
 	}

@@ -16,13 +16,10 @@ import (
 	"github.com/supme/gonder/mailer"
 	"github.com/supme/gonder/models"
 	"errors"
-//	_ "github.com/eaigner/dkim"
 	"time"
 	"strconv"
 	"math/rand"
 )
-
-var Send bool
 
 type (
 	campaign struct {
@@ -106,7 +103,7 @@ func (r recipient) send(c *campaign) string {
 		data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n"
 
 		var res error
-		if Send {
+		if models.Config.RealSend {
 			// Send mail
 			res = data.Send()
 		} else {

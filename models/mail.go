@@ -21,13 +21,6 @@ import (
 	"regexp"
 	"bytes"
 	"fmt"
-	"log"
-)
-
-var (
-	Version string
-	StatUrl string
-	Db *sql.DB
 )
 
 type (
@@ -56,7 +49,7 @@ func webUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
+	return Config.Url + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
 }
 
 func UnsubscribeUrl(campaignId string, recipientId string) string {
@@ -74,7 +67,7 @@ func unsubscribeUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
+	return Config.Url + "/data/" + base64.URLEncoding.EncodeToString(j) + ".html"
 }
 
 func statUrl(campaignId string, recipientId string, url string) string {
@@ -88,7 +81,7 @@ func statUrl(campaignId string, recipientId string, url string) string {
 	}
 	j, err := json.Marshal(d)
 	checkErr(err)
-	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j)
+	return Config.Url + "/data/" + base64.URLEncoding.EncodeToString(j)
 }
 
 func statPngUrl(campaignId string, recipientId string) string {
@@ -102,7 +95,7 @@ func statPngUrl(campaignId string, recipientId string) string {
 	}
 	j, err := json.Marshal(dat)
 	checkErr(err)
-	return StatUrl + "/data/" + base64.URLEncoding.EncodeToString(j) + ".png"
+	return Config.Url + "/data/" + base64.URLEncoding.EncodeToString(j) + ".png"
 }
 
 func MailMessage(campaignId, recipientId, subject, body string ) (message, error) {
@@ -183,10 +176,9 @@ func getMessage(campaignId, recipientId, subject, body string) (message, error) 
 		}
 	})
 
-
 	//replace static url to absolute
-	body = strings.Replace(body, "\"/files/", "\"" + StatUrl + "/files/", -1)
-	body = strings.Replace(body, "'/files/", "'" + StatUrl + "'/files/", -1)
+	body = strings.Replace(body, "\"/files/", "\"" + Config.Url + "/files/", -1)
+	body = strings.Replace(body, "'/files/", "'" + Config.Url + "'/files/", -1)
 
 	tmpl := template.New("mail")
 
@@ -213,10 +205,4 @@ func recipientParam(id string) map[string]string {
 		recipient[string(paramKey)] = string(paramValue)
 	}
 	return recipient
-}
-
-func checkErr(err error) {
-	if err != nil {
-		log.Println(err)
-	}
 }

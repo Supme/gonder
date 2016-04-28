@@ -27,6 +27,7 @@ import (
     "time"
     "net/http"
     "encoding/json"
+    "github.com/supme/gonder/models"
 )
 
 var filemanagerRootPath string
@@ -138,7 +139,7 @@ func filemanagerAction(mode string, path string, name string, old string, new st
 }
 
 func filemanagerAdd(path string, name string, file multipart.File) info {
-    out, err :=os.Create(filemanagerRootPath + path + name)
+    out, err :=os.Create(models.FromRootDir(filemanagerRootPath + path + name))
     if err != nil {
         return info{Error: "Can not create file", Code: 1,}
     }
@@ -160,13 +161,13 @@ func filemanagerDownload(path string) (string, []byte) {
 
 func filemanagerResize(path string, width string, height string) []byte {
 
-    resized := "cache/preview/" + width + "_" + height + strings.Replace(path, "/", "_", -1)
+    resized := models.FromRootDir("cache/preview/" + width + "_" + height + strings.Replace(path, "/", "_", -1))
 
     if stat, err := os.Stat(resized); err != nil || time.Since(stat.ModTime()) > time.Minute * 10 {
         w, _ := strconv.ParseInt(width, 10, 0)
         h, _ := strconv.ParseInt(height, 10, 0)
 
-        f, err := os.Open(filemanagerRootPath + path)
+        f, err := os.Open(models.FromRootDir(filemanagerRootPath + path))
         if err != nil {
             apilog.Println(err)
         }
@@ -197,7 +198,7 @@ func filemanagerResize(path string, width string, height string) []byte {
 
 func filemanagerGetInfo(path string) info {
 
-    f, err := os.Lstat(filemanagerRootPath + path)
+    f, err := os.Lstat(models.FromRootDir(filemanagerRootPath + path))
     if err != nil {
         return info {Error: "Error reading file", Code: 1, }
     }
@@ -240,7 +241,7 @@ func filemanagerGetInfo(path string) info {
 
 func filemanagerGetFolder(path string) interface{}{
     r := []info{}
-    files, err := ioutil.ReadDir(filemanagerRootPath + path)
+    files, err := ioutil.ReadDir(models.FromRootDir(filemanagerRootPath + path))
     if err != nil {
         return info {
             Error: "Error reading directory",
@@ -284,21 +285,21 @@ func filemanagerGetFolder(path string) interface{}{
 
 func filemanagerDelete(path string) info {
 
-    if err := os.RemoveAll(filemanagerRootPath + path); err != nil {
+    if err := os.RemoveAll(models.FromRootDir(filemanagerRootPath + path)); err != nil {
         return info {Error: "Error delete", Code: 1, }
     }
     return info {Error: "Ok", Code: 0, }
 }
 
 func filemanagerMkDir(path, name string) info {
-    if err := os.MkdirAll(filemanagerRootPath + path + name, 0755); err != nil {
+    if err := os.MkdirAll(models.FromRootDir(filemanagerRootPath + path + name), 0755); err != nil {
         return info {Error: "Error make directory", Code: 1, }
     }
     return info {Error: "Ok", Code: 0, }
 }
 
 func filemanagerRename(old, new string) info {
-    if err := os.Rename(filemanagerRootPath + old, filemanagerRootPath + filepath.Dir(old) + "/" + new); err != nil {
+    if err := os.Rename(models.FromRootDir(filemanagerRootPath + old), models.FromRootDir(filemanagerRootPath + filepath.Dir(old) + "/" + new)); err != nil {
         return info {Error: "Error rename", Code: 1, }
     }
     return info {Error: "Ok", Code: 0, }

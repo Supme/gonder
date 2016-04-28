@@ -510,29 +510,33 @@
                         });
                     }
             );
-
             // --- /Recipient upload ---
 
             // --- Recipient delete all ---
             $("#recipientDeleteAllButton").click(
                     function () {
-                        w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);
-                        $.ajax({
-                            url: "api/recipients",
-                            type: "POST",
-                            data: {
-                                content: "recipients",
-                                cmd: "deleteAll",
-                                campaign: $('#campaignId').val(),
-                            },
-                            dataType: "json"
-                        }).done(function(data) {
-                            if (data['status'] == 'error') {
-                                w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                        w2confirm(w2utils.lang('Delete all recipients from campaign?'), function (btn) {
+                            if (btn == 'Yes') {
+                                w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);
+                                $.ajax({
+                                    url: "api/recipients",
+                                    type: "POST",
+                                    data: {
+                                        content: "recipients",
+                                        cmd: "deleteAll",
+                                        campaign: $('#campaignId').val(),
+                                    },
+                                    dataType: "json"
+                                }).done(function(data) {
+                                    if (data['status'] == 'error') {
+                                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                                    }
+                                }).complete(function() {
+                                    w2ui['recipient'].reload();
+                                    w2ui.layout.unlock('main');
+                                })
+
                             }
-                        }).complete(function() {
-                            w2ui['recipient'].reload();
-                            w2ui.layout.unlock('main');
                         })
                     }
             );

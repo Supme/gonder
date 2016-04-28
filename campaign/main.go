@@ -21,7 +21,6 @@ import (
 )
 
 var (
-	MaxCampaingns int
 	startedCampaign []string
 	camplog *log.Logger
 )
@@ -38,7 +37,7 @@ func Run()  {
 	camplog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	for {
-		for len(startedCampaign) >= MaxCampaingns {
+		for len(startedCampaign) >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
 		}
 

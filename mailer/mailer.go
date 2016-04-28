@@ -175,7 +175,7 @@ func (m *MailData) makeMail() (msg string) {
 	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
 	msg += "MIME-Version: 1.0\r\n"
 	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"
-	msg += "X-Mailer: " + models.Version + "\r\n"
+	msg += "X-Mailer: " + models.Config.Version + "\r\n"
 	msg += m.Extra_header + "\r\n"
 	// ------------- /head ---------------------------------------------------------
 

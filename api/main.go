@@ -19,16 +19,16 @@ import (
 	"encoding/base64"
 	"os"
 	"io"
+	"github.com/supme/gonder/models"
 )
 
 var (
 	auth Auth
-	Port string
 	apilog *log.Logger
 )
 
 func Run()  {
-	l, err := os.OpenFile("log/api.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening api log file: %v", err)
 	}
@@ -76,15 +76,15 @@ func Run()  {
 	http.HandleFunc("/filemanager", auth.Check(filemanager))
 
 	// Static dirs
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./api/http/assets/"))))
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir("./files/"))))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 	http.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
 		blank, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		w.Write(blank)
 	})
 
 	http.HandleFunc("/panel", auth.Check(func (w http.ResponseWriter, r *http.Request)  {
-		if f, err := ioutil.ReadFile("./api/http/index.html"); err != nil {
+		if f, err := ioutil.ReadFile(models.FromRootDir("api/http/index.html")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else{
 			w.Write(f)
@@ -96,8 +96,8 @@ func Run()  {
 	http.HandleFunc("/status/ws/statistic.log", auth.Check(statisticLog))
 	http.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
-	apilog.Println("API listening on port " + Port + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":" + Port, "./cert/server.pem", "./cert/server.key", nil))
+	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
+	apilog.Fatal(http.ListenAndServeTLS(":" + models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", nil))
 }
 
 

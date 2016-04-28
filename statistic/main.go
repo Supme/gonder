@@ -25,10 +25,6 @@ import (
 	"os"
 )
 
-var (
-	Port string
-)
-
 func Run() {
 
 	gin.SetMode(gin.ReleaseMode)
@@ -82,7 +78,7 @@ func Run() {
 				"campaignId":  param.Campaign,
 				"recipientId": param.Recipient,
 			}
-			router.LoadHTMLFiles("statistic/templates/" + getTemplateName(param.Campaign) + "/accept.html")
+			router.LoadHTMLFiles("statistic/templates/" + getTemplateUnsubscribe(param.Campaign) + "/accept.html")
 			c.HTML(http.StatusOK, "accept.html", data)
 		} else {
 			c.String(http.StatusNotFound, "Not found")
@@ -90,16 +86,15 @@ func Run() {
 	})
 
 	router.POST("/unsubscribe", func(c *gin.Context) {
-		postUnsubscribe(c.PostForm("campaignId"), c.PostForm("recipientId"))
-		router.LoadHTMLFiles("statistic/templates/" + getTemplateName(c.PostForm("campaignId")) + "/success.html")
+		unsubscribe(c.PostForm("campaignId"), c.PostForm("recipientId"))
+		router.LoadHTMLFiles("statistic/templates/" + getTemplateUnsubscribe(c.PostForm("campaignId")) + "/success.html")
 		c.HTML(http.StatusOK, "success.html", gin.H{})
 	})
 
-	// Listen and server on 0.0.0.0:8080
-	router.Run(":" + Port)
+	router.Run(":" + models.Config.StatPort)
 }
 
-func getTemplateName(campaignId string) (name string) {
+func getTemplateUnsubscribe(campaignId string) (name string) {
 	models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", campaignId).Scan(&name)
 	if name == "" {
 		name = "default"
@@ -129,7 +124,7 @@ func statWebVersion(campaignId string, recipientId string, userAgent string)  {
 	models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, recipientId)
 }
 
-func postUnsubscribe(campaignId string, recipientId string) {
+func unsubscribe(campaignId string, recipientId string) {
 	models.Db.Exec("INSERT INTO unsubscribe (`group_id`, campaign_id, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, (SELECT email FROM recipient WHERE id=?))", campaignId, campaignId, recipientId)
 }
 
