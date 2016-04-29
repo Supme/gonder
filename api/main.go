@@ -73,6 +73,9 @@ func Run()  {
 	// ...
 	http.HandleFunc("/api/recipients", auth.Check(recipients))
 
+	http.HandleFunc("/preview", auth.Check(getMailPreview))
+	http.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
+
 	http.HandleFunc("/filemanager", auth.Check(filemanager))
 
 	// Static dirs

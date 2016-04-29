@@ -79,7 +79,7 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
 				}
-				file := "./tmp/" + time.Now().String()
+				file := models.FromRootDir("tmp/" + time.Now().String())
 				err = ioutil.WriteFile(file, content, 0644)
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Write file"}`)
@@ -179,7 +179,7 @@ func getRecipientParams(recipient, offset, limit string) (RecipientParams, error
 	var p RecipientParam
 	var ps RecipientParams
 	ps.Records = []RecipientParam{}
-	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
+	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=? LIMIT ? OFFSET ?", recipient, limit, offset)
 	if err != nil {
 		return ps, err
 	}
@@ -201,8 +201,6 @@ func delRecipients(campaignId string) error {
 
 // ToDo optimize this
 func recipientCsv(campaignId string, file string) error {
-//	var groupId string
-//	models.Db.QueryRow("SELECT `group_id` FROM `campaign` WHERE `id`=? ", campaignId).Scan(&groupId)
 
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -236,15 +234,7 @@ func recipientCsv(campaignId string, file string) error {
 				}
 			}
 
-//			var cnt int
-//			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` WHERE `group_id`=? AND `email`=?", groupId, email).Scan(&cnt)
-
-			sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
-//			if cnt > 0 {
-//				sql = "INSERT INTO recipient (`campaign_id`, `email`, `name`, `status`) VALUES (?, ?, ?, 'Unsubscribed')"
-//			}
-
-			res, err := models.Db.Exec(sql, campaignId, email, name)
+			res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
 			if err != nil {
 				return err
 			}
@@ -269,8 +259,6 @@ func recipientCsv(campaignId string, file string) error {
 }
 
 func recipientXlsx(campaignId string, file string) error {
-	//	var groupId string
-	//	models.Db.QueryRow("SELECT `group_id` FROM `campaign` WHERE `id`=? ", campaignId).Scan(&groupId)
 
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -300,9 +288,7 @@ func recipientXlsx(campaignId string, file string) error {
 					}
 				}
 
-				sql := "INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)"
-
-				res, err := models.Db.Exec(sql, campaignId, email, name)
+				res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
 				if err != nil {
 					return err
 				}

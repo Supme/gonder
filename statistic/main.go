@@ -78,7 +78,7 @@ func Run() {
 				"campaignId":  param.Campaign,
 				"recipientId": param.Recipient,
 			}
-			router.LoadHTMLFiles("statistic/templates/" + getTemplateUnsubscribe(param.Campaign) + "/accept.html")
+			router.LoadHTMLFiles(models.FromRootDir("statistic/templates/" + getTemplateUnsubscribe(param.Campaign) + "/accept.html"))
 			c.HTML(http.StatusOK, "accept.html", data)
 		} else {
 			c.String(http.StatusNotFound, "Not found")
@@ -87,7 +87,7 @@ func Run() {
 
 	router.POST("/unsubscribe", func(c *gin.Context) {
 		unsubscribe(c.PostForm("campaignId"), c.PostForm("recipientId"))
-		router.LoadHTMLFiles("statistic/templates/" + getTemplateUnsubscribe(c.PostForm("campaignId")) + "/success.html")
+		router.LoadHTMLFiles(models.FromRootDir("statistic/templates/" + getTemplateUnsubscribe(c.PostForm("campaignId")) + "/success.html"))
 		c.HTML(http.StatusOK, "success.html", gin.H{})
 	})
 
@@ -99,10 +99,10 @@ func getTemplateUnsubscribe(campaignId string) (name string) {
 	if name == "" {
 		name = "default"
 	} else {
-		if _, err := os.Stat("statistic/templates/" + name + "/accept.html"); err != nil {
+		if _, err := os.Stat(models.FromRootDir("statistic/templates/" + name + "/accept.html")); err != nil {
 			name = "default"
 		}
-		if _, err := os.Stat("statistic/templates/" + name + "/success.html"); err != nil {
+		if _, err := os.Stat(models.FromRootDir("statistic/templates/" + name + "/success.html")); err != nil {
 			name = "default"
 		}
 	}
