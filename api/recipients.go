@@ -203,7 +203,6 @@ func delRecipients(campaignId string) error {
 func recipientCsv(campaignId string, file string) error {
 
 	title := make(map[int]string)
-	data := make(map[string]string)
 
 	csvfile, err := os.Open(file)
 	if err != nil {
@@ -224,6 +223,7 @@ func recipientCsv(campaignId string, file string) error {
 		} else {
 			email := ""
 			name := ""
+			data := make(map[string]string)
 			for i, t := range v {
 				if i == 0 {
 					email = t
@@ -261,7 +261,6 @@ func recipientCsv(campaignId string, file string) error {
 func recipientXlsx(campaignId string, file string) error {
 
 	title := make(map[int]string)
-	data := make(map[string]string)
 	var email, name string
 
 	xlFile, err := xlsx.OpenFile(file)
@@ -273,12 +272,21 @@ func recipientXlsx(campaignId string, file string) error {
 		for k, v := range xlFile.Sheets[0].Rows {
 			if k == 0 {
 				for i, cell := range v.Cells {
-					t, _ := cell.String()
+					t, err := cell.String()
+					if err != nil {
+						apilog.Println(err)
+					}
 					title[i] = t
 				}
 			} else {
+				email = ""
+				name = ""
+				data := make(map[string]string)
 				for i, cell := range v.Cells {
-					t, _ := cell.String()
+					t, err := cell.String()
+					if err != nil {
+						apilog.Println(err)
+					}
 					if i == 0 {
 						email = t
 					} else if i == 1 {
