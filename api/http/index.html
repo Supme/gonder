@@ -256,9 +256,9 @@
                 name: 'parameter',
                 fields: [
                     { name: 'campaignId', type: 'text', html: { caption: w2utils.lang('Id'), attr: 'size="4" readonly' } },
-                    { name: 'campaignName', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40" readonly' } },
+                    { name: 'campaignName', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" readonly' } },
                     { name: 'campaignProfileId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
-                    { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40" maxlength="40"' } },
+                    { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40"' } },
                     { name: 'campaignFromName', type: 'text', html: { caption: w2utils.lang('From name'), attr: 'size="40"' } },
                     { name: 'campaignFromEmail', type: 'email', html: { caption: w2utils.lang('From email'), attr: 'size="40"' } },
                     { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' } },
@@ -519,29 +519,33 @@
             //ToDo check if no one file selected
             $('#recipientUploadButton').click(
                     function () {
-                        w2ui.layout.lock('main', w2utils.lang('Uploading...'), true);
-                        $.each($('#recipientUploadFile').data('selected'), function(index, file){
-                            $.ajax({
-                                url: "api/recipients",
-                                type: "POST",
-                                data: {
-                                    content: "recipients",
-                                    cmd: "upload",
-                                    campaign: $('#campaignId').val(),
-                                    name: file.name,
-                                    base64: file.content
-                                },
-                                dataType: "json"
-                            }).done(function(data) {
-                                if (data['status'] == 'error') {
-                                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                                }
-                            }).complete(function() {
-                                $('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false});
-                                w2ui['recipient'].reload();
-                                w2ui.layout.unlock('main');
+                        if ($('#recipientUploadFile').data("selected").length == 0) {
+                            w2alert(w2utils.lang('No one file selected.'), w2utils.lang('Error'));
+                        } else {
+                            w2ui.layout.lock('main', w2utils.lang('Uploading...'), true);
+                            $.each($('#recipientUploadFile').data('selected'), function(index, file){
+                                $.ajax({
+                                    url: "api/recipients",
+                                    type: "POST",
+                                    data: {
+                                        content: "recipients",
+                                        cmd: "upload",
+                                        campaign: $('#campaignId').val(),
+                                        name: file.name,
+                                        base64: file.content
+                                    },
+                                    dataType: "json"
+                                }).done(function(data) {
+                                    if (data['status'] == 'error') {
+                                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                                    }
+                                }).complete(function() {
+                                    $('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false});
+                                    w2ui['recipient'].reload();
+                                    w2ui.layout.unlock('main');
+                                });
                             });
-                        });
+                        }
                     }
             );
             // --- /Recipient upload ---
