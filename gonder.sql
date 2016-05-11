@@ -41,8 +41,7 @@ CREATE TABLE `campaign` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `profile_id` int(11) NOT NULL,
-  `from` text NOT NULL,
-  `from_name` text NOT NULL,
+  `sender_id` int(11) NOT NULL DEFAULT '0',
   `name` text NOT NULL,
   `subject` text NOT NULL,
   `body` text NOT NULL,
@@ -93,6 +92,13 @@ CREATE TABLE `recipient` (
   `client_agent` text,
   `web_agent` text,
   `removed` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `sender` (
+  `id` int(11) NOT NULL,
+  `group_id` int(11) NOT NULL,
+  `email` text NOT NULL,
+  `name` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `status` (
@@ -161,26 +167,6 @@ ADD KEY `campaign_id` (`campaign_id`);
 ALTER TABLE `status`
 ADD PRIMARY KEY (`id`);
 
-ALTER TABLE `statusBounces`
-ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `statusMapping`
-ADD PRIMARY KEY (`id`),
-ADD KEY `transcript_id` (`transcript_id`);
-
-ALTER TABLE `statusNames`
-ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `statusSmtpRules`
-ADD PRIMARY KEY (`id`),
-ADD KEY `transcript_id` (`transcript_id`);
-
-ALTER TABLE `statusTranscript`
-ADD PRIMARY KEY (`id`),
-ADD KEY `status_id` (`status_id`),
-ADD KEY `sounce_id` (`sounce_id`),
-ADD KEY `bounce_id` (`bounce_id`);
-
 ALTER TABLE `unsubscribe`
 ADD PRIMARY KEY (`id`),
 ADD KEY `group_id` (`group_id`),
@@ -213,16 +199,6 @@ ALTER TABLE `recipient`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `status`
 MODIFY `id` int(3) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-ALTER TABLE `statusBounces`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-ALTER TABLE `statusMapping`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-ALTER TABLE `statusNames`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-ALTER TABLE `statusSmtpRules`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
-ALTER TABLE `statusTranscript`
-MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `unsubscribe`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
@@ -238,7 +214,8 @@ ADD CONSTRAINT `auth_user_group_ibfk_1` FOREIGN KEY (`auth_user_id`) REFERENCES 
 ADD CONSTRAINT `auth_user_group_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `campaign`
-ADD CONSTRAINT `campaign_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT `campaign_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+ADD KEY `sender_id` (`sender_id`);
 
 ALTER TABLE `jumping`
 ADD CONSTRAINT `jumping_ibfk_1` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -250,16 +227,10 @@ ADD CONSTRAINT `parameter_ibfk_1` FOREIGN KEY (`recipient_id`) REFERENCES `recip
 ALTER TABLE `recipient`
 ADD CONSTRAINT `recipient_ibfk_1` FOREIGN KEY (`campaign_id`) REFERENCES `campaign` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE `statusMapping`
-ADD CONSTRAINT `statusMapping_ibfk_1` FOREIGN KEY (`transcript_id`) REFERENCES `statusTranscript` (`id`);
-
-ALTER TABLE `statusSmtpRules`
-ADD CONSTRAINT `statusSmtpRules_ibfk_1` FOREIGN KEY (`transcript_id`) REFERENCES `statusTranscript` (`id`);
-
-ALTER TABLE `statusTranscript`
-ADD CONSTRAINT `statusTranscript_ibfk_1` FOREIGN KEY (`status_id`) REFERENCES `statusNames` (`id`),
-ADD CONSTRAINT `statusTranscript_ibfk_2` FOREIGN KEY (`sounce_id`) REFERENCES `statusBounces` (`id`),
-ADD CONSTRAINT `statusTranscript_ibfk_3` FOREIGN KEY (`bounce_id`) REFERENCES `statusBounces` (`id`);
+ALTER TABLE `sender`
+ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`),
+MODIFY `id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1,
+ADD CONSTRAINT `sender_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE `unsubscribe`
 ADD CONSTRAINT `unsubscribe_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -17,7 +17,6 @@ import (
 	"crypto/sha256"
 	"github.com/supme/gonder/models"
 	"encoding/hex"
-	"strconv"
 )
 
 type Auth struct {
@@ -50,10 +49,11 @@ func (a *Auth) Log(fn http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *Auth) GroupRight(group int64) bool {
+func (a *Auth) GroupRight(group interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
+
 	var r bool
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=?", a.userId, group).Scan(&c)
@@ -63,15 +63,15 @@ func (a *Auth) GroupRight(group int64) bool {
 	return r
 }
 
-func (a *Auth) CampaignRightString(campaign string) bool {
+/*func (a *Auth) CampaignRightString(campaign string) bool {
 	c, err := strconv.ParseInt(campaign, 10, 64)
 	if err != nil {
 		return false
 	}
 	return a.CampaignRight(c)
-}
+}*/
 
-func (a *Auth) CampaignRight(campaign int64) bool {
+func (a *Auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}

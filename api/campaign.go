@@ -28,8 +28,7 @@ type Data struct {
 	Name string `json:"name"`
 	ProfileId int `json:"profileId"`
 	Subject string `json:"subject"`
-	FromName string `json:"fromName"`
-	FromEmail string `json:"fromEmail"`
+	SenderId int `json:"senderId"`
 	StartDate int64 `json:"startDate"`
 	EndDate int64 `json:"endDate"`
 	SendUnsubscribe bool `json:"sendUnsubscribe"`
@@ -57,12 +56,11 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		}
 		if auth.Right("get-campaign") && auth.CampaignRight(dataId) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`from_name`,`from`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", data.Id).Scan(
+			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", data.Id).Scan(
 				&data.Name,
 				&data.ProfileId,
 				&data.Subject,
-				&data.FromName,
-				&data.FromEmail,
+				&data.SenderId,
 				&start,
 				&end,
 				&data.SendUnsubscribe,
@@ -109,12 +107,11 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
 
-			_, err := models.Db.Exec("UPDATE campaign SET `name`=?, `profile_id`=?, `subject`=?,`from_name`=?,`from`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
+			_, err := models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				data.Name,
 				data.ProfileId,
 				data.Subject,
-				data.FromName,
-				data.FromEmail,
+				data.SenderId,
 				start,
 				end,
 				data.SendUnsubscribe,

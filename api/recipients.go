@@ -61,7 +61,7 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 	if r.Form["content"][0] == "recipients" {
 		switch r.Form["cmd"][0] {
 		case "get-records":
-			if auth.Right("get-recipients") && auth.CampaignRightString(r.Form["campaign"][0]) {
+			if auth.Right("get-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
 				rs, err := getRecipients( r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
 				js, err = json.Marshal(rs)
 				if err != nil {
@@ -74,7 +74,7 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			break
 
 		case "upload":
-			if auth.Right("upload-recipients") && auth.CampaignRightString(r.Form["campaign"][0]) {
+			if auth.Right("upload-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
 				content, err := base64.StdEncoding.DecodeString(r.FormValue("base64"))
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
@@ -108,7 +108,7 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			break
 
 		case "deleteAll":
-			if auth.Right("delete-recipients") && auth.CampaignRightString(r.Form["campaign"][0]) {
+			if auth.Right("delete-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
 				err = delRecipients(r.Form["campaign"][0])
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Can't delete all recipients"}`)

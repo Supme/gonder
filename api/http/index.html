@@ -118,6 +118,23 @@
                 w2ui['parameter'].refresh();
             }
 
+            function refreshSenderList(selectedSender){
+                var sender;
+                $.ajax({
+                    type: "GET",
+                    async: false,
+                    url: '/api/senderlist?groupId=' + w2ui['group'].getSelection()[0],
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json"
+                }).done(function(data) {
+                    sender = data;
+                });
+                console.log(sender);
+                w2ui['parameter'].set('campaignSenderId', { options: { items: sender } });
+                w2ui['parameter'].record['campaignSenderId'] = selectedSender;
+                w2ui['parameter'].refresh();
+            }
+
             // --- Config for layout ---
             var config = {
                 sidebar: {
@@ -177,8 +194,7 @@
                                                 "profileId": $('#campaignProfileId').data('selected').id,
                                                 "name": $('#campaignName').val(),
                                                 "subject": $("#campaignSubject").val(),
-                                                "fromEmail": $("#campaignFromEmail").val(),
-                                                "fromName": $("#campaignFromName").val(),
+                                                "senderId": $('#campaignSenderId').data('selected').id,
                                                 "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime()/1000,
                                                 "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime()/1000,
                                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
@@ -259,9 +275,7 @@
                     { name: 'campaignName', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" readonly' } },
                     { name: 'campaignProfileId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
                     { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40"' } },
-                    { name: 'campaignFromId', type: 'list', html: { caption: w2utils.lang('From'), attr: 'size="40"' }, minLength: 0},
-                    { name: 'campaignFromName', type: 'text', html: { caption: w2utils.lang('From name'), attr: 'size="40"' } },
-                    { name: 'campaignFromEmail', type: 'email', html: { caption: w2utils.lang('From email'), attr: 'size="40"' } },
+                    { name: 'campaignSenderId', type: 'list', html: { caption: w2utils.lang('Sender'), attr: 'size="40"' }, minLength: 0},
                     { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' } },
                     { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"' } },
                     { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
@@ -322,9 +336,9 @@
 
             // --- /Layout ---
 
-            // --- From emails editor ---
+            // --- Sender emails editor ---
             $().w2layout({
-                name: 'fromEditor',
+                name: 'senderEditor',
                 padding: 4,
                 panels: [
                     { type: 'left', size: '40%', resizable: true, minSize: 300 },
@@ -332,16 +346,15 @@
                 ]
             });
             $().w2grid({
-                name: 'fromGrid',
+                name: 'senderGrid',
                 columns: [
                     { field: 'email', caption: w2utils.lang('Email'), size: '50%' },
                     { field: 'name', caption: w2utils.lang('Name'), size: '50%'}
                 ],
-                //url: '/api/groups?' + 'gId=' + w2ui['group'].getSelection()[0],
                 method: 'GET',
                 onClick: function(event) {
                     var grid = this;
-                    var form = w2ui.fromForm;
+                    var form = w2ui.senderForm;
                     event.onComplete = function () {
                         var sel = grid.getSelection();
                         if (sel.length == 1) {
@@ -356,7 +369,7 @@
             });
             $().w2form({
                 header: w2utils.lang('Edit Record'),
-                name: 'fromForm',
+                name: 'senderForm',
                 fields: [
                     { name: 'recid', type: 'text', html: { caption: 'ID', attr: 'size="10" readonly' } },
                     { name: 'name', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40"' } },
@@ -370,31 +383,39 @@
                         var errors = this.validate();
                         if (errors.length > 0) return;
                         var url;
-                        if (this.recid == 0) {
-                            url = '/api/from?cmd=add-record&groupId=' + w2ui['group'].getSelection()[0];
+                        var i = this;
+                        if (i.recid == 0) {
+                            url = '/api/sender?cmd=add-record&groupId=' + w2ui['group'].getSelection()[0];
                         } else {
-                            url = '/api/from?cmd=save-record';
+                            url = '/api/sender?cmd=save-record';
                         }
                         $.ajax({
-                            type: "POST",
+                            type: "GET",
                             url: url,
-                            data: JSON.stringify( this.record ),
+                            data: i.record,
                             contentType: "application/json; charset=utf-8",
                             dataType: "json"
                         }).done(function (data) {
+
                             if (data['status'] == 'error') {
                                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                             } else {
-                                w2ui.fromGrid.set(this.recid, this.record);
-                                w2ui.fromGrid.selectNone();
-                                this.clear();
+                                if (i.recid == 0) {
+                                    i.record.recid = data["recid"];
+                                    w2ui.senderGrid.add($.extend(true, { recid: data["recid"] }, i.record));
+                                } else {
+                                    w2ui.senderGrid.set(i.recid, i.record);
+                                }
+                                w2ui.senderGrid.selectNone();
+                                i.clear();
+                                refreshSenderList($('#campaignSenderId').data('selected').id);
                             }
                         });
 
                     }
                 }
             });
-            // --- /From emails editor ---
+            // --- /Sender emails editor ---
 
             // --- Group table ---
             $('#group').w2grid({
@@ -422,7 +443,7 @@
                 toolbar: {
                     items: [
                         {id: 'add', type: 'button', caption: w2utils.lang('Add New'), icon: 'w2ui-icon-plus'},
-                        {id: 'from', type: 'button', caption: w2utils.lang('Emails'), icon: 'w2ui-icon-pencil'}
+                        {id: 'sender', type: 'button', caption: w2utils.lang('Emails'), icon: 'w2ui-icon-pencil'}
                     ],
                     onClick: function (event) {
                         if (event.target == 'add') {
@@ -444,27 +465,27 @@
                         }
 
 
-                        if (event.target == 'from') {
+                        if (event.target == 'sender') {
                             if (w2ui['group'].getSelection()[0] == undefined) {
                                 w2alert(w2utils.lang('Select group.'));
                             } else {
-                                w2ui['fromGrid'].url = '/api/groups?' + 'gId=' + w2ui['group'].getSelection()[0];
+                                w2ui['senderGrid'].url = '/api/sender?' + 'groupId=' + w2ui['group'].getSelection()[0];
                                 w2popup.open({
                                     title   : w2utils.lang('Email list editor'),
                                     width   : 900,
                                     height  : 600,
                                     showMax : true,
-                                    body    : '<div id="fromPopup" style="position: absolute; left: 5px; top: 5px; right: 5px; bottom: 5px;"></div>',
+                                    body    : '<div id="senderPopup" style="position: absolute; left: 5px; top: 5px; right: 5px; bottom: 5px;"></div>',
                                     onOpen  : function (event) {
                                         event.onComplete = function () {
-                                            $('#w2ui-popup #fromPopup').w2render('fromEditor');
-                                            w2ui.fromEditor.content('left', w2ui['fromGrid']);
-                                            w2ui.fromEditor.content('main', w2ui['fromForm']);
+                                            $('#w2ui-popup #senderPopup').w2render('senderEditor');
+                                            w2ui.senderEditor.content('left', w2ui['senderGrid']);
+                                            w2ui.senderEditor.content('main', w2ui['senderForm']);
                                         };
                                     },
                                     onToggle: function (event) {
                                         event.onComplete = function () {
-                                            w2ui.fromEditor.resize();
+                                            w2ui.senderEditor.resize();
                                         }
                                     }
                                 });
@@ -492,7 +513,6 @@
                     { field: 'name', caption: w2utils.lang('Name'), size: '100%', editable: { type: 'text' } }
                 ],
                 multiSelect: false,
-//                url: '/api/campaigns',
                 method: 'GET',
                 toolbar: {
                     items: [
@@ -530,11 +550,10 @@
                     }).done(function(data) {
                         zone = new Date().getTimezoneOffset() * 60;
                         refreshProfilesList(data["profileId"]);
+                        refreshSenderList(data["senderId"]);
                         $('#campaignId').val(record.recid);
                         $('#campaignName').val(record.name);
                         $("#campaignSubject").val(data["subject"]);
-                        $("#campaignFromName").val(data["fromName"]);
-                        $("#campaignFromEmail").val(data["fromEmail"]);
                         $("#campaignStartDate").val(w2utils.formatDate((new Date((data["startDate"] + zone)* 1000 )), w2utils.settings.dateFormat));
                         $("#campaignStartTime").val(w2utils.formatTime((new Date((data["startDate"] + zone) * 1000)), w2utils.settings.timeFormat));
                         $("#campaignEndDate").val(w2utils.formatDate((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.dateFormat));

@@ -23,7 +23,7 @@ import (
 
 type (
 	campaign struct {
-		id, from, from_name, subject, body, iface, host string
+		id, from_email, from_name, subject, body, iface, host string
 		send_unsubscribe bool
 		stream, resend_delay, resend_count int
 		attachments []mailer.Attachment
@@ -87,7 +87,7 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 func (r recipient) send(c *campaign) string {
 	data := new(mailer.MailData)
 	data.Iface = c.iface
-	data.From = c.from
+	data.From_email = c.from_email
 	data.From_name = c.from_name
 	data.Host = c.host
 	data.Attachments = c.attachments
@@ -126,9 +126,9 @@ func (r recipient) send(c *campaign) string {
 }
 
 func (c *campaign) get(id string) {
-	models.Db.QueryRow("SELECT t1.`id`,t1.`from`,t1.`from_name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM campaign t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` WHERE id=?", id).Scan(
+	models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`from_id` WHERE t1.`id`=?", id).Scan(
 		c.id,
-		c.from,
+		c.from_email,
 		c.from_name,
 		c.subject,
 		c.body,

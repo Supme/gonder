@@ -73,6 +73,9 @@ func Run()  {
 	// ...
 	http.HandleFunc("/api/recipients", auth.Check(recipients))
 
+	http.HandleFunc("/api/sender", auth.Check(sender))
+	http.HandleFunc("/api/senderlist", auth.Check(senderList))
+
 	http.HandleFunc("/preview", auth.Check(getMailPreview))
 	http.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
 

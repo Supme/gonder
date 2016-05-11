@@ -71,7 +71,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUnsubscribePreview(w http.ResponseWriter, r *http.Request)  {
-	if auth.Right("get-recipients") && auth.CampaignRightString(r.FormValue("campaignId")) {
+	if auth.Right("get-recipients") && auth.CampaignRight(r.FormValue("campaignId")) {
 
 		var tmpl string
 		var content []byte
@@ -109,73 +109,3 @@ func getUnsubscribePreview(w http.ResponseWriter, r *http.Request)  {
 	}
 
 }
-
-
-/*
-func getMessage(campaignId, recipientId, subject, body string) (message, error) {
-
-	var err error
-	var web bool
-
-	if subject == "" && body == "" {
-		err = Db.QueryRow("SELECT `subject`, `body` FROM campaign WHERE `id`=?", campaignId).Scan(&subject, &body)
-		if err == sql.ErrNoRows {
-			return message{Subject: "Error", Body: "Message not found"}, nil
-		}
-		web = true
-	} else {
-		web = false
-	}
-
-	weburl := webUrl(campaignId, recipientId)
-
-	people := recipientParam(recipientId)
-	people["UnsubscribeUrl"] = unsubscribeUrl(campaignId, recipientId)
-	people["StatPng"] = statPngUrl(campaignId, recipientId)
-
-	if !web {
-		people["WebUrl"] = weburl
-
-		// add statistic png
-		if strings.Index(body, "{{.StatPng}}") == -1 {
-			if strings.Index(body, "</body>") == -1 {
-				body = body + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
-			} else {
-				body = strings.Replace(body, "</body>", "\n<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>\n</body>", -1)
-			}
-		}
-	}
-
-	// Replace links for statistic
-	re := regexp.MustCompile(`href=["'](\bhttp:\/\/\b|\bhttps:\/\/\b)(.*?)["']`)
-	body = re.ReplaceAllStringFunc(body, func(str string) string {
-		// get only url
-		s := strings.Replace(str, "'", "", -1)
-		s = strings.Replace(s, `"`, "", -1)
-		s = strings.Replace(s, "href=", "", 1)
-
-		switch s {
-		case "{{.WebUrl}}":
-			if web {
-				return `href=""`
-			} else {
-				return `href="` + weburl + `"`
-			}
-		case "{{.UnsubscribeUrl}}":
-			return `href="` + people["UnsubscribeUrl"] + `"`
-		default:
-			// template parameter in url
-			urlt := template.New("url")
-			urlt, err = urlt.Parse(s)
-			if err != nil {
-				s = fmt.Sprintf("Error parse url params: %v", err)
-			}
-			u := bytes.NewBufferString("")
-			urlt.Execute(u, people)
-			s = u.String()
-
-			return `href="` + statUrl(campaignId, recipientId, s) + `"`
-		}
-	})
-}
-*/

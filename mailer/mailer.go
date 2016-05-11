@@ -33,7 +33,7 @@ type (
 	MailData struct {
 		Iface 	     string
 		Host         string
-		From         string
+		From_email   string
 		From_name    string
 		To           string
 		To_name      string
@@ -123,7 +123,7 @@ func (m *MailData) Send() error {
 	}
 
 	// Set the sender and recipient first
-	if err := c.Mail(m.From); err != nil {
+	if err := c.Mail(m.From_email); err != nil {
 		return err
 	}
 
@@ -159,9 +159,9 @@ func (m *MailData) makeMail() (msg string) {
 	msg = ""
 
 	if m.From_name == "" {
-		msg += `From: ` + m.From + "\r\n"
+		msg += `From: ` + m.From_email + "\r\n"
 	} else {
-		msg += `From: "` + encodeRFC2047(m.From_name) + `" <` + m.From + `>` +"\r\n"
+		msg += `From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\r\n"
 	}
 
 	if m.To_name == "" {
