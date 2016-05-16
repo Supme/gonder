@@ -35,7 +35,7 @@ type (
 		Host         string
 		From_email   string
 		From_name    string
-		To           string
+		To_email     string
 		To_name      string
 		Extra_header string
 		Subject      string
@@ -78,9 +78,9 @@ func (m *MailData) Send() error {
 
 	//ToDo cache MX servers
 	// trim space
-	m.To = strings.TrimSpace(m.To)
+	m.To_email = strings.TrimSpace(m.To_email)
 	// punycode convert
-	splitEmail := strings.Split(m.To, "@")
+	splitEmail := strings.Split(m.To_email, "@")
 	if len(splitEmail) != 2 {
 		return errors.New(fmt.Sprintf("Bad email"))
 	}
@@ -88,7 +88,7 @@ func (m *MailData) Send() error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("Domain name failed: %v\r\n", err))
 	}
-	m.To = strings.Split(m.To, "@")[0] + "@" + domain
+	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
 	mx, err = net.LookupMX(domain)
 	if err != nil {
@@ -127,7 +127,7 @@ func (m *MailData) Send() error {
 		return err
 	}
 
-	if err := c.Rcpt(m.To); err != nil {
+	if err := c.Rcpt(m.To_email); err != nil {
 		return err
 	}
 
@@ -165,9 +165,9 @@ func (m *MailData) makeMail() (msg string) {
 	}
 
 	if m.To_name == "" {
-		msg += `To: ` + m.To + "\r\n"
+		msg += `To: ` + m.To_email + "\r\n"
 	} else {
-		msg += `To: "` + encodeRFC2047(m.To_name) + `" <` + m.To + `>` + "\r\n"
+		msg += `To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\r\n"
 	}
 
 	// -------------- head ----------------------------------------------------------

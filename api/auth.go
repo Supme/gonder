@@ -36,7 +36,7 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		a.Name = user
-		loging(r)
+		logging(r)
 
 		fn(w, r)
 	}
@@ -44,7 +44,7 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 
 func (a *Auth) Log(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		loging(r)
+		logging(r)
 		fn(w, r)
 	}
 }
@@ -142,6 +142,7 @@ func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Logout. Bye!", 401)
 }
 
-func loging(r *http.Request)  {
+func logging(r *http.Request)  {
 	apilog.Printf("user: '%s' host: %s %s %s", auth.Name, r.RemoteAddr, r.Method, r.RequestURI)
 }
+

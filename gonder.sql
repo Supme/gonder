@@ -172,7 +172,6 @@ ADD PRIMARY KEY (`id`),
 ADD KEY `group_id` (`group_id`),
 ADD KEY `campaign_id` (`campaign_id`);
 
-
 ALTER TABLE `attachment`
 MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `auth_right`

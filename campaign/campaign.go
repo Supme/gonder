@@ -31,7 +31,7 @@ type (
 	}
 
 	recipient struct {
-		id, to, to_name	string
+		id, to_email, to_name	string
 	}
 )
 
@@ -49,7 +49,7 @@ func (c *campaign) get_null_recipients() {
 	defer q.Close()
 
 	for q.Next() {
-		err = q.Scan(&d.id, &d.to, &d.to_name)
+		err = q.Scan(&d.id, &d.to_email, &d.to_name)
 		checkErr(err)
 		c.recipients = append(c.recipients, d)
 	}
@@ -68,7 +68,7 @@ func (c *campaign) get_soft_bounce_recipients() {
 	defer q.Close()
 
 	for q.Next() {
-		err = q.Scan(&d.id, &d.to, &d.to_name)
+		err = q.Scan(&d.id, &d.to_email, &d.to_name)
 		checkErr(err)
 		c.recipients = append(c.recipients, d)
 	}
@@ -77,7 +77,7 @@ func (c *campaign) get_soft_bounce_recipients() {
 
 func (r *recipient) unsubscribe(campaignId string) bool {
 	var unsubscribeCount int
-	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.to).Scan(&unsubscribeCount)
+	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.to_email).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
 		return false
 	}
@@ -91,7 +91,7 @@ func (r recipient) send(c *campaign) string {
 	data.From_name = c.from_name
 	data.Host = c.host
 	data.Attachments = c.attachments
-	data.To = r.to
+	data.To_email = r.to_email
 	data.To_name = r.to_name
 
 	var rs string
@@ -121,7 +121,7 @@ func (r recipient) send(c *campaign) string {
 		rs = e.Error()
 	}
 
-	camplog.Printf("Campaign %s for recipient id %s email %s is %s", c.id, r.id, data.To, rs)
+	camplog.Printf("Campaign %s for recipient id %s email %s is %s", c.id, r.id, data.To_email, rs)
 	return rs
 }
 
@@ -184,7 +184,7 @@ func (c campaign) send() {
 			}(r)
 		} else {
 			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
 		}
 	}
 
@@ -212,14 +212,14 @@ func (c campaign) resend_soft_bounce() {
 		for _, r := range c.recipients {
 			// если пользователь ни разу не отказался от подписки в этой группе
 			var unsubscribeCount int
-			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to).Scan(&unsubscribeCount)
+			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to_email).Scan(&unsubscribeCount)
 			if unsubscribeCount == 0 || c.send_unsubscribe {
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 				rs := r.send(&c)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
 			} else {
 				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-				camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to)
+				camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
 			}
 		}
 	}
