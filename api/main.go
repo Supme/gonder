@@ -38,58 +38,60 @@ func Run()  {
 
 	apilog = log.New(multi, "", log.Ldate|log.Ltime)
 
+	api := http.NewServeMux()
+
 	// Groups
 	// Example:
 	// Get groups: http://host/api/groups?cmd=get-records&limit=100&offset=0
 	// Rename groups: http://host/api/groups?cmd=save-records&selected[]=20&limit=100&offset=0&changes[0][recid]=1&changes[0][name]=Test+1&changes[1][recid]=2&changes[1][name]=Test+2
 	// ...
-	http.HandleFunc("/api/groups", auth.Check(groups))
+	api.HandleFunc("/api/groups", auth.Check(groups))
 
 	// Campaigns from group
 	// Example:
 	// Get campaigns: http://host/api/campaigns?group=2&cmd=get-records&limit=100&offset=0
 	// Rename campaign: http://host/api/campaigns?cmd=save-records&selected[]=6&limit=100&offset=0&changes[0][recid]=6&changes[0][name]=Test+campaign
 	// ...
-	http.HandleFunc("/api/campaigns", auth.Check(campaigns))
+	api.HandleFunc("/api/campaigns", auth.Check(campaigns))
 
 	// Campaign data
 	// Example:
 	// Get data: http://host/api/campaign?cmd=get-data&recid=4
 	// ...
-	http.HandleFunc("/api/campaign", auth.Check(campaign))
+	api.HandleFunc("/api/campaign", auth.Check(campaign))
 
-	http.HandleFunc("/api/profilelist", auth.Check(profilesList))
+	api.HandleFunc("/api/profilelist", auth.Check(profilesList))
 
 	// Profiles
 	// Example:
 	// Get list http://host/api/profiles?cmd=get-list
 	// ...
-	http.HandleFunc("/api/profiles", auth.Check(profiles))
+	api.HandleFunc("/api/profiles", auth.Check(profiles))
 
 	// Get recipients from campaign
 	// Example:
 	// Get list recipients: http://host/api/recipients?content=recipients&campaign=4&cmd=get-records&limit=100&offset=0
 	// Get recipient parameters: http://host/api/recipients?content=parameters&recipient=149358&cmd=get-records&limit=100&offset=0
 	// ...
-	http.HandleFunc("/api/recipients", auth.Check(recipients))
+	api.HandleFunc("/api/recipients", auth.Check(recipients))
 
-	http.HandleFunc("/api/sender", auth.Check(sender))
-	http.HandleFunc("/api/senderlist", auth.Check(senderList))
+	api.HandleFunc("/api/sender", auth.Check(sender))
+	api.HandleFunc("/api/senderlist", auth.Check(senderList))
 
-	http.HandleFunc("/preview", auth.Check(getMailPreview))
-	http.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
+	api.HandleFunc("/preview", auth.Check(getMailPreview))
+	api.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
 
-	http.HandleFunc("/filemanager", auth.Check(filemanager))
+	api.HandleFunc("/filemanager", auth.Check(filemanager))
 
 	// Static dirs
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
-	http.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
-	http.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
+	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
+	api.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
 		blank, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		w.Write(blank)
 	})
 
-	http.HandleFunc("/panel", auth.Check(func (w http.ResponseWriter, r *http.Request)  {
+	api.HandleFunc("/panel", auth.Check(func (w http.ResponseWriter, r *http.Request)  {
 		if f, err := ioutil.ReadFile(models.FromRootDir("api/http/index.html")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else{
@@ -97,13 +99,13 @@ func Run()  {
 		}
 	}))
 
-	http.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
-	http.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
-	http.HandleFunc("/status/ws/statistic.log", auth.Check(statisticLog))
-	http.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
+	api.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
+	api.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
+	api.HandleFunc("/status/ws/statistic.log", auth.Check(statisticLog))
+	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":" + models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", nil))
+	apilog.Fatal(http.ListenAndServeTLS(":" + models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
 }
 
 
