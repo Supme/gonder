@@ -66,6 +66,7 @@ func Run() {
 
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			message, data, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
 			if err != nil {
 				utmlog.Println(err)
@@ -106,6 +107,7 @@ func Run() {
 	})
 
 	utm.HandleFunc("/unsubscribe", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if r.Method == "POST" {
 			var message models.Message
 			err := message.New(r.PostFormValue("recipientId"))
@@ -151,6 +153,7 @@ func Run() {
 	})
 
 	utm.HandleFunc("/web/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		message, _, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
@@ -217,6 +220,7 @@ func Run() {
 				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
 				http.Redirect(w, r, param.Url, http.StatusFound)
 			} else if param.Webver != "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", param.Campaign, param.Recipient, "web_version")
 				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
 				var m models.Message
@@ -229,6 +233,7 @@ func Run() {
 				}
 				w.Write([]byte(message))
 			} else if param.Unsubscribe != "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				var name string
 				models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", param.Campaign).Scan(&name)
 				if name == "" {
