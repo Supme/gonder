@@ -255,7 +255,7 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (18, 'get-log-main'),
   (19, 'get-log-api'),
   (20, 'get-log-campaign'),
-  (21, 'get-log-statistic');
+  (21, 'get-log-utm');
 
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
   (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),

@@ -101,7 +101,7 @@ func Run()  {
 
 	api.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
 	api.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
-	api.HandleFunc("/status/ws/statistic.log", auth.Check(statisticLog))
+	api.HandleFunc("/status/ws/utm.log", auth.Check(utmLog))
 	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")

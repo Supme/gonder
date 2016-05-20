@@ -94,12 +94,20 @@ func (r recipient) send(c *campaign) string {
 	data.To_email = r.to_email
 	data.To_name = r.to_name
 
+	message := new(models.Message)
+	message.CampaignId = c.id
+	message.RecipientId = r.id
+	message.CampaignSubject = c.subject
+	message.CampaignTemplate = c.body
+	message.RecipientEmail = r.to_email
+	message.RecipientName = r.to_name
+
 	var rs string
-	d, e := models.MailMessage(c.id, r.id, c.subject, c.body)
+	m, e := message.Render_message()
 	if e == nil {
-		data.Subject = d.Subject
-		data.Html = d.Body
-		data.Extra_header = "List-Unsubscribe: " + models.UnsubscribeUrl(c.id, r.id) + "\r\nPrecedence: bulk\r\n"
+		data.Subject = message.CampaignSubject
+		data.Html = m
+		data.Extra_header = "List-Unsubscribe: " + message.Unsubscribe_mail_link() + "\r\nPrecedence: bulk\r\n"
 		data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n"
 
 		var res error

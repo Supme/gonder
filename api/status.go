@@ -37,11 +37,11 @@ func apiLog(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func statisticLog(w http.ResponseWriter, r *http.Request) {
-	if auth.Right("get-log-statistic") {
-		logHandler(w, r, "./log/statistic.log")
+func utmLog(w http.ResponseWriter, r *http.Request) {
+	if auth.Right("get-log-utm") {
+		logHandler(w, r, "./log/utm.log")
 	} else {
-		http.Error(w, "Forbidden get log statistic", http.StatusForbidden)
+		http.Error(w, "Forbidden get log utm", http.StatusForbidden)
 		return
 	}
 }
@@ -99,17 +99,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	if err != nil {
 		apilog.Println(err)
 	}
-/*
-	go func() {
-		for {
-			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				apilog.Println(err)
-				return
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-*/
+
 	for line := range t.Lines {
 		if line.Err == nil {
 			if err = conn.WriteMessage(websocket.TextMessage, []byte(more + line.Text)); err != nil {

@@ -13,12 +13,11 @@
 package main
 
 import (
-	"github.com/supme/gonder/statistic"
+	"github.com/supme/gonder/utm"
 	"github.com/supme/gonder/models"
 	"github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/api"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"os"
 	"os/exec"
@@ -64,11 +63,11 @@ func main() {
 			} else {
 				fmt.Println("Process sender stoping")
 			}
-			err = checkPid("stat")
+			err = checkPid("utm")
 			if err == nil {
-				fmt.Println("Process stat running")
+				fmt.Println("Process utm running")
 			} else {
-				fmt.Println("Process stat stoping")
+				fmt.Println("Process utm stoping")
 			}
 		}
 		if os.Args[1] == "start" {
@@ -80,7 +79,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			err = startProcess("stat")
+			err = startProcess("utm")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -95,7 +94,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			err = stopProcess("stat")
+			err = stopProcess("utm")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -110,11 +109,11 @@ func main() {
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			err = stopProcess("stat")
+			err = stopProcess("utm")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
-			err = startProcess("stat")
+			err = startProcess("utm")
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -144,8 +143,8 @@ func main() {
 					fmt.Println(err.Error())
 				}
 			}
-			if os.Args[2] == "stat" {
-				err = startProcess("stat")
+			if os.Args[2] == "utm" {
+				err = startProcess("utm")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -166,8 +165,8 @@ func main() {
 					fmt.Println(err.Error())
 				}
 			}
-			if os.Args[2] == "stat" {
-				err = stopProcess("stat")
+			if os.Args[2] == "utm" {
+				err = stopProcess("utm")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -196,12 +195,12 @@ func main() {
 					fmt.Println(err.Error())
 				}
 			}
-			if os.Args[2] == "stat" {
-				err = stopProcess("stat")
+			if os.Args[2] == "utm" {
+				err = stopProcess("utm")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
-				err = startProcess("stat")
+				err = startProcess("utm")
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -227,10 +226,10 @@ func main() {
 				for {}
 			}
 
-			if os.Args[2] == "stat" {
+			if os.Args[2] == "utm" {
 
-				fmt.Println("Start statistics http server")
-				statistic.Run()
+				fmt.Println("Start utm http server")
+				utm.Run()
 
 				for {}
 			}
@@ -246,8 +245,8 @@ func main() {
 		fmt.Println("Start database mailer")
 		go campaign.Run()
 
-		fmt.Println("Start statistics http server")
-		go statistic.Run()
+		fmt.Println("Start utm http server")
+		go utm.Run()
 
 		fmt.Println("Press Enter for stop")
 		var input string
