@@ -27,6 +27,7 @@ import (
 	"net/smtp"
 	"strings"
 	"golang.org/x/net/idna"
+	"cmd/go/testdata/testinternal2/x/y/z/internal/w"
 )
 
 type (
@@ -131,15 +132,13 @@ func (m *MailData) Send() error {
 		return err
 	}
 
-	msg := m.makeMail()
-
 	//dkim.New()
 
 	w, err := c.Data()
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprint(w, msg)
+	_, err = fmt.Fprint(w, m.makeMail())
 	if err != nil {
 		return err
 	}
