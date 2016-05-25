@@ -24,3 +24,5 @@ ALTER TABLE `campaign` ADD KEY `sender_id` (`sender_id`);
 ALTER TABLE `campaign`
 DROP `from`,
 DROP `from_name`;
+
+UPDATE `auth_right` SET `name` = 'get-log-utm' WHERE `auth_right`.`id` = 21;

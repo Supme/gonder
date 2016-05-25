@@ -91,7 +91,7 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.ApiPort = apiConfig.ValueOf("port")
 
-	c.Version = "Gonder 0.6"
+	c.Version = "0.7"
 }
 
 
