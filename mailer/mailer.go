@@ -27,7 +27,6 @@ import (
 	"net/smtp"
 	"strings"
 	"golang.org/x/net/idna"
-	"cmd/go/testdata/testinternal2/x/y/z/internal/w"
 )
 
 type (
@@ -116,39 +115,38 @@ func (m *MailData) Send() error {
 	host, _, _ := net.SplitHostPort(smx)
 	c, err := smtp.NewClient(conn, host)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (NewClient)\r\n", err))
 	}
 
 	if err := c.Hello(m.Host); err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (Hello)\r\n", err))
 	}
 
 	// Set the sender and recipient first
 	if err := c.Mail(m.From_email); err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (Mail)\r\n", err))
 	}
 
 	if err := c.Rcpt(m.To_email); err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (Rcpt)\r\n", err))
 	}
 
 	//dkim.New()
 
 	w, err := c.Data()
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (Data)\r\n", err))
 	}
 	_, err = fmt.Fprint(w, m.makeMail())
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (wData)\r\n", err))
 	}
 
 	err = w.Close()
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%v (Close)\r\n", err))
 	}
 
-	// Send the QUIT command and close the connection.
 	return c.Quit()
 }
 
