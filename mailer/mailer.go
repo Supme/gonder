@@ -153,64 +153,65 @@ func (m *MailData) Send() error {
 	return c.Quit()
 }
 
-func (m *MailData) makeMail() (msg string) {
+func (m *MailData) makeMail() string {
 	marker := makeMarker()
 
-	msg = ""
+	var msg bytes.Buffer
 
 	if m.From_name == "" {
-		msg += `From: ` + m.From_email + "\r\n"
+		msg.WriteString(`From: ` + m.From_email + "\r\n")
 	} else {
-		msg += `From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\r\n"
+		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\r\n")
 	}
 
 	if m.To_name == "" {
-		msg += `To: ` + m.To_email + "\r\n"
+		msg.WriteString(`To: ` + m.To_email + "\r\n")
 	} else {
-		msg += `To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\r\n"
+		msg.WriteString(`To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\r\n")
 	}
 
 	// -------------- head ----------------------------------------------------------
 
-	msg += "Subject: " + encodeRFC2047(m.Subject) + "\r\n"
-	msg += "MIME-Version: 1.0\r\n"
-	msg += "Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n"
-	msg += "X-Mailer: " + models.Config.Version + "\r\n"
-	msg += m.Extra_header + "\r\n"
+	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\r\n")
+	msg.WriteString("MIME-Version: 1.0\r\n")
+	msg.WriteString("Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n")
+	msg.WriteString("X-Mailer: " + models.Config.Version + "\r\n")
+	msg.WriteString(m.Extra_header + "\r\n")
 	// ------------- /head ---------------------------------------------------------
 
 	// ------------- body ----------------------------------------------------------
-	msg += "\r\n--" + marker + "\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
-	msg += m.Html
+	msg.WriteString("\r\n--" + marker + "\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n")
+	msg.WriteString(m.Html)
 	// ------------ /body ---------------------------------------------------------
 
 	// ----------- attachments ----------------------------------------------------
 	for _, file := range m.Attachments {
 
-		msg += "\r\n--" + marker
+		msg.WriteString("\r\n--" + marker)
 		//read and encode attachment
-		content, _ := ioutil.ReadFile(file.Location + file.Name)
+		content, err := ioutil.ReadFile(file.Location + file.Name)
+		if err != nil {
+			fmt.Println(err)
+		}
 		encoded := base64.StdEncoding.EncodeToString(content)
 
+		//part 3 will be the attachment
+		msg.WriteString(fmt.Sprintf("\r\nContent-Type: %s;\r\n	name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment;\r\n	filename=\"%s\"\r\n\r\n", http.DetectContentType(content), file.Name, file.Name))
 		//split the encoded file in lines (doesn't matter, but low enough not to hit a max limit)
 		lineMaxLength := 500
 		nbrLines := len(encoded) / lineMaxLength
-
-		//append lines to buffer
-		var buf bytes.Buffer
 		for i := 0; i < nbrLines; i++ {
-			buf.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
-		} //for
+			msg.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
+		}
 
 		//append last line in buffer
-		buf.WriteString(encoded[nbrLines*lineMaxLength:])
+		msg.WriteString(encoded[nbrLines*lineMaxLength:])
+		msg.WriteString("\r\n")
 
-		//part 3 will be the attachment
-		msg += fmt.Sprintf("\r\nContent-Type: %s;\r\n	name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment;\r\n	filename=\"%s\"\r\n\r\n%s\r\n", http.DetectContentType(content), file.Name, file.Name, buf.String())
 	}
 	// ----------- /attachments ---------------------------------------------------
 
-	return
+	return msg.String()
 }
 
 func makeMarker() string {
