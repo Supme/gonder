@@ -54,7 +54,6 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden get group"}`)
 		}
-		break
 
 	case "save-records":
 		if auth.Right("save-groups") {
@@ -78,8 +77,6 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
 
-		break
-
 	case "add-record":
 		if auth.Right("add-groups") {
 			group, err := addGroup()
@@ -96,7 +93,6 @@ func groups(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden add groups"}`)
 		}
 
-		break
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -20,6 +20,9 @@ import (
 	"log"
 	"strings"
 	"path/filepath"
+	_ "github.com/go-sql-driver/mysql"
+	"fmt"
+	"io/ioutil"
 )
 
 type config struct {
@@ -38,13 +41,37 @@ var (
 	Config config
 )
 
-func (c *config) Get() {
+func init() {
 	var err error
-	c.Update()
-	Db, err = sql.Open(c.dbType, c.dbString)
+	Config.Update()
+	Db, err = sql.Open(Config.dbType, Config.dbString)
 	checkErr(err)
 	Db.SetMaxIdleConns(10)
 	Db.SetMaxOpenConns(10)
+	_, err = Db.Query("SELECT 1 FROM `auth_user`")
+	if err != nil {
+		checkErr(createDb())
+	}
+}
+
+func createDb() error {
+	var input string
+	fmt.Print("Install database (y/N)? ")
+	fmt.Scanln(&input)
+	if input == "y" || input == "Y" {
+		sql, err := ioutil.ReadFile("dump-my.sql")
+		if err != nil {
+			return err
+		}
+		query := strings.Split(string(sql),";")
+		for i := range query {
+			_, err = Db.Exec(query[i])
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *config) Close() {
@@ -91,7 +118,7 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.ApiPort = apiConfig.ValueOf("port")
 
-	c.Version = "0.7"
+	c.Version = "Gonder 0.7"
 }
 
 

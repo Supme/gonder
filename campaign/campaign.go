@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func (c *campaign) get_null_recipients() {
+func (c *campaign) getNullRecipients() {
 	var d recipient
 	c.recipients = nil
 
@@ -55,7 +55,7 @@ func (c *campaign) get_null_recipients() {
 	}
 }
 
-func (c *campaign) get_soft_bounce_recipients() {
+func (c *campaign) getSoftBounceRecipients() {
 	var	d recipient
 	c.recipients = nil
 
@@ -103,11 +103,11 @@ func (r recipient) send(c *campaign) string {
 	message.RecipientName = r.to_name
 
 	var rs string
-	m, e := message.Render_message()
+	m, e := message.RenderMessage()
 	if e == nil {
 		data.Subject = message.CampaignSubject
 		data.Html = m
-		data.Extra_header = "List-Unsubscribe: " + message.Unsubscribe_mail_link() + "\r\nPrecedence: bulk\r\n"
+		data.Extra_header = "List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n"
 		data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n"
 
 		var res error
@@ -149,7 +149,7 @@ func (c *campaign) get(id string) {
 	)
 }
 
-func (c *campaign) get_attachments() {
+func (c *campaign) getAttachments() {
 	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
 	checkErr(err)
 	defer attachment.Close()
@@ -173,7 +173,7 @@ func (c campaign) send() {
 	stream := 0
 	next := make(chan bool)
 
-	c.get_null_recipients()
+	c.getNullRecipients()
 	camplog.Printf("Start campaign %s. Count recipients %d", c.id, len(c.recipients))
 
 	for _, r := range c.recipients {
@@ -205,8 +205,8 @@ func (c campaign) send() {
 	camplog.Printf("Done campaign %s. Count %d", c.id, count)
 }
 
-func (c campaign) resend_soft_bounce() {
-	c.get_soft_bounce_recipients()
+func (c campaign) resendSoftBounce() {
+	c.getSoftBounceRecipients()
 	if c.resend_count != 0 {
 		camplog.Printf("Start %d resend by campaign id %s ", len(c.recipients), c.id)
 	}
@@ -216,7 +216,7 @@ func (c campaign) resend_soft_bounce() {
 
 	for n := 0; n < c.resend_count; n++ {
 		time.Sleep(time.Duration(c.resend_delay) * time.Second)
-		c.get_soft_bounce_recipients()
+		c.getSoftBounceRecipients()
 		for _, r := range c.recipients {
 			// если пользователь ни разу не отказался от подписки в этой группе
 			var unsubscribeCount int

@@ -63,7 +63,6 @@ func sender(w http.ResponseWriter, r *http.Request) {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden get groups"}`)
 		}
-		break
 
 	case "save-record":
 		if auth.Right("save-groups") {
@@ -84,7 +83,6 @@ func sender(w http.ResponseWriter, r *http.Request) {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
-		break
 
 	case "add-record":
 		if auth.Right("save-groups") && auth.GroupRight(r.Form["groupId"][0]){
@@ -100,7 +98,6 @@ func sender(w http.ResponseWriter, r *http.Request) {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
-		break
 	}
 
 

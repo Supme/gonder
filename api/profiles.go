@@ -39,7 +39,6 @@ type Profiles struct {
 	Records		[]Profile `json:"records"`
 }
 
-//ToDo check rights
 func profiles(w http.ResponseWriter, r *http.Request)  {
 	var err error
 	var js []byte
@@ -71,8 +70,6 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
 
-		break
-
 	case "add-records":
 		if auth.Right("add-profiles") {
 			p, err = addProfile()
@@ -89,8 +86,6 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
 
-		break
-
 	case "delete-records":
 		if auth.Right("delete-profiles") {
 			fmt.Print(r.Form["selected[]"])
@@ -99,8 +94,6 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
-
-		break
 
 	case "save-records":
 		if auth.Right("save-profiles") {
@@ -119,7 +112,6 @@ func profiles(w http.ResponseWriter, r *http.Request)  {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		break
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -130,10 +122,6 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 	var e error
 	err = nil
 	var p Profile
-
-	fmt.Println("changes")
-	fmt.Print(changes)
-	fmt.Println("/changes")
 	for c := range changes {
 		p.Id, e = strconv.ParseInt(changes[c]["recid"][0], 10, 64)
 		if e != nil {
@@ -143,40 +131,27 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 		if e != nil {
 			err = e
 		}
-
-		for i,n := range changes[c] {
-			fmt.Println("i" ,i)
-			fmt.Println("n" ,n)
-			fmt.Println("changes[c][i][0]", changes[c][i][0])
+		for i := range changes[c] {
 			switch i {
 			case "name":
 				p.Name = changes[c][i][0]
-				break
 			case "iface":
 				p.Iface = changes[c][i][0]
-				break
 			case "host":
 				p.Host = changes[c][i][0]
-				break
 			case "stream":
 				p.Stream,_ = strconv.Atoi(changes[c][i][0])
-				break
 			case "resend_delay":
 				p.ResendDelay,_ = strconv.Atoi(changes[c][i][0])
-				break
 			case "resend_count":
 				p.ResendCount,_ = strconv.Atoi(changes[c][i][0])
-				break
 			}
 		}
-
-
 		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name,p.Iface,p.Host,p.Stream,p.ResendDelay,p.ResendCount,p.Id)
 		if e != nil {
 			err = e
 		}
 	}
-
 	return
 }
 
@@ -205,7 +180,6 @@ func getProfiles() (Profiles, error) {
 	var ps Profiles
 	ps.Records = []Profile{}
 	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`")
-//	query, err := models.Db.Query("SELECT `id`,`name` FROM `profile`")
 	if err != nil {
 		return ps, err
 	}
@@ -218,4 +192,3 @@ func getProfiles() (Profiles, error) {
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`").Scan(&ps.Total)
 	return ps, err
 }
-

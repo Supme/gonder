@@ -44,7 +44,8 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	models.Config.Get()
+
+//	models.Config.Get()
 	defer models.Config.Close()
 
 	// Start

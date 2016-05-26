@@ -1,4 +1,4 @@
-// Project Gonder.
+	// Project Gonder.
 // Author Supme
 // Copyright Supme 2016
 // License http://opensource.org/licenses/MIT MIT License	
@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"io"
+	"bytes"
 )
 
 var (
@@ -41,32 +42,40 @@ func Run()  {
 			time.Sleep(1 * time.Second)
 		}
 
-		c := next_campaign()
+		c := nextCampaign()
 		if c.id != "" {
 			startedCampaign = append(startedCampaign, c.id)
 			go run_campaign(c)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
-func next_campaign() campaign {
+func nextCampaign() campaign {
 	var c campaign
-
-	started := ""
+	var started bytes.Buffer
 	for i, s := range startedCampaign {
 		if i != 0 {
-			started += ","
+			started.WriteString(",")
 		}
-		started += "'" + s + "'"
+		started.WriteString("'" + s + "'")
 	}
 
-	query := "SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0"
-	if started != "" {
-		query += " AND t1.`id` NOT IN (" + started + ")"
+	var query bytes.Buffer
+	query.WriteString("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0")
+/* ToDo sqlite
+	if models.Config.DbType == "sqlite3" {
+		query = "SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (strftime('%s','now') BETWEEN strftime('%s',t1.`start_time`) AND strftime('%s',t1.`end_time`)) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0"
+	}
+	if (models.Config.DbType == "mysql") {
+		query = "SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0"
+	}
+*/
+	if started.String() != "" {
+		query.WriteString(" AND t1.`id` NOT IN (" + started.String() + ")")
 	}
 
-	models.Db.QueryRow(query).Scan(
+	models.Db.QueryRow(query.String()).Scan(
 		&c.id,
 		&c.from_email,
 		&c.from_name,
@@ -82,7 +91,7 @@ func next_campaign() campaign {
 	return c
 }
 
-func remove_started_campaign(id string) {
+func removeStartedCampaign(id string) {
 	for i, d := range startedCampaign {
 		if d == id {
 			startedCampaign = append(startedCampaign[:i], startedCampaign[i+1:]...)
@@ -93,9 +102,9 @@ func remove_started_campaign(id string) {
 }
 
 func run_campaign(c campaign) {
-	c.get_attachments()
+	c.getAttachments()
 	c.send()
-	c.resend_soft_bounce()
-	remove_started_campaign(c.id)
+	c.resendSoftBounce()
+	removeStartedCampaign(c.id)
 	camplog.Println("Finish campaign id", c.id)
 }

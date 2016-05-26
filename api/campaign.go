@@ -83,8 +83,6 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden get campaign"}`)
 		}
 
-		break
-
 	case "save-data":
 		decoder := json.NewDecoder(r.Body)
 		err = decoder.Decode(&data)
@@ -133,7 +131,6 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 			js = []byte(`{"status": "error", "message": "Forbidden save campaign"}`)
 		}
 
-		break
 
 	case "accept":
 		decoder := json.NewDecoder(r.Body)
@@ -167,7 +164,6 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden accept campaign"}`)
 		}
-		break
 	}
 
 	w.Header().Set("Content-Type", "application/json")

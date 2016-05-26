@@ -52,7 +52,7 @@ func (m *Message) New(recipientId string) error {
 	return nil
 }
 
-func Decode_data(base64data string) (message Message, data string, err error) {
+func DecodeData(base64data string) (message Message, data string, err error) {
 	var param JsonData
 
 	decode, err := base64.URLEncoding.DecodeString(base64data)
@@ -79,7 +79,7 @@ func (m *Message) Unsubscribe() error {
 	return err
 }
 
-func (m *Message) Unsubscribe_template_dir() (name string) {
+func (m *Message) UnsubscribeTemplateDir() (name string) {
 	Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignId).Scan(&name)
 	if name == "" {
 		name = "default"
@@ -95,7 +95,7 @@ func (m *Message) Unsubscribe_template_dir() (name string) {
 	return
 }
 
-func (m *Message) make_link(cmd, data string) string {
+func (m *Message) makeLink(cmd, data string) string {
 	j, _ := json.Marshal(
 		JsonData{
 			Id: m.RecipientId,
@@ -105,27 +105,27 @@ func (m *Message) make_link(cmd, data string) string {
 	return Config.Url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
-func (m *Message) Unsubscribe_web_link() string  {
-	return m.make_link("unsubscribe","web")
+func (m *Message) UnsubscribeWebLink() string  {
+	return m.makeLink("unsubscribe","web")
 }
 
-func (m *Message) Unsubscribe_mail_link() string  {
-	return m.make_link("unsubscribe","mail")
+func (m *Message) UnsubscribeMailLink() string  {
+	return m.makeLink("unsubscribe","mail")
 }
 
-func (m *Message) Redirect_link(url string) string {
-	return m.make_link("redirect", url)
+func (m *Message) RedirectLink(url string) string {
+	return m.makeLink("redirect", url)
 }
 
-func (m *Message) Web_link() string {
-	return m.make_link("web", "")
+func (m *Message) WebLink() string {
+	return m.makeLink("web", "")
 }
 
-func (m *Message) StatPng_link() string {
-	return m.make_link("open", "")
+func (m *Message) StatPngLink() string {
+	return m.makeLink("open", "")
 }
 
-func (m *Message) Render_message() (string, error) {
+func (m *Message) RenderMessage() (string, error) {
 
 	var err error
 	var web bool
@@ -155,11 +155,11 @@ func (m *Message) Render_message() (string, error) {
 		m.RecipientParam[paramKey] = paramValue
 	}
 
-	m.RecipientParam["UnsubscribeUrl"] = m.Unsubscribe_web_link()
-	m.RecipientParam["StatPng"] = m.StatPng_link()
+	m.RecipientParam["UnsubscribeUrl"] = m.UnsubscribeWebLink()
+	m.RecipientParam["StatPng"] = m.StatPngLink()
 
 	if !web {
-		m.RecipientParam["WebUrl"] = m.Web_link()
+		m.RecipientParam["WebUrl"] = m.WebLink()
 
 		// add statistic png
 		if strings.Index(m.CampaignTemplate, "{{.StatPng}}") == -1 {
@@ -195,7 +195,7 @@ func (m *Message) Render_message() (string, error) {
 			urlt.Execute(u, m.RecipientParam)
 			s = u.String()
 
-			return `href="` + m.Redirect_link(s) + `"`
+			return `href="` + m.RedirectLink(s) + `"`
 		}
 	})
 

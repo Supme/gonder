@@ -71,7 +71,6 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			}  else {
 				js = []byte(`{"status": "error", "message": "Forbidden get recipients"}`)
 			}
-			break
 
 		case "upload":
 			if auth.Right("upload-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
@@ -105,7 +104,6 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden upload recipients"}`)
 			}
-			break
 
 		case "deleteAll":
 			if auth.Right("delete-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
@@ -137,8 +135,6 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			}  else {
 				js = []byte(`{"status": "error", "message": "Forbidden get recipient parameters"}`)
 			}
-
-			break
 		}
 	}
 

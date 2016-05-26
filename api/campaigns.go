@@ -61,7 +61,6 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden get campaigns"}`)
 		}
-		break
 
 	case "save-records":
 		if auth.Right("save-campaigns") {
@@ -84,7 +83,6 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden save campaigns"}`)
 		}
-		break
 
 	case "add-record":
 		if auth.Right("add-campaigns") {
@@ -101,7 +99,6 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden add campaigns"}`)
 		}
-		break
 	}
 
 	w.Header().Set("Content-Type", "application/json")

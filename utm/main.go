@@ -42,7 +42,6 @@ type oldJson struct {
 	Unsubscribe string `json:"s"`
 }
 
-
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
@@ -64,7 +63,7 @@ func Run() {
 
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("# Gonder " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /unsubscribe\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
+		w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /unsubscribe\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
 	})
 
 	utm.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +77,7 @@ func Run() {
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			message, data, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
+			message, data, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
 			if err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
@@ -90,7 +89,7 @@ func Run() {
 					http.Error(w, "", http.StatusInternalServerError)
 					return
 				} else {
-					if t, err := template.ParseFiles(message.Unsubscribe_template_dir() + "/success.html"); err != nil {
+					if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
 						utmlog.Println(err)
 						http.Error(w, "", http.StatusInternalServerError)
 						return
@@ -103,7 +102,7 @@ func Run() {
 				}
 			}
 			if data == "web" {
-				if t, err := template.ParseFiles(message.Unsubscribe_template_dir() + "/accept.html"); err != nil {
+				if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/accept.html"); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -132,7 +131,7 @@ func Run() {
 				http.Error(w, "Not valid request", http.StatusInternalServerError)
 				return
 			}
-			if t, err := template.ParseFiles(message.Unsubscribe_template_dir() + "/success.html"); err != nil {
+			if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
 				return
@@ -151,7 +150,7 @@ func Run() {
 	})
 
 	utm.HandleFunc("/redirect/", func(w http.ResponseWriter, r *http.Request) {
-		message, data, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
+		message, data, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -165,7 +164,7 @@ func Run() {
 
 	utm.HandleFunc("/web/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		message, _, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
+		message, _, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -173,7 +172,7 @@ func Run() {
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
 		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", getIP(r) + " " + r.UserAgent(), message.RecipientId)
-		data, err := message.Render_message()
+		data, err := message.RenderMessage()
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -183,7 +182,7 @@ func Run() {
 	})
 
 	utm.HandleFunc("/open/", func(w http.ResponseWriter, r *http.Request) {
-		message, _, err := models.Decode_data(strings.Split(r.URL.Path, "/")[2])
+		message, _, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -236,7 +235,7 @@ func Run() {
 				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
 				var m models.Message
 				m.New(param.Recipient)
-				message, err :=  m.Render_message()
+				message, err :=  m.RenderMessage()
 				if err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)

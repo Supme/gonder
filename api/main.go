@@ -20,6 +20,8 @@ import (
 	"os"
 	"io"
 	"github.com/supme/gonder/models"
+	"runtime"
+	"strconv"
 )
 
 var (
@@ -39,6 +41,12 @@ func Run()  {
 	apilog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	api := http.NewServeMux()
+
+	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		mem := new(runtime.MemStats)
+		runtime.ReadMemStats(mem)
+		w.Write([]byte("Welcome to San Tropez! (Conn: "  + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
+	})
 
 	// Groups
 	// Example:
