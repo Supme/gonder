@@ -143,6 +143,6 @@ func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func logging(r *http.Request)  {
-	apilog.Printf("user: '%s' host: %s %s %s", auth.Name, r.RemoteAddr, r.Method, r.RequestURI)
+	apilog.Printf("user: '%s' host: %s %s %s", auth.Name, models.GetIP(r), r.Method, r.RequestURI)
 }
 

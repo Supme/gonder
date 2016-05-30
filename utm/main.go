@@ -25,7 +25,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"regexp"
-	"net"
 )
 
 var (
@@ -281,15 +280,8 @@ func Run() {
 
 func mux_log(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		utmlog.Printf("host: %s %s %s", getIP(r), r.Method, r.RequestURI)
+		utmlog.Printf("host: %s %s %s", models.GetIP(r), r.Method, r.RequestURI)
 		handler.ServeHTTP(w, r)
 	})
 }
 
-func getIP(r *http.Request) string {
-	if ipProxy := r.Header.Get("X-FORWARDED-FOR"); len(ipProxy) > 0 {
-		return ipProxy
-	}
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	return ip
-}
