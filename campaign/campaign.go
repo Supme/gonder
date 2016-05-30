@@ -19,6 +19,7 @@ import (
 	"time"
 	"strconv"
 	"math/rand"
+	"bytes"
 )
 
 type (
@@ -107,8 +108,10 @@ func (r recipient) send(c *campaign) string {
 	if e == nil {
 		data.Subject = message.CampaignSubject
 		data.Html = m
-		data.Extra_header = "List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n"
-		data.Extra_header += "Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n"
+		var extraHeader bytes.Buffer
+		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n")
+		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n")
+		data.Extra_header = extraHeader.String()
 
 		var res error
 		if models.Config.RealSend {
