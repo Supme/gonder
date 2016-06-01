@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+        body {
+            background-color: #f2f2f2;
+        }
+        form.form-horizontal {
+            padding-top: 20px;
+            line-height: 0px;
+            text-align: center;
+        }
+        div {
+            font-family: Arial, Sans-selif, Helvetica;
+            padding-top: 20px;
+        }
+        button {
+            line-height: normal;
+        }
+        div.box {
+            border-style: solid;
+            border-color: #efefef;
+            border-style: outset;
+            border-radius: 6px;
+            margin: auto;
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+        }
+        div.unit {
+            line-height: normal;
+        }
+        @media only screen and (max-width:480px){
+            body {
+                padding: 10px;
+            }
+            div.box {
+                width: 100% !important;
+                max-width: 300px !important;
+                background-color: #ffffff;
+                padding: 0px;
+                margin: 0px;
+            }
+            form.form-horizontal {
+                padding: 0px;
+                margin: 0px;
+                line-height: 0px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<form class="form-horizontal" method="POST" action="/unsubscribe">
+    <input id="campaignId" name="campaignId" type="hidden" value="{{.campaignId}}">
+    <input id="recipientId" name="recipientId" type="hidden" value="{{.recipientId}}">
+    <div class="box">
+        <div class="unit">Если Вы больше не желаете получать от нас интересные новости и предложения, то нажмите кнопку "Отписаться".</div>
+        <div class="unit">Но нам Вас будет очень не хватать :(</div>
+        <div><button id="unsubscribe" name="unsubscribe" class="btn btn-success">Custom Отписаться</button></div>
+        <div></div>
+    </div>
+</form>
+
+</body>
+</html>
