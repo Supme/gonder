@@ -26,6 +26,7 @@ type domainMx struct {
 
 var servers = map[string]domainMx{}
 
+// Return MX records for domain
 func getMX(domain string) ([]*net.MX, error) {
 
 	if _, ok := servers[domain]; ok || servers[domain].time.Unix() > time.Now().Add(-5 * time.Minute).Unix() {
@@ -45,6 +46,7 @@ func getMX(domain string) ([]*net.MX, error) {
 	return servers[domain].mxs, nil
 }
 
+// Add one connect to domain
 func upMXconnect(domain string)  {
 	s := servers[domain]
 	s.connection++
@@ -52,6 +54,7 @@ func upMXconnect(domain string)  {
 	log.Printf("%d connections to %s\n", getMXconnect(domain), domain)
 }
 
+// Sub one connect to domain
 func downMXconnect(domain string)  {
 	s := servers[domain]
 	s.connection--
@@ -59,6 +62,7 @@ func downMXconnect(domain string)  {
 	log.Printf("%d connections to %s\n", getMXconnect(domain), domain)
 }
 
+// Get count connection to domain
 func getMXconnect(domain string) int {
 	if _, ok := servers[domain]; !ok {
 		return int(0)

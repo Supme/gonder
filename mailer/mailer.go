@@ -52,7 +52,7 @@ type (
 )
 
 func (m *MailData) Send() error {
-	connect := new(Connect)
+	s := new(connect)
 
 	// trim space
 	m.To_email = strings.TrimSpace(m.To_email)
@@ -67,13 +67,13 @@ func (m *MailData) Send() error {
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
-	conn, err := connect.Up(m.Iface, domain)
+	conn, err := s.up(m.Iface, domain)
 	if err != nil {
 		return err
 	}
-	defer connect.Close()
+	defer s.close()
 
-	c, err := smtp.NewClient(conn, connect.ServerMx)
+	c, err := smtp.NewClient(conn, s.serverMx)
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (NewClient)\r\n", err))
 	}

@@ -18,14 +18,15 @@ import (
 )
 
 type (
-	Connect struct {
-		ServerMx string
+	connect struct {
+		serverMx string
 		domain string
 		conn net.Conn
 	}
 )
 
-func (c *Connect) Up(iface, domain string) (net.Conn, error) {
+// Get
+func (c *connect) up(iface, domain string) (net.Conn, error) {
 	var (
 		s proxy.Dialer
 		n net.Dialer
@@ -62,7 +63,7 @@ func (c *Connect) Up(iface, domain string) (net.Conn, error) {
 			c.conn, err = n.Dial("tcp", smx)
 		}
 		if err == nil {
-			c.ServerMx = record[i].Host
+			c.serverMx = record[i].Host
 			break
 		}
 	}
@@ -74,7 +75,7 @@ func (c *Connect) Up(iface, domain string) (net.Conn, error) {
 	return c.conn, err
 }
 
-func (c *Connect) Close(){
+func (c *connect) close(){
 	c.conn.Close()
 	downMXconnect(c.domain)
 }
