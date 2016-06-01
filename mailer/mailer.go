@@ -52,31 +52,8 @@ type (
 )
 
 func (m *MailData) Send() error {
-	var smx string
-	var mx []*net.MX
-	var conn net.Conn
+	connect := new(Connect)
 
-	if m.Iface == "" {
-		// default interface
-		m.n = net.Dialer{}
-	} else {
-		if m.Iface[0:8] == "socks://" {
-			m.Iface = m.Iface[8:]
-			var err error
-			m.s, err = proxy.SOCKS5("tcp", m.Iface, nil, proxy.FromEnvironment())
-			if err != nil {
-				return err
-			}
-		} else {
-			connectAddr := net.ParseIP(m.Iface)
-			tcpAddr := &net.TCPAddr{
-				IP: connectAddr,
-			}
-			m.n = net.Dialer{LocalAddr: tcpAddr}
-		}
-	}
-
-	//ToDo cache MX servers
 	// trim space
 	m.To_email = strings.TrimSpace(m.To_email)
 	// punycode convert
@@ -90,30 +67,13 @@ func (m *MailData) Send() error {
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
-	mx, err = net.LookupMX(domain)
-	if err != nil {
-		return errors.New(fmt.Sprintf("LookupMX failed: %v\r\n", err))
-	} else {
-		for i := range mx {
-			smx := net.JoinHostPort(mx[i].Host, "25")
-			// Set ip (from MX records) and port mail server
-			if m.s != nil {
-				conn, err = m.s.Dial("tcp", smx)
-			} else {
-				conn, err = m.n.Dial("tcp", smx)
-			}
-			if err == nil {
-				break
-			}
-		}
-	}
+	conn, err := connect.Up(m.Iface, domain)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer connect.Close()
 
-	host, _, _ := net.SplitHostPort(smx)
-	c, err := smtp.NewClient(conn, host)
+	c, err := smtp.NewClient(conn, connect.ServerMx)
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (NewClient)\r\n", err))
 	}
@@ -172,7 +132,7 @@ func (m *MailData) makeMail() string {
 	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\r\n")
 	msg.WriteString("MIME-Version: 1.0\r\n")
 	msg.WriteString("Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n")
-	msg.WriteString("X-Mailer: " + models.Config.Version + "\r\n")
+	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\r\n")
 	msg.WriteString(m.Extra_header + "\r\n")
 	// ------------- /head ---------------------------------------------------------
 

@@ -156,7 +156,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, data)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", getIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
 		url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(data, 2)
 		http.Redirect(w, r, strings.TrimSpace(url[len(url)-1]), http.StatusFound)
 	})
@@ -170,7 +170,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", getIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
 		data, err := message.RenderMessage()
 		if err != nil {
 			utmlog.Println(err)
@@ -188,7 +188,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'open_trace')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", getIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
 		w.Header().Set("Content-Type", "image/png")
 		png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		w.Write(png)
@@ -216,7 +216,7 @@ func Run() {
 				return
 			}
 
-			userAgent := getIP(r) + " " + r.UserAgent()
+			userAgent := models.GetIP(r) + " " + r.UserAgent()
 
 			if param.Opened != "" {
 				models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", param.Campaign, param.Recipient, "open_trace")
