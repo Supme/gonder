@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"math/rand"
 	"bytes"
+	"strings"
 )
 
 type (
@@ -86,6 +87,8 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 }
 
 func (r recipient) send(c *campaign) string {
+	start := time.Now()
+
 	data := new(mailer.MailData)
 	data.Iface = c.iface
 	data.From_email = c.from_email
@@ -132,7 +135,7 @@ func (r recipient) send(c *campaign) string {
 		rs = e.Error()
 	}
 
-	camplog.Printf("Campaign %s for recipient id %s email %s is %s", c.id, r.id, data.To_email, rs)
+	camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.id, r.id, data.To_email, rs, time.Since(start))
 	return rs
 }
 
@@ -189,7 +192,21 @@ func (c campaign) send() {
 				stream -= 1
 			}
 			go func(d recipient) {
+				domain := strings.Split(d.to_email, "@")
+				ok := len(domain) == 2
+				if ok {
+					for i:=1; i<15; i++ {
+						if models.DomainMaxConn(domain[1]) {
+							time.Sleep(time.Second)
+						} else {
+							break
+						}
+					}
+					models.DomainUpConn(domain[1])
+				}
 				rs := d.send(&c)
+				//ToDo down max connection if rs == ???
+				if ok { models.DomainDownConn(domain[1]) }
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
 				next <- true
 			}(r)

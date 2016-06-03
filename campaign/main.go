@@ -19,10 +19,17 @@ import (
 	"os"
 	"io"
 	"bytes"
+	"sync"
 )
 
+type started struct{
+	campaigns []string
+	sync.Mutex
+}
+
 var (
-	startedCampaign []string
+	startedCampaign started
+	campSum int
 	camplog *log.Logger
 )
 
@@ -38,14 +45,23 @@ func Run()  {
 	camplog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	for {
-		for len(startedCampaign) >= models.Config.MaxCampaingns {
+		for {
+			startedCampaign.Lock()
+			campSum = len(startedCampaign.campaigns)
+			startedCampaign.Unlock()
+			if campSum <= models.Config.MaxCampaingns {
+				break
+			}
 			time.Sleep(1 * time.Second)
 		}
 
 		c := nextCampaign()
 		if c.id != "" {
-			startedCampaign = append(startedCampaign, c.id)
+			startedCampaign.Lock()
+			startedCampaign.campaigns = append(startedCampaign.campaigns, c.id)
+			startedCampaign.Unlock()
 			go run_campaign(c)
+
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -54,13 +70,14 @@ func Run()  {
 func nextCampaign() campaign {
 	var c campaign
 	var started bytes.Buffer
-	for i, s := range startedCampaign {
+	startedCampaign.Lock()
+	for i, s := range startedCampaign.campaigns {
 		if i != 0 {
 			started.WriteString(",")
 		}
 		started.WriteString("'" + s + "'")
 	}
-
+	startedCampaign.Unlock()
 	var query bytes.Buffer
 	query.WriteString("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0")
 /* ToDo sqlite
@@ -92,12 +109,14 @@ func nextCampaign() campaign {
 }
 
 func removeStartedCampaign(id string) {
-	for i, d := range startedCampaign {
-		if d == id {
-			startedCampaign = append(startedCampaign[:i], startedCampaign[i+1:]...)
-			return
+	startedCampaign.Lock()
+	for i := range startedCampaign.campaigns {
+		if startedCampaign.campaigns[i] == id {
+			startedCampaign.campaigns = append(startedCampaign.campaigns[:i], startedCampaign.campaigns[i+1:]...)
+			break
 		}
 	}
+	startedCampaign.Unlock()
 	return
 }
 

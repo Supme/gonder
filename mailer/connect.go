@@ -15,6 +15,8 @@ package mailer
 import (
 	"net"
 	"golang.org/x/net/proxy"
+	"time"
+	"fmt"
 )
 
 type (
@@ -25,7 +27,6 @@ type (
 	}
 )
 
-// Get
 func (c *connect) up(iface, domain string) (net.Conn, error) {
 	var (
 		s proxy.Dialer
@@ -53,8 +54,10 @@ func (c *connect) up(iface, domain string) (net.Conn, error) {
 			n = net.Dialer{LocalAddr: tcpAddr}
 		}
 	}
-
-	record, err := getMX(c.domain)
+	start := time.Now()
+	record, err := net.LookupMX(c.domain)
+	lookupTime := time.Since(start)
+	start = time.Now()
 	for i := range record {
 		smx := net.JoinHostPort(record[i].Host, "25")
 		if s != nil {
@@ -64,18 +67,11 @@ func (c *connect) up(iface, domain string) (net.Conn, error) {
 		}
 		if err == nil {
 			c.serverMx = record[i].Host
+			connTime := time.Since(start)
+			fmt.Printf("Connect time to %s %s. Lookup time %s.\n", c.domain, connTime, lookupTime)
 			break
 		}
 	}
 
-	if err == nil {
-		upMXconnect(c.domain)
-	}
-
 	return c.conn, err
-}
-
-func (c *connect) close(){
-	c.conn.Close()
-	downMXconnect(c.domain)
 }

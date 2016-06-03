@@ -48,6 +48,7 @@ func init() {
 	checkErr(err)
 	Db.SetMaxIdleConns(10)
 	Db.SetMaxOpenConns(10)
+	domains = domainStor{name:map[string]int{}}
 	_, err = Db.Query("SELECT 1 FROM `auth_user`")
 	if err != nil {
 		checkErr(createDb())

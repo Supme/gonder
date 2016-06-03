@@ -23,8 +23,8 @@ import (
 	"golang.org/x/net/proxy"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"net/smtp"
+	"net/http"
 	"strings"
 	"golang.org/x/net/idna"
 )
@@ -52,7 +52,6 @@ type (
 )
 
 func (m *MailData) Send() error {
-	s := new(connect)
 
 	// trim space
 	m.To_email = strings.TrimSpace(m.To_email)
@@ -67,11 +66,11 @@ func (m *MailData) Send() error {
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
+	s := new(connect)
 	conn, err := s.up(m.Iface, domain)
 	if err != nil {
 		return err
 	}
-	defer s.close()
 
 	c, err := smtp.NewClient(conn, s.serverMx)
 	if err != nil {
