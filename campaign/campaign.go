@@ -196,11 +196,10 @@ func (c campaign) send() {
 				ok := len(domain) == 2
 				if ok {
 					for i:=1; i<15; i++ {
-						if models.DomainMaxConn(c.host, domain[1]) {
-							time.Sleep(time.Second)
-						} else {
+						if !models.DomainMaxConn(c.host, domain[1]) {
 							break
 						}
+						time.Sleep(time.Second)
 					}
 					models.DomainUpConn(c.host, domain[1])
 				}

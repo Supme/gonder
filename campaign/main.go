@@ -63,7 +63,6 @@ func Run()  {
 			go run_campaign(c)
 
 		}
-		time.Sleep(5 * time.Second)
 	}
 }
 

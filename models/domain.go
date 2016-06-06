@@ -16,7 +16,6 @@ import (
 	"sync"
 	"net"
 	"time"
-	"fmt"
 )
 
 type (
@@ -79,10 +78,9 @@ func domainGet(host, domain string) (connNow, connMax , i int) {
 func DomainMaxConn(host, domain string) bool {
 	connNow, connMax, _ := domainGet(host, domain)
 	if connMax == 0 {
-		return true
+		return false
 	}
-	r := connNow >= connMax - 1
-	fmt.Printf("Domain %s have %d connections\n",domain, DomainGetConnNow(host, domain))
+	r := connNow <= connMax - 1
 	return r
 }
 
@@ -129,28 +127,12 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 			return record, nil
 		}
 	}
-
 	record, err = net.LookupMX(domain)
 	mx.stor[domain] = mxStor{
 		records: record,
 		update:time.Now(),
 	}
-	//mx.stor[domain].records = record
-	//mx.stor[domain].update = time.Now()
 	mx.Unlock()
-/*
-	conn, i := domainGet(domain)
-	if len(conn.mx) != 0 || conn.mxRefresh.Unix() > time.Now().Add(-5 * time.Minute).Unix() {
-		record = conn.mx
-	} else {
-		record, err = net.LookupMX(domain)
-		domains.mu.Lock()
-		domains.conn[i].mx = record
-		domains.conn[i].mxRefresh = time.Now()
-		domains.mu.Unlock()
-	}
-	fmt.Print(record)
-*/
 	return record, err
 }
 
