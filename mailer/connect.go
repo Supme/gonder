@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/proxy"
 	"time"
 	"fmt"
+	"github.com/supme/gonder/models"
 )
 
 type (
@@ -55,7 +56,8 @@ func (c *connect) up(iface, domain string) (net.Conn, error) {
 		}
 	}
 	start := time.Now()
-	record, err := net.LookupMX(c.domain)
+	//record, err := net.LookupMX(c.domain)
+	record, err := models.DomainGetMX(c.domain)
 	lookupTime := time.Since(start)
 	start = time.Now()
 	for i := range record {
@@ -74,4 +76,8 @@ func (c *connect) up(iface, domain string) (net.Conn, error) {
 	}
 
 	return c.conn, err
+}
+
+func (c *connect) down() {
+	c.conn.Close()
 }

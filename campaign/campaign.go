@@ -196,17 +196,21 @@ func (c campaign) send() {
 				ok := len(domain) == 2
 				if ok {
 					for i:=1; i<15; i++ {
-						if models.DomainMaxConn(domain[1]) {
+						if models.DomainMaxConn(c.host, domain[1]) {
 							time.Sleep(time.Second)
 						} else {
 							break
 						}
 					}
-					models.DomainUpConn(domain[1])
+					models.DomainUpConn(c.host, domain[1])
 				}
 				rs := d.send(&c)
-				//ToDo down max connection if rs == ???
-				if ok { models.DomainDownConn(domain[1]) }
+				if ok {
+					models.DomainDownConn(c.host, domain[1])
+					if rs[0:2] == "421" {
+						models.DomainDownMax(c.host, domain[1])
+					}
+				}
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
 				next <- true
 			}(r)
