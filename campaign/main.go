@@ -61,8 +61,8 @@ func Run()  {
 			startedCampaign.campaigns = append(startedCampaign.campaigns, c.id)
 			startedCampaign.Unlock()
 			go run_campaign(c)
-
 		}
+		time.Sleep(10 * time.Second)
 	}
 }
 
