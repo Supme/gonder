@@ -192,7 +192,7 @@ func (c campaign) send() {
 				stream -= 1
 			}
 			go func(d recipient) {
-				domain := strings.Split(d.to_email, "@")
+/*				domain := strings.Split(d.to_email, "@")
 				ok := len(domain) == 2
 				if ok {
 					for i:=1; i<15; i++ {
@@ -203,13 +203,16 @@ func (c campaign) send() {
 					}
 					models.DomainUpConn(c.host, domain[1])
 				}
+*/
 				rs := d.send(&c)
+/*
 				if ok {
 					models.DomainDownConn(c.host, domain[1])
 					if rs[0:2] == "421" {
 						models.DomainDownMax(c.host, domain[1])
 					}
 				}
+*/
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
 				next <- true
 			}(r)

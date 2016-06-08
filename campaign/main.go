@@ -22,13 +22,11 @@ import (
 	"sync"
 )
 
-type started struct{
-	campaigns []string
-	sync.Mutex
-}
-
 var (
-	startedCampaign started
+	startedCampaign struct{
+		campaigns []string
+		sync.Mutex
+	}
 	campSum int
 	camplog *log.Logger
 )
@@ -68,13 +66,13 @@ func Run()  {
 
 func nextCampaign() campaign {
 	var c campaign
-	var started bytes.Buffer
+	var launched bytes.Buffer
 	startedCampaign.Lock()
 	for i, s := range startedCampaign.campaigns {
 		if i != 0 {
-			started.WriteString(",")
+			launched.WriteString(",")
 		}
-		started.WriteString("'" + s + "'")
+		launched.WriteString("'" + s + "'")
 	}
 	startedCampaign.Unlock()
 	var query bytes.Buffer
@@ -87,8 +85,8 @@ func nextCampaign() campaign {
 		query = "SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0"
 	}
 */
-	if started.String() != "" {
-		query.WriteString(" AND t1.`id` NOT IN (" + started.String() + ")")
+	if launched.String() != "" {
+		query.WriteString(" AND t1.`id` NOT IN (" + launched.String() + ")")
 	}
 
 	models.Db.QueryRow(query.String()).Scan(

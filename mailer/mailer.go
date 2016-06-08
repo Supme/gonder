@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"strings"
 	"golang.org/x/net/idna"
+	"time"
 )
 
 type (
@@ -41,8 +42,9 @@ type (
 		Subject      string
 		Html         string
 		Attachments  []Attachment
-		s	     	 proxy.Dialer
-		n            net.Dialer
+		conn 		 net.Conn
+		socksConn	     	 proxy.Dialer
+		netConn            net.Dialer
 	}
 
 	Attachment struct {
@@ -66,13 +68,56 @@ func (m *MailData) Send() error {
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
+/*
 	s := new(connect)
 	conn, err := s.up(m.Iface, domain)
 	if err != nil {
 		return err
 	}
+*/
 
-	c, err := smtp.NewClient(conn, s.serverMx)
+	if m.Iface == "" {
+		// default interface
+		m.netConn = net.Dialer{}
+	} else {
+		if m.Iface[0:8] == "socks://" {
+			m.Iface = m.Iface[8:]
+			var err error
+			m.socksConn, err = proxy.SOCKS5("tcp", m.Iface, nil, proxy.FromEnvironment())
+			if err != nil {
+				return  err
+			}
+		} else {
+			connectAddr := net.ParseIP(m.Iface)
+			tcpAddr := &net.TCPAddr{
+				IP: connectAddr,
+			}
+			m.netConn = net.Dialer{LocalAddr: tcpAddr}
+		}
+	}
+	start := time.Now()
+	//record, err := net.LookupMX(c.domain)
+	record, err := models.DomainGetMX(domain)
+	lookupTime := time.Since(start)
+	start = time.Now()
+
+	var serverMx string
+	for i := range record {
+		smx := net.JoinHostPort(record[i].Host, "25")
+		if m.socksConn != nil {
+			m.conn, err = m.socksConn.Dial("tcp", smx)
+		} else {
+			m.conn, err = m.netConn.Dial("tcp", smx)
+		}
+		if err == nil {
+			serverMx = record[i].Host
+			connTime := time.Since(start)
+			fmt.Printf("Connect time to %s %s. Lookup time %s.\n", domain, connTime, lookupTime)
+			break
+		}
+	}
+
+	c, err := smtp.NewClient(m.conn, serverMx)
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (NewClient)\r\n", err))
 	}
