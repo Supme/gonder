@@ -57,6 +57,7 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 	var record []*net.MX
 	var err error
 	mx.Lock()
+	defer mx.Unlock()
 	if _, ok := mx.stor[domain]; ok {
 		if time.Since(mx.stor[domain].update) < 15 * time.Minute {
 			record = mx.stor[domain].records
@@ -69,7 +70,7 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 		records: record,
 		update:time.Now(),
 	}
-	mx.Unlock()
+
 	return record, err
 }
 
@@ -86,8 +87,6 @@ type (
 	}
 )
 
-var network Network
-
 func (n *Network) Init(profileId int) error {
 	var t networkConnect
 	row, err := Db.Query("SELECT iface, host FROM network WHERE profile_id=?", profileId)
@@ -95,10 +94,12 @@ func (n *Network) Init(profileId int) error {
 		return err
 	}
 	defer row.Close()
-	
+
+	n.Lock()
+	defer n.Unlock()
 	for row.Next() {
 		row.Scan(t.iface, t.host)
-		network = append(network, t)
+		n.connect = append(n.connect, t)
 	}
 	n.i = 0
 	return nil
@@ -106,9 +107,9 @@ func (n *Network) Init(profileId int) error {
 
 func (n *Network) Next() (iface, host string) {
 	n.Lock()
+	defer n.Unlock()
 	iface, host = n.connect[n.i].iface, n.connect[n.i].host
 	if n.i++; n.i >= len(n.connect) { n.i = 0 }
-	n.Unlock()
 	return
 }
 
