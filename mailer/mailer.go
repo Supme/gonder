@@ -68,14 +68,6 @@ func (m *MailData) Send() error {
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
-/*
-	s := new(connect)
-	conn, err := s.up(m.Iface, domain)
-	if err != nil {
-		return err
-	}
-*/
-
 	if m.Iface == "" {
 		// default interface
 		m.netConn = net.Dialer{}
@@ -99,8 +91,8 @@ func (m *MailData) Send() error {
 	//record, err := net.LookupMX(c.domain)
 	record, err := models.DomainGetMX(domain)
 	lookupTime := time.Since(start)
-	start = time.Now()
 
+	start = time.Now()
 	var serverMx string
 	for i := range record {
 		smx := net.JoinHostPort(record[i].Host, "25")
