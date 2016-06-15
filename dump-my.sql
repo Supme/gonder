@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `sender_id` int(11) NOT NULL,
   `name` text NOT NULL,
   `subject` text NOT NULL,
-  `body` text NOT NULL,
+  `body` mediumtext NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
   `send_unsubscribe` tinyint(1) NOT NULL DEFAULT '0',
