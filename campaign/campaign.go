@@ -207,7 +207,6 @@ func (c campaign) send() {
 				if ok {
 					models.DomainDownConn(c.host, domain[1])
 					if rs[0:2] == "421" {
-						camplog.Printf("Down connections to domain %s to &d", domain[1], models.DomainGetConnNow(c.host, domain[1]))
 						models.DomainDownMax(c.host, domain[1])
 					}
 				}
