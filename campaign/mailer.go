@@ -10,7 +10,7 @@
 //
 // Please see the License.txt file for more information.
 //
-package mailer
+package campaign
 
 import (
 	"github.com/supme/gonder/models"

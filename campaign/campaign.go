@@ -27,7 +27,7 @@ type (
 		id, from_email, from_name, subject, body, iface, host string
 		send_unsubscribe bool
 		stream, resend_delay, resend_count int
-		attachments []mailer.Attachment
+		attachments []Attachment
 		recipients  []recipient
 	}
 
@@ -88,7 +88,7 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 func (r recipient) send(c *campaign) string {
 	start := time.Now()
 
-	data := new(mailer.MailData)
+	data := new(MailData)
 	data.Iface = c.iface
 	data.From_email = c.from_email
 	data.From_name = c.from_name
@@ -169,7 +169,7 @@ func (c *campaign) getAttachments() {
 	for attach.Next() {
 		err = attach.Scan(&location, &name)
 		checkErr(err)
-		c.attachments = append(c.attachments, mailer.Attachment{Location: location, Name: name})
+		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
 	}
 }
 
