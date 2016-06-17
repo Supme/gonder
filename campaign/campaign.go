@@ -13,7 +13,6 @@
 package campaign
 
 import (
-	"github.com/supme/gonder/mailer"
 	"github.com/supme/gonder/models"
 	"errors"
 	"time"
@@ -77,6 +76,7 @@ func (c *campaign) getSoftBounceRecipients() {
 
 }
 
+// Check recipient for unsubscribe
 func (r *recipient) unsubscribe(campaignId string) bool {
 	var unsubscribeCount int
 	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.to_email).Scan(&unsubscribeCount)
@@ -86,6 +86,7 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 	return true
 }
 
+// Send mail for recipient this campaign data
 func (r recipient) send(c *campaign) string {
 	start := time.Now()
 
@@ -139,6 +140,7 @@ func (r recipient) send(c *campaign) string {
 	return rs
 }
 
+// Get all info for campaign
 func (c *campaign) get(id string) {
 	models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`from_id` WHERE t1.`id`=?", id).Scan(
 		c.id,
@@ -174,6 +176,7 @@ func (c *campaign) getAttachments() {
 	}
 }
 
+// Send campaign
 func (c campaign) send() {
 	count := 0
 	stream := 0
