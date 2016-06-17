@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package campaign
 
 import (
@@ -31,6 +19,12 @@ import (
 )
 
 type (
+	// Mail parameters and data
+	// Iface: send email from selected interface
+	//       "": default interface
+	//       "12.34.56.78": ip address interface
+	//       "socks://12.34.56.78:1234": send from remote socks server
+	// Host: host name of selected interface ip
 	MailData struct {
 		Iface 	     string
 		Host         string
@@ -47,12 +41,16 @@ type (
 		netConn            net.Dialer
 	}
 
+	// Attach file to mail
+	// Location: folder
+	// Name: file
 	Attachment struct {
 		Location string
 		Name     string
 	}
 )
 
+// Send email
 func (m *MailData) Send() error {
 
 	// trim space

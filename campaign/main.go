@@ -1,4 +1,4 @@
-	// Project Gonder.
+// Project Gonder.
 // Author Supme
 // Copyright Supme 2016
 // License http://opensource.org/licenses/MIT MIT License	
@@ -9,7 +9,7 @@
 //  PURPOSE.
 //
 // Please see the License.txt file for more information.
-//
+
 package campaign
 
 import (
@@ -31,6 +31,7 @@ var (
 	camplog *log.Logger
 )
 
+// Start look database for ready campaign for send
 func Run()  {
 	l, err := os.OpenFile("log/campaign.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
