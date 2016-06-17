@@ -30,6 +30,7 @@
                     <label></label>
                     <div>
                         <input id="recipientUploadFile" style="width: 600px;"><button id="recipientUploadButton" class="btn"></button><button id="recipientDeleteAllButton" class="btn"></button>
+                        <button id="recipientResend" class="btn"></button>
                     </div>
                 </div>
             </div>
@@ -90,9 +91,6 @@
         $(function () {
 
             w2utils.locale('/assets/locale/ru-ru.json');
-
-            $("#recipientUploadButton").html(w2utils.lang('Upload'));
-            $("#recipientDeleteAllButton").html(w2utils.lang('Delete all'));
 
             function getDate(dateStr, timeStr) {
                 //ToDo parse config format
@@ -628,8 +626,7 @@
 
             // --- Recipient upload ---
             $('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false/*placeholder: 'Select file'*/});
-
-            //ToDo check if no one file selected
+            $("#recipientUploadButton").html(w2utils.lang('Upload'));
             $('#recipientUploadButton').click(
                     function () {
                         if ($('#recipientUploadFile').data("selected").length == 0) {
@@ -664,6 +661,7 @@
             // --- /Recipient upload ---
 
             // --- Recipient delete all ---
+            $("#recipientDeleteAllButton").html(w2utils.lang('Delete all'));
             $("#recipientDeleteAllButton").click(
                     function () {
                         w2confirm(w2utils.lang('Delete all recipients from campaign?'), function (btn) {
@@ -686,12 +684,41 @@
                                     w2ui['recipient'].reload();
                                     w2ui.layout.unlock('main');
                                 })
-
                             }
                         })
                     }
             );
             // --- /Recipient delete all ---
+
+            $("#recipientResend").html(w2utils.lang('Resend by 4x1 code'));
+            $('#recipientResend').click(
+                    function () {
+                        console.log("click resend");
+                        w2confirm(w2utils.lang('Resend by 421 and 451 code?'), function (btn) {
+                            if (btn == 'Yes') {
+                                w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);
+                                $.ajax({
+                                    url: "api/recipients",
+                                    type: "POST",
+                                    data: {
+                                        content: "recipients",
+                                        cmd: "resend4x1",
+                                        campaign: $('#campaignId').val(),
+                                    },
+                                    dataType: "json"
+                                }).done(function(data) {
+                                    if (data['status'] == 'error') {
+                                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                                    }
+                                }).complete(function() {
+                                    w2ui['recipient'].reload();
+                                    w2ui.layout.unlock('main');
+                                })
+                            }
+                        })
+
+                    }
+            );
 
             // --- Profile table ---
             $('#profile').w2grid({

@@ -114,6 +114,13 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden delete recipients"}`)
 			}
+
+
+		case "resend4x1":
+			if auth.Right("accept-campaign") && auth.CampaignRight(r.Form["campaign"][0]) {
+				//ToDo resend
+				resendCampaign(r.Form["campaign"][0])
+			}
 		}
 	}
 
@@ -140,6 +147,13 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func resendCampaign(campaignId string) error {
+	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND (`status` LIKE '421%' OR `status` LIKE '451%')", campaignId)
+	c, _ := res.RowsAffected()
+	apilog.Printf("User %s resend by 4x1 code for campaign %s. Resend count %d", auth.Name, campaignId, c)
+	return err
 }
 
 func getRecipientCampaign(recipientId string) (int64, error){
