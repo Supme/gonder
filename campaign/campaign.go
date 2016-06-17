@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package campaign
 
 import (
@@ -19,7 +7,6 @@ import (
 	"strconv"
 	"math/rand"
 	"bytes"
-	"strings"
 )
 
 type (
@@ -27,7 +14,7 @@ type (
 		id, from_email, from_name, subject, body, iface, host string
 		send_unsubscribe bool
 		stream, resend_delay, resend_count int
-		attachments []mailer.Attachment
+		attachments []Attachment
 		recipients  []recipient
 	}
 
@@ -90,7 +77,7 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 func (r recipient) send(c *campaign) string {
 	start := time.Now()
 
-	data := new(mailer.MailData)
+	data := new(MailData)
 	data.Iface = c.iface
 	data.From_email = c.from_email
 	data.From_name = c.from_name
@@ -172,7 +159,7 @@ func (c *campaign) getAttachments() {
 	for attach.Next() {
 		err = attach.Scan(&location, &name)
 		checkErr(err)
-		c.attachments = append(c.attachments, mailer.Attachment{Location: location, Name: name})
+		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
 	}
 }
 
@@ -195,24 +182,7 @@ func (c campaign) send() {
 				stream -= 1
 			}
 			go func(d recipient) {
-				domain := strings.Split(d.to_email, "@")
-				ok := len(domain) == 2
-				if ok {
-					for i:=1; i<15; i++ {
-						if !models.DomainMaxConn(c.host, domain[1]) {
-							break
-						}
-						time.Sleep(time.Second)
-					}
-					models.DomainUpConn(c.host, domain[1])
-				}
 				rs := d.send(&c)
-				if ok {
-					models.DomainDownConn(c.host, domain[1])
-					if rs[0:2] == "421" {
-						models.DomainDownMax(c.host, domain[1])
-					}
-				}
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
 				next <- true
 			}(r)
