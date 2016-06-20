@@ -118,8 +118,12 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 
 		case "resend4x1":
 			if auth.Right("accept-campaign") && auth.CampaignRight(r.Form["campaign"][0]) {
-				//ToDo resend
-				resendCampaign(r.Form["campaign"][0])
+				err = resendCampaign(r.Form["campaign"][0])
+				if err != nil {
+					js = []byte(`{"status": "error", "message": "Can't resend"}`)
+				}
+			} else {
+				js = []byte(`{"status": "error", "message": "Forbidden resend campaign"}`)
 			}
 		}
 	}
