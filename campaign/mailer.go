@@ -88,6 +88,9 @@ func (m *MailData) Send() error {
 	start := time.Now()
 	//record, err := net.LookupMX(c.domain)
 	record, err := models.DomainGetMX(domain)
+	if err != nil {
+		return errors.New(fmt.Sprintf("LookupMX failed: %v\r\n", err))
+	}
 	lookupTime := time.Since(start)
 
 	start = time.Now()
@@ -106,6 +109,10 @@ func (m *MailData) Send() error {
 			break
 		}
 	}
+	if err != nil {
+		return err
+	}
+	defer m.conn.Close()
 
 	c, err := smtp.NewClient(m.conn, serverMx)
 	if err != nil {

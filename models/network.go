@@ -58,17 +58,16 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 	var err error
 	mx.Lock()
 	defer mx.Unlock()
-	if _, ok := mx.stor[domain]; ok {
-		if time.Since(mx.stor[domain].update) < 15 * time.Minute {
-			record = mx.stor[domain].records
-			mx.Unlock()
-			return record, nil
+	if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15 * time.Minute {
+		record, err = net.LookupMX(domain)
+		if err == nil {
+			mx.stor[domain] = mxStor{
+				records: record,
+				update:time.Now(),
+			}
 		}
-	}
-	record, err = net.LookupMX(domain)
-	mx.stor[domain] = mxStor{
-		records: record,
-		update:time.Now(),
+	} else {
+		record = mx.stor[domain].records
 	}
 
 	return record, err
