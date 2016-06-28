@@ -125,3 +125,9 @@ func run_campaign(c campaign) {
 	removeStartedCampaign(c.id)
 	camplog.Println("Finish campaign id", c.id)
 }
+
+func checkErr(err error) {
+	if err != nil {
+		camplog.Println(err)
+	}
+}
