@@ -10,95 +10,34 @@ type campaign struct {
 	send_unsubscribe bool
 	stream, resend_delay, resend_count int
 	attachments []Attachment
-	recipients  []recipient
 }
 
-func (c *campaign) getNullRecipients() {
-	var d recipient
-	c.recipients = nil
+
+func (c campaign) run(id string) {
+	c.get(id)
+	c.send()
+	c.resend()
+}
+
+
+// Send campaign
+func (c campaign) send() {
+	var r recipient
+	count := 0
+	stream := 0
+	next := make(chan bool)
 
 	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL")
 	checkErr(err)
 	defer query.Close()
 
-	//q, err := query.Query(c.id, c.stream)
 	q, err := query.Query(c.id)
 	checkErr(err)
 	defer q.Close()
 
 	for q.Next() {
-		err = q.Scan(&d.id, &d.to_email, &d.to_name)
+		err = q.Scan(&r.id, &r.to_email, &r.to_name)
 		checkErr(err)
-		c.recipients = append(c.recipients, d)
-	}
-}
-
-func (c *campaign) getSoftBounceRecipients() {
-	var	d recipient
-	c.recipients = nil
-
-	query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
-	checkErr(err)
-	defer query.Close()
-
-	q, err := query.Query(c.id)
-	checkErr(err)
-	defer q.Close()
-
-	for q.Next() {
-		err = q.Scan(&d.id, &d.to_email, &d.to_name)
-		checkErr(err)
-		c.recipients = append(c.recipients, d)
-	}
-
-}
-
-// Get all info for campaign
-func (c *campaign) get(id string) {
-	models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`from_id` WHERE t1.`id`=?", id).Scan(
-		c.id,
-		c.from_email,
-		c.from_name,
-		c.subject,
-		c.body,
-		c.iface,
-		c.host,
-		c.stream,
-		c.send_unsubscribe,
-		c.resend_delay,
-		c.resend_count,
-	)
-}
-
-func (c *campaign) getAttachments() {
-	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
-	checkErr(err)
-	defer attachment.Close()
-
-	attach, err := attachment.Query(c.id)
-	checkErr(err)
-	defer attach.Close()
-
-	c.attachments = nil
-	var location string
-	var name string
-	for attach.Next() {
-		err = attach.Scan(&location, &name)
-		checkErr(err)
-		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
-	}
-}
-
-// Send campaign
-func (c campaign) send() {
-	count := 0
-	stream := 0
-	next := make(chan bool)
-
-	c.getNullRecipients()
-	camplog.Printf("Start campaign %s. Count recipients %d", c.id, len(c.recipients))
-
-	for _, r := range c.recipients {
 		count += 1
 		if r.unsubscribe(c.id) == false  || c.send_unsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
@@ -124,26 +63,29 @@ func (c campaign) send() {
 	}
 	close(next)
 
-	camplog.Printf("Done campaign %s. Count %d", c.id, count)
+	camplog.Printf("Done campaign %s. The number of recipients %d", c.id, count)
 }
 
-func (c campaign) resendSoftBounce() {
-	c.getSoftBounceRecipients()
+func (c campaign) resend() {
+	var r recipient
 	if c.resend_count != 0 {
-		camplog.Printf("Start %d resend by campaign id %s ", len(c.recipients), c.id)
-	}
-	if len(c.recipients) == 0 {
-		return
+		camplog.Printf("Start resend by campaign id %s ", c.id)
 	}
 
 	for n := 0; n < c.resend_count; n++ {
 		time.Sleep(time.Duration(c.resend_delay) * time.Second)
-		c.getSoftBounceRecipients()
-		for _, r := range c.recipients {
-			// если пользователь ни разу не отказался от подписки в этой группе
-			var unsubscribeCount int
-			models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", c.id, r.to_email).Scan(&unsubscribeCount)
-			if unsubscribeCount == 0 || c.send_unsubscribe {
+		query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+		checkErr(err)
+		defer query.Close()
+
+		q, err := query.Query(c.id)
+		checkErr(err)
+		defer q.Close()
+
+		for q.Next() {
+			err = q.Scan(&r.id, &r.to_email, &r.to_name)
+			checkErr(err)
+			if r.unsubscribe(c.id) == false || c.send_unsubscribe {
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 				rs := r.send(&c)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
@@ -154,4 +96,41 @@ func (c campaign) resendSoftBounce() {
 		}
 	}
 }
+
+// Get all info for campaign
+func (c *campaign) get(id string) {
+	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`iface`,t2.`host`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+		&c.id,
+		&c.from_email,
+		&c.from_name,
+		&c.subject,
+		&c.body,
+		&c.iface,
+		&c.host,
+		&c.stream,
+		&c.send_unsubscribe,
+		&c.resend_delay,
+		&c.resend_count,
+	)
+
+	checkErr(err)
+
+	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
+	checkErr(err)
+	defer attachment.Close()
+
+	attach, err := attachment.Query(c.id)
+	checkErr(err)
+	defer attach.Close()
+
+	c.attachments = nil
+	var location string
+	var name string
+	for attach.Next() {
+		err = attach.Scan(&location, &name)
+		checkErr(err)
+		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
+	}
+}
+
 
