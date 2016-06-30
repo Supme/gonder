@@ -31,6 +31,9 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 		user, password, _ := r.BasicAuth()
 		a.userId, a.unitId, authorize = check(user, password)
 		if !authorize {
+			if user != "" {
+				apilog.Printf("%s bad auth login '%s'", models.GetIP(r), user)
+			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)
 			return
@@ -143,6 +146,6 @@ func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func logging(r *http.Request)  {
-	apilog.Printf("user: '%s' host: %s %s %s", auth.Name, models.GetIP(r), r.Method, r.RequestURI)
+	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.Name, r.Method, r.RequestURI)
 }
 

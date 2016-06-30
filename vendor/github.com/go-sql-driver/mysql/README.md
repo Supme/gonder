@@ -93,6 +93,8 @@ This has the same effect as an empty DSN string:
 
 ```
 
+Alternatively, [Config.FormatDSN](https://godoc.org/github.com/go-sql-driver/mysql#Config.FormatDSN) can be used to create a DSN string by filling a struct.
+
 #### Password
 Passwords can consist of any character. Escaping is **not** necessary.
 
@@ -218,6 +220,18 @@ Sets the location for time.Time values (when using `parseTime=true`). *"Local"* 
 Note that this sets the location for time.Time values but does not change MySQL's [time_zone setting](https://dev.mysql.com/doc/refman/5.5/en/time-zone-support.html). For that see the [time_zone system variable](#system-variables), which can also be set as a DSN parameter.
 
 Please keep in mind, that param values must be [url.QueryEscape](http://golang.org/pkg/net/url/#QueryEscape)'ed. Alternatively you can manually replace the `/` with `%2F`. For example `US/Pacific` would be `loc=US%2FPacific`.
+
+##### `multiStatements`
+
+```
+Type:           bool
+Valid Values:   true, false
+Default:        false
+```
+
+Allow multiple statements in one query. While this allows batch queries, it also greatly increases the risk of SQL injections. Only the result of the first query is returned, all other results are silently discarded.
+
+When `multiStatements` is used, `?` parameters must only be used in the first statement.
 
 
 ##### `parseTime`

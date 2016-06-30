@@ -285,7 +285,7 @@
 
             $('#campaignSendUnsubscribe').click(function(data) {
                 if ($('#campaignSendUnsubscribe').is(':checked')) {
-                    w2confirm(w2utils.lang('You are shure send mail for unsubscribed?'), function (btn) {
+                    w2confirm(w2utils.lang('You are sure send mail for unsubscribed?'), function (btn) {
                         if (btn != 'Yes') {
                             $('#campaignSendUnsubscribe').prop('checked', !$('#campaignSendUnsubscribe').is(':checked'));
                         }
@@ -296,9 +296,9 @@
             $('#campaignAcceptSend').click(function(data) {
                 var confirm;
                 if ($('#campaignAcceptSend').is(':checked')) {
-                    confirm = 'You are shure to activate campaign?';
+                    confirm = 'You are sure to activate campaign?';
                 } else {
-                    confirm = 'You are shure to deactivate campaign?';
+                    confirm = 'You are sure to deactivate campaign?';
                 }
                 w2confirm(w2utils.lang(confirm), function (btn) {
                     if (btn == 'Yes') {

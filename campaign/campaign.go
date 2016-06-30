@@ -12,13 +12,11 @@ type campaign struct {
 	attachments []Attachment
 }
 
-
 func (c campaign) run(id string) {
 	c.get(id)
 	c.send()
 	c.resend()
 }
-
 
 // Send campaign
 func (c campaign) send() {
