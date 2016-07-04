@@ -87,6 +87,7 @@ func Run()  {
 	api.HandleFunc("/api/senderlist", auth.Check(senderList))
 
 	// Reports
+	// Example:
 	// Get reports: http://host/api/report?campaign=4
 	api.HandleFunc("/api/report", auth.Check(report))
 

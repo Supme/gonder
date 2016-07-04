@@ -21,7 +21,7 @@ func report(w http.ResponseWriter, r *http.Request)  {
 	}
 	campaign := r.Form["campaign"][0]
 	if auth.CampaignRight(campaign) {
-		reports = append(reports, Report{Name:"WebVersionCount", Value:reportWebVersionCount(campaign)})
+		reports = append(reports, Report{Name:"OpenWebVersionCount", Value:reportOpenWebVersionCount(campaign)})
 		//ToDo
 		reports = append(reports, Report{Name:"Other statistic", Value:"Comming soon"})
 		js, err = json.Marshal(reports)
@@ -39,7 +39,7 @@ func report(w http.ResponseWriter, r *http.Request)  {
 }
 
 
-func reportWebVersionCount(id string) int {
+func reportOpenWebVersionCount(id string) int {
 	var count int
 	models.Db.QueryRow("SELECT COUNT(*) FROM `jumping` INNER JOIN recipient ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='web_version' AND `recipient`.`removed`!=1", id).Scan(&count)
 	return count
