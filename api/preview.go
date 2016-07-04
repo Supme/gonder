@@ -44,6 +44,14 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 				params[string(paramKey)] = string(paramValue)
 			}
 
+			var email, name string
+			err = models.Db.QueryRow("SELECT `email`, `name` FROM `recipient` WHERE `id`=?", r.FormValue("id")).Scan(&email, &name)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			params["RecipientEmail"] = email
+			params["RecipientName"] = name
+
 			if r.FormValue("type") != "web" {
 				params["WebUrl"] = "/preview?id=" + r.FormValue("id") + "&type=web"
 			}

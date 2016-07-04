@@ -157,6 +157,8 @@ func (m *Message) RenderMessage() (string, error) {
 
 	m.RecipientParam["UnsubscribeUrl"] = m.UnsubscribeWebLink()
 	m.RecipientParam["StatPng"] = m.StatPngLink()
+	m.RecipientParam["RecipientEmail"] = m.RecipientEmail
+	m.RecipientParam["RecipientName"] = m.RecipientName
 
 	if !web {
 		m.RecipientParam["WebUrl"] = m.WebLink()
