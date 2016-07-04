@@ -86,6 +86,11 @@ func Run()  {
 	api.HandleFunc("/api/sender", auth.Check(sender))
 	api.HandleFunc("/api/senderlist", auth.Check(senderList))
 
+	// Reports
+	// Get reports: http://host/api/report?campaign=4
+	api.HandleFunc("/api/report", auth.Check(report))
+
+
 	api.HandleFunc("/preview", auth.Check(getMailPreview))
 	api.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
 
