@@ -105,7 +105,7 @@ func (m *MailData) Send() error {
 		if err == nil {
 			serverMx = record[i].Host
 			connTime := time.Since(start)
-			fmt.Printf("Connect time to %s %s. Lookup time %s.", domain, connTime, lookupTime)
+			fmt.Printf("Connect time to %s %s. Lookup time %s.\n\r", domain, connTime, lookupTime)
 			break
 		}
 	}

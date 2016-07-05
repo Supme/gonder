@@ -66,8 +66,15 @@ func (c campaign) send() {
 
 func (c campaign) resend() {
 	var r recipient
+
+	var count int
+	models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
+	if count == 0 {
+		return
+	}
+
 	if c.resend_count != 0 {
-		camplog.Printf("Start resend by campaign id %s ", c.id)
+		camplog.Printf("Start %d resend by campaign id %s ", count, c.id)
 	}
 
 	for n := 0; n < c.resend_count; n++ {
