@@ -62,7 +62,7 @@ func (m *MailData) Send() error {
 	}
 	domain, err := idna.ToASCII(splitEmail[1])
 	if err != nil {
-		return errors.New(fmt.Sprintf("Domain name failed: %v\r\n", err))
+		return errors.New(fmt.Sprintf("Domain name failed: %v", err))
 	}
 	m.To_email = strings.Split(m.To_email, "@")[0] + "@" + domain
 
@@ -105,7 +105,7 @@ func (m *MailData) Send() error {
 		if err == nil {
 			serverMx = record[i].Host
 			connTime := time.Since(start)
-			fmt.Printf("Connect time to %s %s. Lookup time %s.\n", domain, connTime, lookupTime)
+			fmt.Printf("Connect time to %s %s. Lookup time %s.", domain, connTime, lookupTime)
 			break
 		}
 	}
@@ -116,36 +116,36 @@ func (m *MailData) Send() error {
 
 	c, err := smtp.NewClient(m.conn, serverMx)
 	if err != nil {
-		return errors.New(fmt.Sprintf("%v (NewClient)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (NewClient)", err))
 	}
 
 	if err := c.Hello(m.Host); err != nil {
-		return errors.New(fmt.Sprintf("%v (Hello)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (Hello)", err))
 	}
 
 	// Set the sender and recipient first
 	if err := c.Mail(m.From_email); err != nil {
-		return errors.New(fmt.Sprintf("%v (Mail)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (Mail)", err))
 	}
 
 	if err := c.Rcpt(m.To_email); err != nil {
-		return errors.New(fmt.Sprintf("%v (Rcpt)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (Rcpt)", err))
 	}
 
 	//dkim.New()
 
 	w, err := c.Data()
 	if err != nil {
-		return errors.New(fmt.Sprintf("%v (Data)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (Data)", err))
 	}
 	_, err = fmt.Fprint(w, m.makeMail())
 	if err != nil {
-		return errors.New(fmt.Sprintf("%v (wData)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (SendData)", err))
 	}
 
 	err = w.Close()
 	if err != nil {
-		return errors.New(fmt.Sprintf("%v (Close)\r\n", err))
+		return errors.New(fmt.Sprintf("%v (Close)", err))
 	}
 
 	return c.Quit()
