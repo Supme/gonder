@@ -60,10 +60,10 @@ func Run()  {
 			startedCampaign.campaigns = append(startedCampaign.campaigns, id)
 			c := campaign{}
 			go func() {
-				camplog.Printf("Start campaign %s.", id)
+				camplog.Printf("Start campaign id %s.", id)
 				c.run(id)
 				removeStartedCampaign(id)
-				camplog.Println("Finish campaign id", id)
+				camplog.Printf("Finish campaign id %s", id)
 			}()
 		}
 		startedCampaign.Unlock()

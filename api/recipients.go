@@ -169,7 +169,6 @@ func getRecipientCampaign(recipientId string) (int64, error){
 //ToDo check right errors
 func getRecipients(campaign, offset, limit string) (Recipients, error) {
 	var err error
-	var r Recipient
 	var rs Recipients
 	rs.Records = []Recipient{}
 	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=?  LIMIT ? OFFSET ?", campaign, limit, offset)
@@ -178,8 +177,8 @@ func getRecipients(campaign, offset, limit string) (Recipients, error) {
 	}
 	defer query.Close()
 	for query.Next() {
+		r := Recipient{}
 		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result)
-
 		rs.Records = append(rs.Records, r)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=?", campaign).Scan(&rs.Total)
