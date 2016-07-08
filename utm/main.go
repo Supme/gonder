@@ -275,10 +275,10 @@ func Run() {
 
 
 	utmlog.Println("UTM listening on port " + models.Config.StatPort + "...")
-	utmlog.Fatal(http.ListenAndServe(":" + models.Config.StatPort, mux_log(utm)))
+	utmlog.Fatal(http.ListenAndServe(":" + models.Config.StatPort, muxLog(utm)))
 }
 
-func mux_log(handler http.Handler) http.Handler {
+func muxLog(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		utmlog.Printf("host: %s %s %s", models.GetIP(r), r.Method, r.RequestURI)
 		handler.ServeHTTP(w, r)

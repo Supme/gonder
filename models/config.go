@@ -34,6 +34,7 @@ type config struct {
 	StatPort string
 	MaxCampaingns int
 	RealSend bool
+	DnsCache bool
 }
 
 var (
@@ -104,6 +105,11 @@ func (c *config) Update() {
 		c.RealSend = true
 	} else {
 		c.RealSend = false
+	}
+	if mailerConfig.ValueOf("dnscache") == "yes" {
+		c.DnsCache = true
+	} else {
+		c.DnsCache = false
 	}
 	c.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
 	if err != nil {

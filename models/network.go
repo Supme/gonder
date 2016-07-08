@@ -31,20 +31,27 @@ var mx = struct {
 }
 
 func DomainGetMX(domain string) ([]*net.MX, error) {
-	var record []*net.MX
-	var err error
-	mx.Lock()
-	defer mx.Unlock()
-	if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15 * time.Minute {
-		record, err = net.LookupMX(domain)
-		if err == nil {
-			mx.stor[domain] = mxStor{
-				records: record,
-				update:time.Now(),
+	var (
+		record []*net.MX
+		err error
+	)
+
+	if Config.DnsCache {
+		mx.Lock()
+		defer mx.Unlock()
+		if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15 * time.Minute {
+			record, err = net.LookupMX(domain)
+			if err == nil {
+				mx.stor[domain] = mxStor{
+					records: record,
+					update:time.Now(),
+				}
 			}
+		} else {
+			record = mx.stor[domain].records
 		}
 	} else {
-		record = mx.stor[domain].records
+		record, err = net.LookupMX(domain)
 	}
 
 	return record, err
