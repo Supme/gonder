@@ -114,6 +114,9 @@ func (m *MailData) Send() error {
 	}
 	defer m.conn.Close()
 
+	// 5 minute by RFC
+	m.conn.SetDeadline(time.Now().Add(5 * time.Minute))
+
 	c, err := smtp.NewClient(m.conn, serverMx)
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (NewClient)", err))

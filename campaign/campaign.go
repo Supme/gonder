@@ -7,8 +7,8 @@ import (
 
 type campaign struct {
 	id, from_email, from_name, subject, body, iface, host string
-	send_unsubscribe bool
-	stream, resend_delay, resend_count int
+	sendUnsubscribe bool
+	stream, resendDelay, resendCount int
 	attachments []Attachment
 }
 
@@ -37,7 +37,7 @@ func (c campaign) send() {
 		err = q.Scan(&r.id, &r.to_email, &r.to_name)
 		checkErr(err)
 		count += 1
-		if r.unsubscribe(c.id) == false  || c.send_unsubscribe {
+		if r.unsubscribe(c.id) == false  || c.sendUnsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 			stream += 1
 			if stream > c.stream {
@@ -61,24 +61,26 @@ func (c campaign) send() {
 	}
 	close(next)
 
-	camplog.Printf("Done campaign %s. The number of recipients %d", c.id, count)
+	camplog.Printf("Done campaign id %s. The number of recipients %d", c.id, count)
 }
 
 func (c campaign) resend() {
 	var r recipient
 
-	var count int
-	models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
+	count := c.countSoftBounce()
 	if count == 0 {
 		return
 	}
 
-	if c.resend_count != 0 {
+	if c.resendCount != 0 {
 		camplog.Printf("Start %d resend by campaign id %s ", count, c.id)
 	}
 
-	for n := 0; n < c.resend_count; n++ {
-		time.Sleep(time.Duration(c.resend_delay) * time.Second)
+	for n := 0; n < c.resendCount; n++ {
+		if c.countSoftBounce() == 0 {
+			return
+		}
+		time.Sleep(time.Duration(c.resendDelay) * time.Second)
 		query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
 		checkErr(err)
 		defer query.Close()
@@ -90,7 +92,7 @@ func (c campaign) resend() {
 		for q.Next() {
 			err = q.Scan(&r.id, &r.to_email, &r.to_name)
 			checkErr(err)
-			if r.unsubscribe(c.id) == false || c.send_unsubscribe {
+			if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 				rs := r.send(&c)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
@@ -100,6 +102,15 @@ func (c campaign) resend() {
 			}
 		}
 	}
+}
+
+func (c *campaign) countSoftBounce() int {
+	var count int
+	err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
+	if err != nil {
+		camplog.Print(err)
+	}
+	return count
 }
 
 // Get all info for campaign
@@ -113,9 +124,9 @@ func (c *campaign) get(id string) {
 		&c.iface,
 		&c.host,
 		&c.stream,
-		&c.send_unsubscribe,
-		&c.resend_delay,
-		&c.resend_count,
+		&c.sendUnsubscribe,
+		&c.resendDelay,
+		&c.resendCount,
 	)
 
 	checkErr(err)
