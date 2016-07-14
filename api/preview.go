@@ -51,6 +51,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 			}
 			params["RecipientEmail"] = email
 			params["RecipientName"] = name
+			params["CampaignId"] = strconv.FormatInt(cId, 10)
 
 			if r.FormValue("type") != "web" {
 				params["WebUrl"] = "/preview?id=" + r.FormValue("id") + "&type=web"

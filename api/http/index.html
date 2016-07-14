@@ -21,7 +21,7 @@
         <div id="parameter"></div>
         <div id="template">
             <textarea id="campaignTemplate" name="campaignTemplate"></textarea>
-            <strong>System variables:</strong> {{.RecipientEmail}} {{.RecipientName}} {{.StatPng}} {{.UnsubscribeUrl}} {{.WebUrl}}
+            <strong>System variables:</strong> {{.CampaignId}} {{.RecipientEmail}} {{.RecipientName}} {{.StatPng}} {{.UnsubscribeUrl}} {{.WebUrl}}
         </div>
         <div id="recipient" style="width: 100%;">
             <div id="campaignRecipient" style="height: 400px;"></div>
@@ -770,7 +770,8 @@
             // --- /Profile table ---
 
             // --- CKEditor ---
-            var editor = CKEDITOR.replace( 'campaignTemplate', {
+            var editor = CKEDITOR.replace(
+                    'campaignTemplate', {
                         filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
                         plugins:
                         //'dialogui,' +
@@ -847,6 +848,7 @@
                         allowedContent:  true,
                         removeFormatAttributes: '',
                         height: 400,
+                        entities:false
                     }
             );
 

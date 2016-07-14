@@ -159,6 +159,7 @@ func (m *Message) RenderMessage() (string, error) {
 	m.RecipientParam["StatPng"] = m.StatPngLink()
 	m.RecipientParam["RecipientEmail"] = m.RecipientEmail
 	m.RecipientParam["RecipientName"] = m.RecipientName
+	m.RecipientParam["CampaignId"] = m.CampaignId
 
 	if !web {
 		m.RecipientParam["WebUrl"] = m.WebLink()

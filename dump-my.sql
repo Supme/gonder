@@ -517,4 +517,5 @@ INSERT INTO `status` (`id`, `pattern`, `bounce_id`) VALUES
   (261, 'ACCOUNT DELETED BY USER', 3),
   (262, 'USER IS TERMINATED', 3),
   (263, 'INTERNAL SERVER ERROR', 2),
-  (264, 'SOCKS5 PROXY', 2);
+  (264, 'SOCKS5 PROXY', 2),
+  (265, 'EOF', 2);
