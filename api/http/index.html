@@ -770,7 +770,8 @@
             // --- /Profile table ---
 
             // --- CKEditor ---
-            var editor = CKEDITOR.replace( 'campaignTemplate', {
+            var editor = CKEDITOR.replace(
+                    'campaignTemplate', {
                         filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
                         plugins:
                         //'dialogui,' +
@@ -847,6 +848,7 @@
                         allowedContent:  true,
                         removeFormatAttributes: '',
                         height: 400,
+                        entities:false
                     }
             );
 
