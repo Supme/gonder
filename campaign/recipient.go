@@ -28,10 +28,9 @@ func (r recipient) send(c *campaign) string {
 	start := time.Now()
 
 	data := new(MailData)
-	data.Iface = c.iface
+	data.Iface, data.Host = models.NetProfile.Get(c.profileId)
 	data.From_email = c.from_email
 	data.From_name = c.from_name
-	data.Host = c.host
 	data.Attachments = c.attachments
 	data.To_email = r.to_email
 	data.To_name = r.to_name

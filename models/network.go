@@ -16,6 +16,8 @@ import (
 	"sync"
 	"net"
 	"time"
+	"log"
+	"strings"
 )
 
 type mxStor struct {
@@ -58,45 +60,74 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 }
 
 
-
-
 type (
-	networkConnect struct {
-		iface string
-		host string
+	NetStore struct {
+		params map[int]profile
 	}
 
-	Network struct {
-		connect []networkConnect
-		i int
+	profile struct {
+		iface, host string
+		streamMax int
+		streamNow int
 		sync.Mutex
+		free chan bool
 	}
 )
 
-func (n *Network) Init(profileId int) error {
-	var t networkConnect
-	row, err := Db.Query("SELECT iface, host FROM network WHERE profile_id=?", profileId)
-	if err != nil {
-		return err
-	}
-	defer row.Close()
+var NetProfile NetStore
 
-	n.Lock()
-	defer n.Unlock()
-	for row.Next() {
-		row.Scan(t.iface, t.host)
-		n.connect = append(n.connect, t)
+func (n *NetStore) Update() {
+	var (
+		iface, host string
+		id, stream  int
+	)
+	query, err := Db.Query("SELECT `id`,`iface`,`host`,`stream` FROM `profile`")
+	if err != nil {
+		log.Print(err)
 	}
-	n.i = 0
-	return nil
+	defer query.Close()
+	for query.Next() {
+		iface, host = "", ""
+		id, stream  = 0, 0
+		err = query.Scan(&id, &iface, &host, &stream)
+		if err != nil {
+			log.Print(err)
+		}
+		n.params[id].Lock()
+		n.params[id].iface, n.params[id].host, n.params[id].streamMax = iface, host, stream
+		n.params[id].Unlock()
+	}
 }
 
-func (n *Network) Next() (iface, host string) {
-	n.Lock()
-	defer n.Unlock()
-	iface, host = n.connect[n.i].iface, n.connect[n.i].host
-	if n.i++; n.i >= len(n.connect) { n.i = 0 }
+func (n *NetStore) next(id int) (string, string) {
+	n.params[id].Lock()
+	if n.params[id].streamMax > n.params[id].streamNow {
+		n.params[id].streamNow++
+		n.params[id].Unlock()
+		return n.params[id].iface, n.params[id].host
+	}
+	<-n.params[id].free
+	n.params[id].Unlock()
+	return n.params[id].iface, n.params[id].host
+}
+
+var netRotate struct{
+	store map [int]int
+	sync.Mutex
+}
+
+func (n *NetStore) Get(id int) (iface, host string) {
+	iface, host = n.next(id)
+	if iface[0:5] == "group" {
+		netRotate.Lock()
+		p := strings.Split(host, ",")
+		netRotate.store[id]++
+		if len(p)-1 > netRotate.store[id] {
+			netRotate.store[id] = 0
+		}
+		iface, host = n.next(p[netRotate.store[id]])
+		netRotate.Unlock()
+	}
 	return
 }
-
 
