@@ -8,7 +8,7 @@ import (
 type campaign struct {
 	id, from_email, from_name, subject, body string
 	sendUnsubscribe bool
-	profileId, stream, resendDelay, resendCount int
+	profileId, resendDelay, resendCount int
 	attachments []Attachment
 }
 
@@ -21,9 +21,6 @@ func (c campaign) run(id string) {
 // Send campaign
 func (c campaign) send() {
 	var r recipient
-	count := 0
-	stream := 0
-	next := make(chan bool)
 
 	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL")
 	checkErr(err)
@@ -36,18 +33,11 @@ func (c campaign) send() {
 	for q.Next() {
 		err = q.Scan(&r.id, &r.to_email, &r.to_name)
 		checkErr(err)
-		count += 1
 		if r.unsubscribe(c.id) == false  || c.sendUnsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-			stream += 1
-			if stream > c.stream {
-				<-next
-				stream -= 1
-			}
 			go func(d recipient) {
 				rs := d.send(&c)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-				next <- true
 			}(r)
 		} else {
 			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
@@ -55,13 +45,7 @@ func (c campaign) send() {
 		}
 	}
 
-	for stream != 0 {
-		<-next
-		stream -= 1
-	}
-	close(next)
-
-	camplog.Printf("Done campaign id %s. The number of recipients %d", c.id, count)
+	camplog.Printf("Done campaign id %s.", c.id)
 }
 
 func (c campaign) resend() {
