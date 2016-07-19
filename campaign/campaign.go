@@ -37,14 +37,14 @@ func (c campaign) send() {
 		checkErr(err)
 		if r.unsubscribe(c.id) == false  || c.sendUnsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-			iface, host := models.ProfileNext(c.profileId)
-			go func(d recipient, i, h string) {
+			pid, iface, host := models.ProfileNext(c.profileId)
+			go func(d recipient, p int, i, h string) {
 				wg.Add(1)
 				rs := d.send(&c, i, h)
 				wg.Done()
-				models.ProfileFree(c.profileId)
+				models.ProfileFree(p)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-			}(r, iface, host)
+			}(r, pid, iface, host)
 		} else {
 			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
 			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
@@ -84,9 +84,9 @@ func (c campaign) resend() {
 			checkErr(err)
 			if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				i, h := models.ProfileNext(c.profileId)
+				p, i, h := models.ProfileNext(c.profileId)
 				rs := r.send(&c, i, h)
-				models.ProfileFree(c.profileId)
+				models.ProfileFree(p)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
 			} else {
 				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)

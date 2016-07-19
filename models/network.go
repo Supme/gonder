@@ -18,6 +18,8 @@ import (
 	"time"
 	"log"
 	"fmt"
+	"strings"
+	"strconv"
 )
 
 type mxStor struct {
@@ -70,24 +72,45 @@ type (
 
 var (
 	profileStor = map[int]profileData{}
+	profileGroup = map[int]int{}
 	profileMutex sync.Mutex
 )
 
-func ProfileNext(id int) (string, string){
+func ProfileNext(id int) (int, string, string){
 	var res profileData
 
 	profileMutex.Lock()
 
 	// Если есть в массиве, недавно обновлялось
 	_, ok := profileStor[id]
-	if ok && time.Since(profileStor[id].lastUpdate) < 1 * time.Minute {
-		// и не достигли максимума потоков
+	if ok && time.Since(profileStor[id].lastUpdate) < 60 * time.Second {
+
+		// Если это группа кампаний
+		if strings.ToLower(strings.TrimSpace(profileStor[id].host)) == "group" {
+			if _, gok := profileGroup[id]; !gok {
+				profileGroup[id] = 0
+			}
+			gIfaces := strings.Split(profileStor[id].iface, ",")
+			if profileGroup[id] + 1 > len(gIfaces) {
+				profileGroup[id] = 0
+			}
+			i, e := strconv.Atoi(gIfaces[profileGroup[id]])
+			if e != nil {
+				log.Print(e)
+			}
+			profileGroup[id]++
+
+			profileMutex.Unlock()
+			return ProfileNext(i)
+		}
+
+		// Не достигли максимума потоков
 		if profileStor[id].streamNow < profileStor[id].streamMax{
 			res = profileStor[id]
 			res.streamNow++
 			profileStor[id] = res
 			profileMutex.Unlock()
-			return res.iface, res.host
+			return id, res.iface, res.host
 		} else {
 			// достигли максимума потоков, ждём освобождения
 			profileMutex.Unlock()
@@ -100,6 +123,11 @@ func ProfileNext(id int) (string, string){
 	err := Db.QueryRow("SELECT `iface`,`host`,`stream` FROM `profile` WHERE `id`=?", id).Scan(&res.iface, &res.host, &res.streamMax)
 	if err != nil {
 		log.Print(err)
+	}
+
+	// если уже существовало, сохраним
+	if ok {
+		res.streamNow = profileStor[id].streamNow
 	}
 
 	res.lastUpdate = time.Now()
@@ -128,7 +156,7 @@ func ProfileFree(id int)  {
 	res.streamNow--
 	profileStor[id] = res
 	profileMutex.Unlock()
-	fmt.Println("Profile id =", id, " free connection count =", res.streamNow)
+	fmt.Println("Profile id =", id, " connection count =", res.streamNow)
 }
 
 
