@@ -51,7 +51,7 @@ func (r recipient) send(c *campaign, iface, host string) string {
 		var extraHeader bytes.Buffer
 		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n")
 		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + data.Host + ">" + "\r\n")
-		// ToDo X-Postmaster-Msgtype: reg01 - Идентификатор (ID) письма. По нему будут группироваться одинаковые письма.
+		extraHeader.WriteString("X-Postmaster-Msgtype: campaign" + c.id + "\r\n")
 		data.Extra_header = extraHeader.String()
 
 		var res error
