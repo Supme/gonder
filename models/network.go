@@ -124,14 +124,11 @@ func ProfileNext(id int) (int, string, string){
 	if err != nil {
 		log.Print(err)
 	}
-
 	// если уже существовало, сохраним
 	if ok {
 		res.streamNow = profileStor[id].streamNow
 	}
-
 	res.lastUpdate = time.Now()
-
 	profileStor[id] = res
 
 	// и повторяем действие
@@ -158,58 +155,3 @@ func ProfileFree(id int)  {
 	profileMutex.Unlock()
 	fmt.Println("Profile id =", id, " connection count =", res.streamNow)
 }
-
-
-/*
-func ProfileUpdate() {
-
-	var profile profileType
-	var id int
-
-	query, err := Db.Query("SELECT `id`,`iface`,`host`,`stream` FROM `profile`")
-	if err != nil {
-		log.Print(err)
-	}
-	defer query.Close()
-
-	profileMutex.Lock()
-	defer profileMutex.Unlock()
-	for query.Next() {
-		profile.iface, profile.host = "", ""
-		id, profile.stream  = 0, 0
-		err = query.Scan(&id, &profile.iface, &profile.host, &profile.stream)
-		if err != nil {
-			log.Print(err)
-		}
-		profileData[id] = profile
-		if _, ok := profileCount[id]; !ok {
-			profileCount[id] = 0
-		}
-	}
-
-	fmt.Println(profileData)
-}
-
-func ProfileNext(id int) (iface, host string) {
-	var free bool
-	for iface, host, free = profileNext(id); free;  {
-	}
-	profileCount[id]++
-	fmt.Println("Profile id =", id, " get next connection count=", profileCount[id], " host = ", profileData[id].host)
-	return
-}
-
-func profileNext(id int) (iface, host string, free bool) {
-	profileMutex.Lock()
-	defer profileMutex.Unlock()
-	iface, host, free = profileData[id].iface, profileData[id].host, profileCount[id] < profileData[id].stream
-	return
-}
-
-func ProfileFree(id int)  {
-	profileMutex.Lock()
-	defer profileMutex.Unlock()
-	profileCount[id]--
-	fmt.Println("Profile id =", id, " free connection count =", profileCount[id])
-}
-*/
