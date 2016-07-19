@@ -17,7 +17,6 @@ import (
 	"net"
 	"time"
 	"log"
-	"fmt"
 	"strings"
 	"strconv"
 )
@@ -94,7 +93,7 @@ func ProfileNext(id int) (int, string, string){
 			if profileGroup[id] + 1 > len(gIfaces) {
 				profileGroup[id] = 0
 			}
-			i, e := strconv.Atoi(gIfaces[profileGroup[id]])
+			i, e := strconv.Atoi(strings.TrimSpace(gIfaces[profileGroup[id]]))
 			if e != nil {
 				log.Print(e)
 			}
@@ -153,5 +152,5 @@ func ProfileFree(id int)  {
 	res.streamNow--
 	profileStor[id] = res
 	profileMutex.Unlock()
-	fmt.Println("Profile id =", id, " connection count =", res.streamNow)
+	log.Println("profile id =", id, " connection count =", res.streamNow)
 }
