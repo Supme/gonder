@@ -60,7 +60,6 @@ func Run()  {
 			startedCampaign.campaigns = append(startedCampaign.campaigns, id)
 			c := campaign{}
 			go func() {
-				models.NetProfile.Update()
 				camplog.Printf("Start campaign id %s.", id)
 				c.run(id)
 				removeStartedCampaign(id)

@@ -24,11 +24,11 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 }
 
 // Send mail for recipient this campaign data
-func (r recipient) send(c *campaign) string {
+func (r recipient) send(c *campaign, iface, host string) string {
 	start := time.Now()
 
 	data := new(MailData)
-	data.Iface, data.Host = models.NetProfile.Get(c.profileId)
+	data.Iface, data.Host = iface, host
 	data.From_email = c.from_email
 	data.From_name = c.from_name
 	data.Attachments = c.attachments
@@ -50,7 +50,8 @@ func (r recipient) send(c *campaign) string {
 		data.Html = m
 		var extraHeader bytes.Buffer
 		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n")
-		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + c.host + ">" + "\r\n")
+		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + data.Host + ">" + "\r\n")
+		// ToDo X-Postmaster-Msgtype: reg01 - Идентификатор (ID) письма. По нему будут группироваться одинаковые письма.
 		data.Extra_header = extraHeader.String()
 
 		var res error

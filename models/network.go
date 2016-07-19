@@ -17,7 +17,7 @@ import (
 	"net"
 	"time"
 	"log"
-	"strings"
+	"fmt"
 )
 
 type mxStor struct {
@@ -61,73 +61,127 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 
 
 type (
-	NetStore struct {
-		params map[int]profile
-	}
-
-	profile struct {
+	profileData struct {
 		iface, host string
-		streamMax int
-		streamNow int
-		sync.Mutex
-		free chan bool
+		streamNow, streamMax int
+		lastUpdate time.Time
 	}
 )
 
-var NetProfile NetStore
+var (
+	profileStor = map[int]profileData{}
+	profileMutex sync.Mutex
+)
 
-func (n *NetStore) Update() {
-	var (
-		iface, host string
-		id, stream  int
-	)
+func ProfileNext(id int) (string, string){
+	var res profileData
+
+	profileMutex.Lock()
+
+	// Если есть в массиве, недавно обновлялось
+	_, ok := profileStor[id]
+	if ok && time.Since(profileStor[id].lastUpdate) < 1 * time.Minute {
+		// и не достигли максимума потоков
+		if profileStor[id].streamNow < profileStor[id].streamMax{
+			res = profileStor[id]
+			res.streamNow++
+			profileStor[id] = res
+			profileMutex.Unlock()
+			return res.iface, res.host
+		} else {
+			// достигли максимума потоков, ждём освобождения
+			profileMutex.Unlock()
+			for !profileCheck(id) {}
+			return ProfileNext(id)
+		}
+	}
+
+	// В остальных случаях обновляем данные
+	err := Db.QueryRow("SELECT `iface`,`host`,`stream` FROM `profile` WHERE `id`=?", id).Scan(&res.iface, &res.host, &res.streamMax)
+	if err != nil {
+		log.Print(err)
+	}
+
+	res.lastUpdate = time.Now()
+
+	profileStor[id] = res
+
+	// и повторяем действие
+	profileMutex.Unlock()
+	return ProfileNext(id)
+
+}
+
+func profileCheck(id int) bool {
+	var free bool
+	profileMutex.Lock()
+	free = profileStor[id].streamNow < profileStor[id].streamMax
+	profileMutex.Unlock()
+	return free
+}
+
+func ProfileFree(id int)  {
+	var res profileData
+
+	profileMutex.Lock()
+	res = profileStor[id]
+	res.streamNow--
+	profileStor[id] = res
+	profileMutex.Unlock()
+	fmt.Println("Profile id =", id, " free connection count =", res.streamNow)
+}
+
+
+/*
+func ProfileUpdate() {
+
+	var profile profileType
+	var id int
+
 	query, err := Db.Query("SELECT `id`,`iface`,`host`,`stream` FROM `profile`")
 	if err != nil {
 		log.Print(err)
 	}
 	defer query.Close()
+
+	profileMutex.Lock()
+	defer profileMutex.Unlock()
 	for query.Next() {
-		iface, host = "", ""
-		id, stream  = 0, 0
-		err = query.Scan(&id, &iface, &host, &stream)
+		profile.iface, profile.host = "", ""
+		id, profile.stream  = 0, 0
+		err = query.Scan(&id, &profile.iface, &profile.host, &profile.stream)
 		if err != nil {
 			log.Print(err)
 		}
-		n.params[id].Lock()
-		n.params[id].iface, n.params[id].host, n.params[id].streamMax = iface, host, stream
-		n.params[id].Unlock()
-	}
-}
-
-func (n *NetStore) next(id int) (string, string) {
-	n.params[id].Lock()
-	if n.params[id].streamMax > n.params[id].streamNow {
-		n.params[id].streamNow++
-		n.params[id].Unlock()
-		return n.params[id].iface, n.params[id].host
-	}
-	<-n.params[id].free
-	n.params[id].Unlock()
-	return n.params[id].iface, n.params[id].host
-}
-
-var netRotate struct{
-	store map [int]int
-	sync.Mutex
-}
-
-func (n *NetStore) Get(id int) (iface, host string) {
-	iface, host = n.next(id)
-	if iface[0:5] == "group" {
-		netRotate.Lock()
-		p := strings.Split(host, ",")
-		netRotate.store[id]++
-		if len(p)-1 > netRotate.store[id] {
-			netRotate.store[id] = 0
+		profileData[id] = profile
+		if _, ok := profileCount[id]; !ok {
+			profileCount[id] = 0
 		}
-		iface, host = n.next(p[netRotate.store[id]])
-		netRotate.Unlock()
 	}
+
+	fmt.Println(profileData)
+}
+
+func ProfileNext(id int) (iface, host string) {
+	var free bool
+	for iface, host, free = profileNext(id); free;  {
+	}
+	profileCount[id]++
+	fmt.Println("Profile id =", id, " get next connection count=", profileCount[id], " host = ", profileData[id].host)
 	return
 }
 
+func profileNext(id int) (iface, host string, free bool) {
+	profileMutex.Lock()
+	defer profileMutex.Unlock()
+	iface, host, free = profileData[id].iface, profileData[id].host, profileCount[id] < profileData[id].stream
+	return
+}
+
+func ProfileFree(id int)  {
+	profileMutex.Lock()
+	defer profileMutex.Unlock()
+	profileCount[id]--
+	fmt.Println("Profile id =", id, " free connection count =", profileCount[id])
+}
+*/

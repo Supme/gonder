@@ -3,6 +3,7 @@ package campaign
 import (
 	"github.com/supme/gonder/models"
 	"time"
+	"sync"
 )
 
 type campaign struct {
@@ -21,6 +22,7 @@ func (c campaign) run(id string) {
 // Send campaign
 func (c campaign) send() {
 	var r recipient
+	var wg sync.WaitGroup
 
 	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL")
 	checkErr(err)
@@ -35,16 +37,20 @@ func (c campaign) send() {
 		checkErr(err)
 		if r.unsubscribe(c.id) == false  || c.sendUnsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-			go func(d recipient) {
-				rs := d.send(&c)
+			iface, host := models.ProfileNext(c.profileId)
+			go func(d recipient, i, h string) {
+				wg.Add(1)
+				rs := d.send(&c, i, h)
+				wg.Done()
+				models.ProfileFree(c.profileId)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-			}(r)
+			}(r, iface, host)
 		} else {
 			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
 			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
 		}
 	}
-
+	wg.Wait()
 	camplog.Printf("Done campaign id %s.", c.id)
 }
 
@@ -78,7 +84,9 @@ func (c campaign) resend() {
 			checkErr(err)
 			if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
 				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				rs := r.send(&c)
+				i, h := models.ProfileNext(c.profileId)
+				rs := r.send(&c, i, h)
+				models.ProfileFree(c.profileId)
 				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
 			} else {
 				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
@@ -99,14 +107,13 @@ func (c *campaign) countSoftBounce() int {
 
 // Get all info for campaign
 func (c *campaign) get(id string) {
-	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`id`,t2.`stream`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.id,
 		&c.from_email,
 		&c.from_name,
 		&c.subject,
 		&c.body,
 		&c.profileId,
-		&c.stream,
 		&c.sendUnsubscribe,
 		&c.resendDelay,
 		&c.resendCount,
