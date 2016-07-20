@@ -124,9 +124,8 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.ApiPort = apiConfig.ValueOf("port")
 
-	c.Version = "0.7"
+	c.Version = "0.7.3"
 }
-
 
 func FromRootDir(path string) string {
 	return filepath.Join(Config.RootPath, path)
