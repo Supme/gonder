@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-//	_ "github.com/eaigner/dkim"
+//	"github.com/eaigner/dkim"
 	"golang.org/x/net/proxy"
 	"io/ioutil"
 	"net"
@@ -163,37 +163,36 @@ func (m *MailData) makeMail() string {
 	var msg bytes.Buffer
 
 	if m.From_name == "" {
-		msg.WriteString(`From: ` + m.From_email + "\r\n")
+		msg.WriteString(`From: ` + m.From_email + "\n")
 	} else {
-		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\r\n")
+		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\n")
 	}
 
 	if m.To_name == "" {
-		msg.WriteString(`To: ` + m.To_email + "\r\n")
+		msg.WriteString(`To: ` + m.To_email + "\n")
 	} else {
-		msg.WriteString(`To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\r\n")
+		msg.WriteString(`To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\n")
 	}
 
 	// -------------- head ----------------------------------------------------------
 
-	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\r\n")
-	msg.WriteString("MIME-Version: 1.0\r\n")
-	msg.WriteString("Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n")
-	//ToDo Date RFC1123Z
-	msg.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
-	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\r\n")
-	msg.WriteString(m.Extra_header + "\r\n")
+	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\n")
+	msg.WriteString("MIME-Version: 1.0\n")
+	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\n")
+	msg.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\n")
+	msg.WriteString("Content-Type: multipart/mixed;\n	boundary=\"" + marker + "\"\n")
+	msg.WriteString(m.Extra_header + "\n\n")
 	// ------------- /head ---------------------------------------------------------
 
 	// ------------- body ----------------------------------------------------------
-	msg.WriteString("\r\n--" + marker + "\r\nContent-Type: text/html; charset=\"utf-8\"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n")
+	msg.WriteString("\n--" + marker + "\nContent-Type: text/html; charset=\"utf-8\"\nContent-Transfer-Encoding: 8bit\n\n")
 	msg.WriteString(m.Html)
 	// ------------ /body ---------------------------------------------------------
 
 	// ----------- attachments ----------------------------------------------------
 	for _, file := range m.Attachments {
 
-		msg.WriteString("\r\n--" + marker)
+		msg.WriteString("\n--" + marker)
 		//read and encode attachment
 		content, err := ioutil.ReadFile(file.Location + file.Name)
 		if err != nil {
@@ -202,7 +201,7 @@ func (m *MailData) makeMail() string {
 		encoded := base64.StdEncoding.EncodeToString(content)
 
 		//part 3 will be the attachment
-		msg.WriteString(fmt.Sprintf("\r\nContent-Type: %s;\r\n	name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment;\r\n	filename=\"%s\"\r\n\r\n", http.DetectContentType(content), file.Name, file.Name))
+		msg.WriteString(fmt.Sprintf("\nContent-Type: %s;\n	name=\"%s\"\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment;\n	filename=\"%s\"\n\n", http.DetectContentType(content), file.Name, file.Name))
 		//split the encoded file in lines (doesn't matter, but low enough not to hit a max limit)
 		lineMaxLength := 500
 		nbrLines := len(encoded) / lineMaxLength
@@ -212,7 +211,7 @@ func (m *MailData) makeMail() string {
 
 		//append last line in buffer
 		msg.WriteString(encoded[nbrLines*lineMaxLength:])
-		msg.WriteString("\r\n")
+		msg.WriteString("\n")
 
 	}
 	// ----------- /attachments ---------------------------------------------------

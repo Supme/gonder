@@ -49,9 +49,9 @@ func (r recipient) send(c *campaign, iface, host string) string {
 		data.Subject = message.CampaignSubject
 		data.Html = m
 		var extraHeader bytes.Buffer
-		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\r\nPrecedence: bulk\r\n")
-		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + data.Host + ">" + "\r\n")
-		extraHeader.WriteString("X-Postmaster-Msgtype: campaign" + c.id + "\r\n")
+		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\nPrecedence: bulk\n")
+		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + data.Host + ">" + "\n")
+		extraHeader.WriteString("X-Postmaster-Msgtype: campaign" + c.id + "\n")
 		data.Extra_header = extraHeader.String()
 
 		var res error
