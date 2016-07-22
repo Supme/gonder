@@ -20,10 +20,12 @@ import (
 
 type (
 	// Mail parameters and data
+	//
 	// Iface: send email from selected interface
 	//       "": default interface
 	//       "12.34.56.78": ip address interface
 	//       "socks://12.34.56.78:1234": send from remote socks server
+	//       "1,4,6,8,9": id`s for send rotate by selected profile (set Host: "group")
 	// Host: host name of selected interface ip
 	MailData struct {
 		Iface 	     string
@@ -36,12 +38,13 @@ type (
 		Subject      string
 		Html         string
 		Attachments  []Attachment
-		conn 		 net.Conn
-		socksConn	     	 proxy.Dialer
-		netConn            net.Dialer
+		conn         net.Conn
+		socksConn    proxy.Dialer
+		netConn      net.Dialer
 	}
 
 	// Attach file to mail
+	//
 	// Location: folder
 	// Name: file
 	Attachment struct {
@@ -176,6 +179,8 @@ func (m *MailData) makeMail() string {
 	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\r\n")
 	msg.WriteString("MIME-Version: 1.0\r\n")
 	msg.WriteString("Content-Type: multipart/mixed;\r\n	boundary=\"" + marker + "\"\r\n")
+	//ToDo Date RFC1123Z
+	msg.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
 	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\r\n")
 	msg.WriteString(m.Extra_header + "\r\n")
 	// ------------- /head ---------------------------------------------------------
