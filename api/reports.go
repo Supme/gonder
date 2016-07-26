@@ -7,17 +7,86 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-/*
-Название рассылки
-Дата рассылки (Fact)
-Кол-во отправленных писем
-Количество недоставленных писем
-Кол-во открытых писем
-Кол-во переходов из письма
- */
+func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request)  {
+	var err error
+	var js []byte
+	if err = r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	if r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0]) {
+		var url string
+		var count int
+		res := make(map[string]int)
+		query, err := models.Db.Query("SELECT `jumping`.`url` as link, ( SELECT COUNT(`jumping`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`url`=link AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 ) as cnt FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `url` NOT IN ('open_trace', 'web_version', 'unsubscribe') AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 GROUP BY `jumping`.`url`", r.Form["campaign"][0], r.Form["campaign"][0])
+		if err != nil {
+			apilog.Print(err)
+		}
+		defer query.Close()
+		for query.Next() {
+			err = query.Scan(&url, &count)
+			if err != nil {
+				apilog.Print(err)
+			}
+			res[url] = count
+		}
+		js, err = json.Marshal(res)
+		if err != nil {
+			js = []byte(`{"status": "error", "message": "Get reports for this campaign"}`)
+		}
+	} else {
+		js = []byte(`{"status": "error", "message": "Forbidden get reports for this campaign"}`)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
+	var err error
+	var js []byte
+	if err = r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	if (r.Form["group"] != nil && auth.CampaignRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
+		var email, queryString, param string
+		res := []string{}
+
+		if r.Form["group"] != nil {
+			queryString = "SELECT `email` FROM `unsubscribe` WHERE `group_id`=?"
+			param = r.Form["group"][0]
+		} else if r.Form["campaign"] != nil {
+			queryString = "SELECT `email` FROM `unsubscribe` WHERE `campaign_id`=?"
+			param = r.Form["campaign"][0]
+		} else {
+			http.Error(w, "Param error", http.StatusInternalServerError)
+		}
+
+		query, err := models.Db.Query(queryString, param)
+		if err != nil {
+			apilog.Print(err)
+		}
+		defer query.Close()
+		for query.Next() {
+			err = query.Scan(&email)
+			if err != nil {
+				apilog.Print(err)
+			}
+			res = append(res, email)
+		}
+		js, err = json.Marshal(res)
+		if err != nil {
+			js = []byte(`{"status": "error", "message": "Get reports"}`)
+		}
+	} else {
+		js = []byte(`{"status": "error", "message": "Forbidden get reports"}`)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
 
 func report(w http.ResponseWriter, r *http.Request)  {
-
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {
@@ -36,7 +105,7 @@ func report(w http.ResponseWriter, r *http.Request)  {
 		reports["OpenMailCount"] = reportOpenMailCount(campaign)
 		reports["OpenWebVersionCount"] = reportOpenWebVersionCount(campaign)
 		reports["UnsubscribeCount"] = reportUnsubscribeCount(campaign)
-		reports["JumpDetailedCount"] = reportJumpDetailedCount(campaign)
+//		reports["JumpDetailedCount"] = reportJumpDetailedCount(campaign)
 		reports["RecipientJumpCount"] = reportRecipientJumpCount(campaign)
 
 		js, err = json.Marshal(reports)
@@ -125,24 +194,4 @@ func reportRecipientJumpCount(campaignId string) int {
 		apilog.Print(err)
 	}
 	return count
-}
-
-func reportJumpDetailedCount(campaignId string) map[string]int {
-	var url string
-	var count int
-	res := make(map[string]int)
-	query, err := models.Db.Query("SELECT `jumping`.`url` as link, ( SELECT COUNT(`jumping`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`url`=link AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 ) as cnt FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `url` NOT IN ('open_trace', 'web_version', 'unsubscribe') AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 GROUP BY `jumping`.`url`", campaignId, campaignId)
-	if err != nil {
-		apilog.Print(err)
-		return res
-	}
-	defer query.Close()
-	for query.Next() {
-		err = query.Scan(&url, &count)
-		if err != nil {
-			apilog.Print(err)
-		}
-		res[url] = count
-	}
-	return res
 }

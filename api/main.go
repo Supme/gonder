@@ -90,7 +90,8 @@ func Run()  {
 	// Example:
 	// Get reports: http://host/api/report?campaign=4
 	api.HandleFunc("/api/report", auth.Check(report))
-
+	api.HandleFunc("/api/report/jump", auth.Check(reportJumpDetailedCount))
+	api.HandleFunc("/api/report/unsubscribed", auth.Check(reportUnsubscribed))
 
 	api.HandleFunc("/preview", auth.Check(getMailPreview))
 	api.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
@@ -108,8 +109,8 @@ func Run()  {
 	})
 
 	api.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
-		w.Header().Set("Content-Type", "image/png")
-		blank, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
+		w.Header().Set("Content-Type", "image/gif")
+		blank, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		w.Write(blank)
 	})
 
