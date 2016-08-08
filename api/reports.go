@@ -49,14 +49,20 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
 	}
 
 	if (r.Form["group"] != nil && auth.CampaignRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
-		var email, queryString, param string
-		res := []string{}
+		var queryString, param string
+		var timestamp mysql.NullTime
+		type U struct {
+			Email string `json:"email"`
+			Date int64 `json:"date"`
+		}
+		var rs U
+		res := []U{}
 
 		if r.Form["group"] != nil {
-			queryString = "SELECT `email` FROM `unsubscribe` WHERE `group_id`=?"
+			queryString = "SELECT `email`, `date` FROM `unsubscribe` WHERE `group_id`=?"
 			param = r.Form["group"][0]
 		} else if r.Form["campaign"] != nil {
-			queryString = "SELECT `email` FROM `unsubscribe` WHERE `campaign_id`=?"
+			queryString = "SELECT `email`, `date` FROM `unsubscribe` WHERE `campaign_id`=?"
 			param = r.Form["campaign"][0]
 		} else {
 			http.Error(w, "Param error", http.StatusInternalServerError)
@@ -68,11 +74,12 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
 		}
 		defer query.Close()
 		for query.Next() {
-			err = query.Scan(&email)
+			err = query.Scan(&rs.Email, &timestamp)
 			if err != nil {
 				apilog.Print(err)
 			}
-			res = append(res, email)
+			rs.Date = timestamp.Time.Unix()
+			res = append(res, rs)
 		}
 		js, err = json.Marshal(res)
 		if err != nil {
@@ -105,7 +112,6 @@ func report(w http.ResponseWriter, r *http.Request)  {
 		reports["OpenMailCount"] = reportOpenMailCount(campaign)
 		reports["OpenWebVersionCount"] = reportOpenWebVersionCount(campaign)
 		reports["UnsubscribeCount"] = reportUnsubscribeCount(campaign)
-//		reports["JumpDetailedCount"] = reportJumpDetailedCount(campaign)
 		reports["RecipientJumpCount"] = reportRecipientJumpCount(campaign)
 
 		js, err = json.Marshal(reports)
