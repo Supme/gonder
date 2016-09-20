@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,22 +13,21 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
 	"github.com/supme/gonder/models"
+	"net/http"
 )
 
-
 type Campaign struct {
-	Id   int64 `json:"recid"`
+	Id   int64  `json:"recid"`
 	Name string `json:"name"`
 }
 type Campaigns struct {
-	Total	    int64 `json:"total"`
-	Records		[]Campaign `json:"records"`
+	Total   int64      `json:"total"`
+	Records []Campaign `json:"records"`
 }
 
-func campaigns(w http.ResponseWriter, r *http.Request)  {
+func campaigns(w http.ResponseWriter, r *http.Request) {
 
 	var campaigns Campaigns
 	var err error
@@ -39,8 +38,8 @@ func campaigns(w http.ResponseWriter, r *http.Request)  {
 		return
 	}
 
-	group := "0";
-	if  r.Form["group"] != nil {
+	group := "0"
+	if r.Form["group"] != nil {
 		group = r.Form["group"][0]
 	}
 
@@ -132,7 +131,7 @@ func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND " + where, change["name"][0], change["recid"][0], auth.userId)
+		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"][0], change["recid"][0], auth.userId)
 		if e != nil {
 			err = e
 		}
@@ -152,7 +151,7 @@ func getCampaigns(group, offset, limit string) (Campaigns, error) {
 		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND " + where + " LIMIT ? OFFSET ?", group, auth.userId , limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND "+where+" LIMIT ? OFFSET ?", group, auth.userId, limit, offset)
 	if err != nil {
 		return cs, err
 	}
@@ -161,6 +160,6 @@ func getCampaigns(group, offset, limit string) (Campaigns, error) {
 		err = query.Scan(&c.Id, &c.Name)
 		cs.Records = append(cs.Records, c)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=? AND " + where, group, auth.userId).Scan(&cs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=? AND "+where, group, auth.userId).Scan(&cs.Total)
 	return cs, err
 }

@@ -1,16 +1,16 @@
 package campaign
 
 import (
-	"github.com/supme/gonder/models"
-	"time"
 	"bytes"
-	"strconv"
 	"errors"
+	"github.com/supme/gonder/models"
 	"math/rand"
+	"strconv"
+	"time"
 )
 
 type recipient struct {
-	id, to_email, to_name	string
+	id, to_email, to_name string
 }
 
 // Check recipient for unsubscribe
@@ -50,7 +50,7 @@ func (r recipient) send(c *campaign, iface, host string) string {
 		data.Html = m
 		var extraHeader bytes.Buffer
 		extraHeader.WriteString("List-Unsubscribe: " + message.UnsubscribeMailLink() + "\nPrecedence: bulk\n")
-		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id +"@" + data.Host + ">" + "\n")
+		extraHeader.WriteString("Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id + "@" + data.Host + ">" + "\n")
 		extraHeader.WriteString("X-Postmaster-Msgtype: campaign" + c.id + "\n")
 		data.Extra_header = extraHeader.String()
 

@@ -1,7 +1,7 @@
 // Project gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,41 +13,41 @@
 package models
 
 import (
-	"sync"
-	"net"
-	"time"
 	"log"
-	"strings"
+	"net"
 	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 type mxStor struct {
 	records []*net.MX
-	update time.Time
+	update  time.Time
 }
 
 var mx = struct {
 	stor map[string]mxStor
 	sync.Mutex
-} {
+}{
 	stor: make(map[string]mxStor),
 }
 
 func DomainGetMX(domain string) ([]*net.MX, error) {
 	var (
 		record []*net.MX
-		err error
+		err    error
 	)
 
 	if Config.DnsCache {
 		mx.Lock()
 		defer mx.Unlock()
-		if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15 * time.Minute {
+		if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15*time.Minute {
 			record, err = net.LookupMX(domain)
 			if err == nil {
 				mx.stor[domain] = mxStor{
 					records: record,
-					update:time.Now(),
+					update:  time.Now(),
 				}
 			}
 		} else {
@@ -60,29 +60,28 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 	return record, err
 }
 
-
 type (
 	profileData struct {
-		iface, host string
+		iface, host          string
 		streamNow, streamMax int
-		lastUpdate time.Time
+		lastUpdate           time.Time
 	}
 )
 
 var (
-	profileStor = map[int]profileData{}
+	profileStor  = map[int]profileData{}
 	profileGroup = map[int]int{}
 	profileMutex sync.Mutex
 )
 
-func ProfileNext(id int) (int, string, string){
+func ProfileNext(id int) (int, string, string) {
 	var res profileData
 
 	profileMutex.Lock()
 
 	// Если есть в массиве, недавно обновлялось
 	_, ok := profileStor[id]
-	if ok && time.Since(profileStor[id].lastUpdate) < 60 * time.Second {
+	if ok && time.Since(profileStor[id].lastUpdate) < 60*time.Second {
 
 		// Если это группа кампаний
 		if strings.ToLower(strings.TrimSpace(profileStor[id].host)) == "group" {
@@ -90,7 +89,7 @@ func ProfileNext(id int) (int, string, string){
 				profileGroup[id] = 0
 			}
 			gIfaces := strings.Split(profileStor[id].iface, ",")
-			if profileGroup[id] + 1 > len(gIfaces) {
+			if profileGroup[id]+1 > len(gIfaces) {
 				profileGroup[id] = 0
 			}
 			i, e := strconv.Atoi(strings.TrimSpace(gIfaces[profileGroup[id]]))
@@ -104,7 +103,7 @@ func ProfileNext(id int) (int, string, string){
 		}
 
 		// Не достигли максимума потоков
-		if profileStor[id].streamNow < profileStor[id].streamMax{
+		if profileStor[id].streamNow < profileStor[id].streamMax {
 			res = profileStor[id]
 			res.streamNow++
 			profileStor[id] = res
@@ -113,7 +112,8 @@ func ProfileNext(id int) (int, string, string){
 		} else {
 			// достигли максимума потоков, ждём освобождения
 			profileMutex.Unlock()
-			for !profileCheck(id) {}
+			for !profileCheck(id) {
+			}
 			return ProfileNext(id)
 		}
 	}
@@ -144,7 +144,7 @@ func profileCheck(id int) bool {
 	return free
 }
 
-func ProfileFree(id int)  {
+func ProfileFree(id int) {
 	var res profileData
 
 	profileMutex.Lock()

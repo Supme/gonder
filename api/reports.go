@@ -1,13 +1,13 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"github.com/go-sql-driver/mysql"
+	"github.com/supme/gonder/models"
+	"net/http"
 )
 
-func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request)  {
+func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {
@@ -41,7 +41,7 @@ func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request)  {
 	w.Write(js)
 }
 
-func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
+func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {
@@ -53,7 +53,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
 		var timestamp mysql.NullTime
 		type U struct {
 			Email string `json:"email"`
-			Date int64 `json:"date"`
+			Date  int64  `json:"date"`
 		}
 		var rs U
 		res := []U{}
@@ -93,7 +93,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request)  {
 	w.Write(js)
 }
 
-func report(w http.ResponseWriter, r *http.Request)  {
+func report(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {

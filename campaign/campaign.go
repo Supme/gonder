@@ -2,15 +2,15 @@ package campaign
 
 import (
 	"github.com/supme/gonder/models"
-	"time"
 	"sync"
+	"time"
 )
 
 type campaign struct {
 	id, from_email, from_name, subject, body string
-	sendUnsubscribe bool
-	profileId, resendDelay, resendCount int
-	attachments []Attachment
+	sendUnsubscribe                          bool
+	profileId, resendDelay, resendCount      int
+	attachments                              []Attachment
 }
 
 func (c campaign) run(id string) {
@@ -35,7 +35,7 @@ func (c campaign) send() {
 	for q.Next() {
 		err = q.Scan(&r.id, &r.to_email, &r.to_name)
 		checkErr(err)
-		if r.unsubscribe(c.id) == false  || c.sendUnsubscribe {
+		if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
 			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
 			pid, iface, host := models.ProfileNext(c.profileId)
 			go func(d recipient, p int, i, h string) {
@@ -138,5 +138,3 @@ func (c *campaign) get(id string) {
 		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
 	}
 }
-
-

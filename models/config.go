@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -14,31 +14,31 @@ package models
 
 import (
 	"database/sql"
-	"strconv"
-	"github.com/alyu/configparser"
-	"github.com/kardianos/osext"
-	"log"
-	"strings"
-	"path/filepath"
-	_ "github.com/go-sql-driver/mysql"
 	"fmt"
+	"github.com/alyu/configparser"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/kardianos/osext"
 	"io/ioutil"
+	"log"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type config struct {
 	dbType, dbString string
-	RootPath string
-	Version string
-	Url string
-	ApiPort string
-	StatPort string
-	MaxCampaingns int
-	RealSend bool
-	DnsCache bool
+	RootPath         string
+	Version          string
+	Url              string
+	ApiPort          string
+	StatPort         string
+	MaxCampaingns    int
+	RealSend         bool
+	DnsCache         bool
 }
 
 var (
-	Db *sql.DB
+	Db     *sql.DB
 	Config config
 )
 
@@ -64,7 +64,7 @@ func createDb() error {
 		if err != nil {
 			return err
 		}
-		query := strings.Split(string(sql),";")
+		query := strings.Split(string(sql), ";")
 		for i := range query {
 			_, err = Db.Exec(query[i])
 			if err != nil {

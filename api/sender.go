@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,20 +13,20 @@
 package api
 
 import (
-	"net/http"
-	"github.com/supme/gonder/models"
 	"encoding/json"
+	"github.com/supme/gonder/models"
+	"net/http"
 	"strconv"
 )
 
 type Sender struct {
-	Id   int64 `json:"recid"`
+	Id    int64  `json:"recid"`
 	Email string `json:"email"`
-	Name string `json:"name"`
+	Name  string `json:"name"`
 }
 type Senders struct {
-	Total	    int64 `json:"total"`
-	Records		[]Sender `json:"records"`
+	Total   int64    `json:"total"`
+	Records []Sender `json:"records"`
 }
 
 func sender(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +41,7 @@ func sender(w http.ResponseWriter, r *http.Request) {
 	switch r.Form["cmd"][0] {
 
 	case "get-records":
-		if auth.Right("get-groups") && auth.GroupRight(r.Form["groupId"][0]){
+		if auth.Right("get-groups") && auth.GroupRight(r.Form["groupId"][0]) {
 			var f Sender
 			var fs Senders
 			fs.Records = []Sender{}
@@ -85,7 +85,7 @@ func sender(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "add-record":
-		if auth.Right("save-groups") && auth.GroupRight(r.Form["groupId"][0]){
+		if auth.Right("save-groups") && auth.GroupRight(r.Form["groupId"][0]) {
 			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`) VALUES (?, ?, ?);", r.Form["groupId"][0], r.Form["email"][0], r.Form["name"][0])
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,8 +99,6 @@ func sender(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
 	}
-
-
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)

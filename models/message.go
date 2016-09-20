@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,33 +13,33 @@
 package models
 
 import (
-	"database/sql"
-	"encoding/json"
-	"encoding/base64"
-	"strings"
-	"regexp"
-	"text/template"
-	"fmt"
 	"bytes"
+	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"regexp"
+	"strings"
+	"text/template"
 )
 
 type (
 	Message struct {
-		RecipientId string
-		RecipientEmail string
-		RecipientName string
-		RecipientParam map[string]string
-		CampaignId string
-		CampaignSubject string
+		RecipientId      string
+		RecipientEmail   string
+		RecipientName    string
+		RecipientParam   map[string]string
+		CampaignId       string
+		CampaignSubject  string
 		CampaignTemplate string
 	}
 
 	JsonData struct {
-		Id  string `json:"id"`
+		Id    string `json:"id"`
 		Email string `json:"email"`
-		Data string `json:"data"`
+		Data  string `json:"data"`
 	}
 )
 
@@ -98,19 +98,19 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 func (m *Message) makeLink(cmd, data string) string {
 	j, _ := json.Marshal(
 		JsonData{
-			Id: m.RecipientId,
+			Id:    m.RecipientId,
 			Email: m.RecipientEmail,
-			Data: data,
+			Data:  data,
 		})
 	return Config.Url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
-func (m *Message) UnsubscribeWebLink() string  {
-	return m.makeLink("unsubscribe","web")
+func (m *Message) UnsubscribeWebLink() string {
+	return m.makeLink("unsubscribe", "web")
 }
 
-func (m *Message) UnsubscribeMailLink() string  {
-	return m.makeLink("unsubscribe","mail")
+func (m *Message) UnsubscribeMailLink() string {
+	return m.makeLink("unsubscribe", "mail")
 }
 
 func (m *Message) RedirectLink(url string) string {
@@ -203,8 +203,8 @@ func (m *Message) RenderMessage() (string, error) {
 	})
 
 	//replace static url to absolute
-	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "\"/files/", "\"" + Config.Url + "/files/", -1)
-	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "'/files/", "'" + Config.Url + "'/files/", -1)
+	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "\"/files/", "\""+Config.Url+"/files/", -1)
+	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "'/files/", "'"+Config.Url+"'/files/", -1)
 
 	tmpl := template.New("mail" + m.RecipientId)
 

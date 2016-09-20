@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,18 +13,18 @@
 package campaign
 
 import (
-	"time"
+	"bytes"
+	"database/sql"
 	"github.com/supme/gonder/models"
+	"io"
 	"log"
 	"os"
-	"io"
-	"bytes"
 	"sync"
-	"database/sql"
+	"time"
 )
 
 var (
-	startedCampaign struct{
+	startedCampaign struct {
 		campaigns []string
 		sync.Mutex
 	}
@@ -33,8 +33,8 @@ var (
 )
 
 // Start look database for ready campaign for send
-func Run()  {
-	l, err := os.OpenFile("log/campaign.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+func Run() {
+	l, err := os.OpenFile("log/campaign.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening campaign log file: %v", err)
 	}
