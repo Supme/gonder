@@ -49,6 +49,8 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 					records: record,
 					update:  time.Now(),
 				}
+			} else if  _, ok := mx.stor[domain]; ok {
+				record = mx.stor[domain].records
 			}
 		} else {
 			record = mx.stor[domain].records
