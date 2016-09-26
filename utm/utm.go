@@ -83,7 +83,7 @@ func Run() {
 				return
 			}
 			if data == "mail" {
-				if err := message.Unsubscribe(); err != nil {
+				if err := message.Unsubscribe(map[string]string{"Unsubscribed":"from header link"}); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -135,7 +135,13 @@ func Run() {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			} else {
-				if err := message.Unsubscribe(); err != nil {
+				var extra = map[string]string{}
+				for name, value := range r.PostForm {
+					if name != "campaignId" && name != "recipientId" && name != "unsubscribe" {
+						extra[name] = strings.Join(value, "|")
+					}
+				}
+				if err := message.Unsubscribe(extra); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return

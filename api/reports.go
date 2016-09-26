@@ -49,20 +49,23 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if (r.Form["group"] != nil && auth.CampaignRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
-		var queryString, param string
-		var timestamp mysql.NullTime
+		var (
+			id int64
+			queryString, param string
+			timestamp mysql.NullTime
+		)
 		type U struct {
 			Email string `json:"email"`
 			Date  int64  `json:"date"`
+			Extra []map[string]string `json:"extra,omitempty"`
 		}
-		var rs U
 		res := []U{}
 
 		if r.Form["group"] != nil {
-			queryString = "SELECT `email`, `date` FROM `unsubscribe` WHERE `group_id`=?"
+			queryString = "SELECT `id`, `email`, `date` FROM `unsubscribe` WHERE `group_id`=?"
 			param = r.Form["group"][0]
 		} else if r.Form["campaign"] != nil {
-			queryString = "SELECT `email`, `date` FROM `unsubscribe` WHERE `campaign_id`=?"
+			queryString = "SELECT `id`, `email`, `date` FROM `unsubscribe` WHERE `campaign_id`=?"
 			param = r.Form["campaign"][0]
 		} else {
 			http.Error(w, "Param error", http.StatusInternalServerError)
@@ -74,11 +77,33 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		}
 		defer query.Close()
 		for query.Next() {
-			err = query.Scan(&rs.Email, &timestamp)
+			rs := U{}
+			err = query.Scan(&id, &rs.Email, &timestamp)
 			if err != nil {
 				apilog.Print(err)
 			}
 			rs.Date = timestamp.Time.Unix()
+			// extra data
+			extra := map[string]string{}
+			var (
+				name string
+				value string
+			)
+			q, err := models.Db.Query("SELECT `name`, `value` FROM `unsubscribe_extra` WHERE `unsubscribe_id`=?", id)
+			if err != nil {
+				apilog.Print(err)
+			}
+			for q.Next() {
+				err = q.Scan(&name, &value)
+				if err != nil {
+					apilog.Print(err)
+				}
+				extra[name] = value
+				rs.Extra = append(rs.Extra, extra)
+			}
+			q.Close()
+
+
 			res = append(res, rs)
 		}
 		js, err = json.Marshal(res)

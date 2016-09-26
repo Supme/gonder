@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"log"
 )
 
 type (
@@ -74,8 +75,15 @@ func DecodeData(base64data string) (message Message, data string, err error) {
 	return message, data, nil
 }
 
-func (m *Message) Unsubscribe() error {
-	_, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignId, m.CampaignId, m.RecipientEmail)
+func (m *Message) Unsubscribe(extra map[string]string) error {
+	r, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignId, m.CampaignId, m.RecipientEmail)
+	id, e := r.LastInsertId();
+	if e != nil {
+		log.Print(err)
+	}
+	for name, value := range extra {
+		Db.Exec("INSERT INTO unsubscribe_extra (`unsubscribe_id`, `name`, `value`) VALUE (?, ?, ?)", id, name, value)
+	}
 	return err
 }
 
