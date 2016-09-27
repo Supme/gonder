@@ -13,25 +13,25 @@
 package main
 
 import (
-	"github.com/supme/gonder/utm"
-	"github.com/supme/gonder/models"
-	"github.com/supme/gonder/campaign"
-	"github.com/supme/gonder/api"
+	"bufio"
+	"errors"
 	"fmt"
+	"github.com/supme/gonder/api"
+	"github.com/supme/gonder/campaign"
+	"github.com/supme/gonder/models"
+	"github.com/supme/gonder/utm"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"runtime"
-	"io"
-	"bufio"
-	"syscall"
 	"strconv"
-	"errors"
+	"syscall"
 )
 
 func main() {
 
-	l, err := os.OpenFile(models.FromRootDir("log/main.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.FromRootDir("log/main.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening log file: %v", err)
 	}
@@ -44,8 +44,7 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-
-//	models.Config.Get()
+	//	models.Config.Get()
 	defer models.Config.Close()
 
 	// Start
@@ -216,7 +215,8 @@ func main() {
 				fmt.Println("Start api http server")
 				api.Run()
 
-				for {}
+				for {
+				}
 			}
 
 			if os.Args[2] == "sender" {
@@ -224,7 +224,8 @@ func main() {
 				fmt.Println("Start database mailer")
 				campaign.Run()
 
-				for {}
+				for {
+				}
 			}
 
 			if os.Args[2] == "utm" {
@@ -232,7 +233,8 @@ func main() {
 				fmt.Println("Start utm http server")
 				utm.Run()
 
-				for {}
+				for {
+				}
 			}
 
 		}
@@ -254,7 +256,6 @@ func main() {
 		fmt.Scanln(&input)
 	}
 
-
 }
 
 func startProcess(name string) error {
@@ -264,14 +265,14 @@ func startProcess(name string) error {
 	} else {
 		p := exec.Command(os.Args[0], "daemonize", name)
 		p.Start()
-		fmt.Println("Started " + name + " pid", p.Process.Pid)
+		fmt.Println("Started "+name+" pid", p.Process.Pid)
 		err := setPid(name, p.Process.Pid)
 		if err != nil {
 			return errors.New(name + " set PID error: " + err.Error())
 		}
 	}
 
-	return  nil
+	return nil
 }
 
 func stopProcess(name string) error {
@@ -285,7 +286,7 @@ func stopProcess(name string) error {
 			return err
 		}
 		reader := bufio.NewReader(file)
-		pid, _, err :=reader.ReadLine()
+		pid, _, err := reader.ReadLine()
 		if err != nil {
 			return err
 		}
@@ -321,7 +322,7 @@ func checkPid(name string) error {
 		return err
 	}
 	reader := bufio.NewReader(file)
-	pid, _, err :=reader.ReadLine()
+	pid, _, err := reader.ReadLine()
 	if err != nil {
 		return err
 	}

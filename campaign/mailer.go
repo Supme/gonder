@@ -1,20 +1,20 @@
 package campaign
 
 import (
-	"github.com/supme/gonder/models"
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-//	"github.com/eaigner/dkim"
+	"github.com/supme/gonder/models"
+	//	"github.com/eaigner/dkim"
+	"golang.org/x/net/idna"
 	"golang.org/x/net/proxy"
 	"io/ioutil"
 	"net"
-	"net/smtp"
 	"net/http"
+	"net/smtp"
 	"strings"
-	"golang.org/x/net/idna"
 	"time"
 )
 
@@ -28,7 +28,7 @@ type (
 	//       "1,4,6,8,9": id`s for send rotate by selected profile (set Host: "group")
 	// Host: host name of selected interface ip
 	MailData struct {
-		Iface 	     string
+		Iface        string
 		Host         string
 		From_email   string
 		From_name    string
@@ -78,7 +78,7 @@ func (m *MailData) Send() error {
 			var err error
 			m.socksConn, err = proxy.SOCKS5("tcp", m.Iface, nil, proxy.FromEnvironment())
 			if err != nil {
-				return  err
+				return err
 			}
 		} else {
 			connectAddr := net.ParseIP(m.Iface)
@@ -165,7 +165,7 @@ func (m *MailData) makeMail() string {
 	if m.From_name == "" {
 		msg.WriteString(`From: ` + m.From_email + "\n")
 	} else {
-		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` +"\n")
+		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` + "\n")
 	}
 
 	if m.To_name == "" {

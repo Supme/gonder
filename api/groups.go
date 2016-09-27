@@ -13,21 +13,21 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
 	"github.com/supme/gonder/models"
+	"net/http"
 )
 
 type Group struct {
-	Id   int64 `json:"recid"`
+	Id   int64  `json:"recid"`
 	Name string `json:"name"`
 }
 type Groups struct {
-	Total	    int64 `json:"total"`
-	Records		[]Group `json:"records"`
+	Total   int64   `json:"total"`
+	Records []Group `json:"records"`
 }
 
-func groups(w http.ResponseWriter, r *http.Request)  {
+func groups(w http.ResponseWriter, r *http.Request) {
 
 	var groups Groups
 	var err error
@@ -126,7 +126,7 @@ func saveGroups(changes map[string]map[string][]string) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND " + where, change["name"][0], change["recid"][0], auth.userId)
+		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"][0], change["recid"][0], auth.userId)
 		if e != nil {
 			err = e
 		}
@@ -146,7 +146,7 @@ func getGroups(offset, limit string) (Groups, error) {
 		where = "id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE " + where +" LIMIT ? OFFSET ?", auth.userId, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE "+where+" LIMIT ? OFFSET ?", auth.userId, limit, offset)
 	if err != nil {
 		return gs, err
 	}
@@ -155,6 +155,6 @@ func getGroups(offset, limit string) (Groups, error) {
 		err = query.Scan(&g.Id, &g.Name)
 		gs.Records = append(gs.Records, g)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `group` WHERE " + where, auth.userId).Scan(&gs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `group` WHERE "+where, auth.userId).Scan(&gs.Total)
 	return gs, err
 }

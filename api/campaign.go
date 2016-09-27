@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,30 +13,30 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"github.com/go-sql-driver/mysql"
-	"time"
-	"strconv"
+	"github.com/supme/gonder/models"
+	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Data struct {
-	Id   string `json:"recid"` //ToDo Id is int64
-	Name string `json:"name"`
-	ProfileId int `json:"profileId"`
-	Subject string `json:"subject"`
-	SenderId int `json:"senderId"`
-	StartDate int64 `json:"startDate"`
-	EndDate int64 `json:"endDate"`
-	SendUnsubscribe bool `json:"sendUnsubscribe"`
-	Accepted bool `json:"accepted"`
-	Template string `json:"template"`
+	Id              string `json:"recid"` //ToDo Id is int64
+	Name            string `json:"name"`
+	ProfileId       int    `json:"profileId"`
+	Subject         string `json:"subject"`
+	SenderId        int    `json:"senderId"`
+	StartDate       int64  `json:"startDate"`
+	EndDate         int64  `json:"endDate"`
+	SendUnsubscribe bool   `json:"sendUnsubscribe"`
+	Accepted        bool   `json:"accepted"`
+	Template        string `json:"template"`
 }
 
-func campaign(w http.ResponseWriter, r *http.Request)  {
+func campaign(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	var data Data
@@ -130,7 +130,6 @@ func campaign(w http.ResponseWriter, r *http.Request)  {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden save campaign"}`)
 		}
-
 
 	case "accept":
 		decoder := json.NewDecoder(r.Body)

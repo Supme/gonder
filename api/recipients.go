@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,43 +13,42 @@
 package api
 
 import (
-	"net/http"
-	"encoding/json"
-	"github.com/supme/gonder/models"
 	"encoding/base64"
-	"io/ioutil"
-	"time"
-	"os"
 	"encoding/csv"
-	"path"
+	"encoding/json"
 	"fmt"
+	"github.com/supme/gonder/models"
 	"github.com/tealeg/xlsx"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path"
+	"time"
 )
 
 type Recipient struct {
-	Id   int64 `json:"recid"`
-	Name string `json:"name"`
-	Email string `json:"email"`
+	Id     int64  `json:"recid"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
 	Result string `json:"result"`
 }
 
 type Recipients struct {
-	Total	    int `json:"total"`
-	Records		[]Recipient `json:"records"`
+	Total   int         `json:"total"`
+	Records []Recipient `json:"records"`
 }
 
-type RecipientParam struct  {
-	Key string `json:"key"`
+type RecipientParam struct {
+	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
 type RecipientParams struct {
-	Total	    int `json:"total"`
-	Records		[]RecipientParam `json:"records"`
+	Total   int              `json:"total"`
+	Records []RecipientParam `json:"records"`
 }
 
-
-func recipients(w http.ResponseWriter, r *http.Request)  {
+func recipients(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 
@@ -62,13 +61,13 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 		switch r.Form["cmd"][0] {
 		case "get-records":
 			if auth.Right("get-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
-				rs, err := getRecipients( r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
+				rs, err := getRecipients(r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
 				js, err = json.Marshal(rs)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-			}  else {
+			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden get recipients"}`)
 			}
 
@@ -115,7 +114,6 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 				js = []byte(`{"status": "error", "message": "Forbidden delete recipients"}`)
 			}
 
-
 		case "resend4x1":
 			if auth.Right("accept-campaign") && auth.CampaignRight(r.Form["campaign"][0]) {
 				err = resendCampaign(r.Form["campaign"][0])
@@ -137,13 +135,13 @@ func recipients(w http.ResponseWriter, r *http.Request)  {
 				return
 			}
 			if auth.Right("get-recipient-parameters") && auth.CampaignRight(rId) {
-				ps, err := getRecipientParams( r.Form["recipient"][0], r.Form["offset"][0], r.Form["limit"][0])
+				ps, err := getRecipientParams(r.Form["recipient"][0], r.Form["offset"][0], r.Form["limit"][0])
 				js, err = json.Marshal(ps)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-			}  else {
+			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden get recipient parameters"}`)
 			}
 		}
@@ -160,7 +158,7 @@ func resendCampaign(campaignId string) error {
 	return err
 }
 
-func getRecipientCampaign(recipientId string) (int64, error){
+func getRecipientCampaign(recipientId string) (int64, error) {
 	var id int64
 	err := models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", recipientId).Scan(&id)
 	return id, err
@@ -209,8 +207,6 @@ func delRecipients(campaignId string) error {
 	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=?", campaignId)
 	return err
 }
-
-
 
 // ToDo optimize this
 func recipientCsv(campaignId string, file string) error {

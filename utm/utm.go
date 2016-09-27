@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,18 +13,18 @@
 package utm
 
 import (
-	"os"
+	"encoding/base64"
+	"encoding/json"
 	"github.com/supme/gonder/models"
-	"log"
+	"html/template"
 	"io"
+	"log"
 	"net/http"
+	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"html/template"
-	"encoding/base64"
-	"encoding/json"
-	"regexp"
 )
 
 var (
@@ -42,7 +42,7 @@ type oldJson struct {
 }
 
 func Run() {
-	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening utm log file: %v", err)
 	}
@@ -50,14 +50,14 @@ func Run() {
 
 	multi := io.MultiWriter(l, os.Stdout)
 
-	utmlog = log.New(multi, "", log.Ldate | log.Ltime)
+	utmlog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	utm := http.NewServeMux()
 
 	utm.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
 		runtime.ReadMemStats(mem)
-		w.Write([]byte("Welcome to San Tropez! (Conn: "  + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
+		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
 
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func Run() {
 				return
 			}
 			if data == "mail" {
-				if err := message.Unsubscribe(); err != nil {
+				if err := message.Unsubscribe(map[string]string{"Unsubscribed":"from header link"}); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -135,7 +135,13 @@ func Run() {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			} else {
-				if err := message.Unsubscribe(); err != nil {
+				var extra = map[string]string{}
+				for name, value := range r.PostForm {
+					if name != "campaignId" && name != "recipientId" && name != "unsubscribe" {
+						extra[name] = strings.Join(value, "|")
+					}
+				}
+				if err := message.Unsubscribe(extra); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -156,7 +162,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, data)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
 		url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(data, 2)
 		http.Redirect(w, r, strings.TrimSpace(url[len(url)-1]), http.StatusFound)
 	})
@@ -170,7 +176,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
 		data, err := message.RenderMessage()
 		if err != nil {
 			utmlog.Println(err)
@@ -188,7 +194,7 @@ func Run() {
 			return
 		}
 		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'open_trace')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r) + " " + r.UserAgent(), message.RecipientId)
+		models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
 		//w.Header().Set("Content-Type", "image/png")
 		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		//w.Write(png)
@@ -196,9 +202,6 @@ func Run() {
 		gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		w.Write(gif)
 	})
-
-
-
 
 	// Old statistic todo delete later
 	utm.HandleFunc("/data/", func(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +240,7 @@ func Run() {
 				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
 				var m models.Message
 				m.New(param.Recipient)
-				message, err :=  m.RenderMessage()
+				message, err := m.RenderMessage()
 				if err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
@@ -273,12 +276,8 @@ func Run() {
 	})
 	// /Old statistic todo delete later
 
-
-
-
-
 	utmlog.Println("UTM listening on port " + models.Config.StatPort + "...")
-	utmlog.Fatal(http.ListenAndServe(":" + models.Config.StatPort, muxLog(utm)))
+	utmlog.Fatal(http.ListenAndServe(":"+models.Config.StatPort, muxLog(utm)))
 }
 
 func muxLog(handler http.Handler) http.Handler {
@@ -287,4 +286,3 @@ func muxLog(handler http.Handler) http.Handler {
 		handler.ServeHTTP(w, r)
 	})
 }
-

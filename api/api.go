@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,24 +13,24 @@
 package api
 
 import (
+	"encoding/base64"
+	"github.com/supme/gonder/models"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"io/ioutil"
-	"encoding/base64"
 	"os"
-	"io"
-	"github.com/supme/gonder/models"
 	"runtime"
 	"strconv"
 )
 
 var (
-	auth Auth
+	auth   Auth
 	apilog *log.Logger
 )
 
-func Run()  {
-	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+func Run() {
+	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Println("error opening api log file: %v", err)
 	}
@@ -45,7 +45,7 @@ func Run()  {
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
 		runtime.ReadMemStats(mem)
-		w.Write([]byte("Welcome to San Tropez! (Conn: "  + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
+		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
 
 	// Groups
@@ -108,19 +108,21 @@ func Run()  {
 		w.Write(ico)
 	})
 
-	api.HandleFunc("/{{.StatPng}}", func (w http.ResponseWriter, r *http.Request)  {
+	api.HandleFunc("/{{.StatPng}}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/gif")
 		blank, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		w.Write(blank)
 	})
 
-	api.HandleFunc("/panel", auth.Check(func (w http.ResponseWriter, r *http.Request)  {
+	api.HandleFunc("/panel", auth.Check(func(w http.ResponseWriter, r *http.Request) {
 		if f, err := ioutil.ReadFile(models.FromRootDir("api/http/index.html")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else{
+		} else {
 			w.Write(f)
 		}
 	}))
+
+	api.HandleFunc("/logout", auth.Logout)
 
 	api.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
 	api.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
@@ -128,7 +130,5 @@ func Run()  {
 	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":" + models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
+	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
 }
-
-

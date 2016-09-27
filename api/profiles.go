@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,33 +13,31 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"fmt"
+	"github.com/supme/gonder/models"
+	"net/http"
 	"strconv"
 )
 
-
-
 type Profile struct {
-	Id   int64 `json:"recid"`
-	Name string `json:"name"`
-	Iface string `json:"iface"`
-	Host string `json:"host"`
-	Stream int `json:"stream"`
-	ResendDelay int `json:"resend_delay"`
-	ResendCount int `json:"resend_count"`
+	Id          int64  `json:"recid"`
+	Name        string `json:"name"`
+	Iface       string `json:"iface"`
+	Host        string `json:"host"`
+	Stream      int    `json:"stream"`
+	ResendDelay int    `json:"resend_delay"`
+	ResendCount int    `json:"resend_count"`
 }
 
 type Profiles struct {
-	Status	    string `json:"status"`
-	Message	    string `json:"message"`
-	Total	    int64 `json:"total"`
-	Records		[]Profile `json:"records"`
+	Status  string    `json:"status"`
+	Message string    `json:"message"`
+	Total   int64     `json:"total"`
+	Records []Profile `json:"records"`
 }
 
-func profiles(w http.ResponseWriter, r *http.Request)  {
+func profiles(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	var ps Profiles
@@ -127,7 +125,7 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 		if e != nil {
 			err = e
 		}
-		e = models.Db.QueryRow("SELECT `name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile` WHERE `id`=?", p.Id).Scan(&p.Name,&p.Iface,&p.Host,&p.Stream,&p.ResendDelay,&p.ResendCount)
+		e = models.Db.QueryRow("SELECT `name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile` WHERE `id`=?", p.Id).Scan(&p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
 		if e != nil {
 			err = e
 		}
@@ -140,14 +138,14 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 			case "host":
 				p.Host = changes[c][i][0]
 			case "stream":
-				p.Stream,_ = strconv.Atoi(changes[c][i][0])
+				p.Stream, _ = strconv.Atoi(changes[c][i][0])
 			case "resend_delay":
-				p.ResendDelay,_ = strconv.Atoi(changes[c][i][0])
+				p.ResendDelay, _ = strconv.Atoi(changes[c][i][0])
 			case "resend_count":
-				p.ResendCount,_ = strconv.Atoi(changes[c][i][0])
+				p.ResendCount, _ = strconv.Atoi(changes[c][i][0])
 			}
 		}
-		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name,p.Iface,p.Host,p.Stream,p.ResendDelay,p.ResendCount,p.Id)
+		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name, p.Iface, p.Host, p.Stream, p.ResendDelay, p.ResendCount, p.Id)
 		if e != nil {
 			err = e
 		}
@@ -156,7 +154,7 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 }
 
 func deleteProfiles(selected []string) {
-	for s := range selected{
+	for s := range selected {
 		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", selected[s])
 	}
 }

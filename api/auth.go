@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,14 +13,14 @@
 package api
 
 import (
-	"net/http"
 	"crypto/sha256"
-	"github.com/supme/gonder/models"
 	"encoding/hex"
+	"github.com/supme/gonder/models"
+	"net/http"
 )
 
 type Auth struct {
-	Name string
+	Name   string
 	userId int64
 	unitId int64
 }
@@ -63,16 +63,14 @@ func (a *Auth) GroupRight(group interface{}) bool {
 	if err != nil {
 		r = false
 	}
+	if c == 0 {
+		r = false
+	} else {
+		r = true
+	}
+
 	return r
 }
-
-/*func (a *Auth) CampaignRightString(campaign string) bool {
-	c, err := strconv.ParseInt(campaign, 10, 64)
-	if err != nil {
-		return false
-	}
-	return a.CampaignRight(c)
-}*/
 
 func (a *Auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {
@@ -140,12 +138,11 @@ func check(user, password string) (int64, int64, bool) {
 }
 
 //ToDo
-func (a *Auth)Logout(w http.ResponseWriter, r *http.Request) {
+func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("Authorization", "Basic")
 	http.Error(w, "Logout. Bye!", 401)
 }
 
-func logging(r *http.Request)  {
+func logging(r *http.Request) {
 	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.Name, r.Method, r.RequestURI)
 }
-
