@@ -63,16 +63,14 @@ func (a *Auth) GroupRight(group interface{}) bool {
 	if err != nil {
 		r = false
 	}
+	if c == 0 {
+		r = false
+	} else {
+		r = true
+	}
+
 	return r
 }
-
-/*func (a *Auth) CampaignRightString(campaign string) bool {
-	c, err := strconv.ParseInt(campaign, 10, 64)
-	if err != nil {
-		return false
-	}
-	return a.CampaignRight(c)
-}*/
 
 func (a *Auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {

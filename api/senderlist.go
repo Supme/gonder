@@ -25,7 +25,8 @@ type SenderList struct {
 
 func senderList(w http.ResponseWriter, r *http.Request) {
 	var js []byte
-	if auth.Right("get-group") && auth.GroupRight(r.FormValue("groupId")) {
+
+	if auth.Right("get-groups") && auth.GroupRight(r.FormValue("groupId")) {
 		var id int64
 		var email, name string
 		var fs []SenderList

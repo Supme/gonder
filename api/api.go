@@ -122,6 +122,8 @@ func Run() {
 		}
 	}))
 
+	api.HandleFunc("/logout", auth.Logout)
+
 	api.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
 	api.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
 	api.HandleFunc("/status/ws/utm.log", auth.Check(utmLog))
