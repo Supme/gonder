@@ -16,6 +16,7 @@ import (
 	"net/smtp"
 	"strings"
 	"time"
+	"mime"
 )
 
 type (
@@ -165,18 +166,18 @@ func (m *MailData) makeMail() string {
 	if m.From_name == "" {
 		msg.WriteString(`From: ` + m.From_email + "\n")
 	} else {
-		msg.WriteString(`From: "` + encodeRFC2047(m.From_name) + `" <` + m.From_email + `>` + "\n")
+		msg.WriteString(`From: "` + encodeRFC2045(m.From_name) + `" <` + m.From_email + `>` + "\n")
 	}
 
 	if m.To_name == "" {
 		msg.WriteString(`To: ` + m.To_email + "\n")
 	} else {
-		msg.WriteString(`To: "` + encodeRFC2047(m.To_name) + `" <` + m.To_email + `>` + "\n")
+		msg.WriteString(`To: "` + encodeRFC2045(m.To_name) + `" <` + m.To_email + `>` + "\n")
 	}
 
 	// -------------- head ----------------------------------------------------------
 
-	msg.WriteString("Subject: " + encodeRFC2047(m.Subject) + "\n")
+	msg.WriteString("Subject: " + encodeRFC2045(m.Subject) + "\n")
 	msg.WriteString("MIME-Version: 1.0\n")
 	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\n")
 	msg.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\n")
@@ -228,26 +229,10 @@ func makeMarker() string {
 	return string(d)
 }
 
-func encodeRFC2047(s string) string {
-	// use code from net/mail for rfc2047 encode any string
-	// UTF-8 "Q" encoding
-	b := bytes.NewBufferString("=?utf-8?q?")
-	for i := 0; i < len(s); i++ {
-		switch c := s[i]; {
-		case c == ' ':
-			b.WriteByte('_')
-		case isVchar(c) && c != '=' && c != '?' && c != '_':
-			b.WriteByte(c)
-		default:
-			fmt.Fprintf(b, "=%02X", c)
-		}
-	}
-	b.WriteString("?= ")
-	return b.String()
+func encodeRFC2045(s string) string {
+	return mime.BEncoding.Encode("utf-8", s)
 }
 
-// isVchar returns true if c is an RFC 5322 VCHAR character.
-func isVchar(c byte) bool {
-	// Visible (printing) characters.
-	return '!' <= c && c <= '~'
+func encodeRFC2047(s string) string {
+	return mime.QEncoding.Encode("utf-8", s)
 }
