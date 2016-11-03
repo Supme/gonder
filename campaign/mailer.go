@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/supme/gonder/models"
-	//	"github.com/eaigner/dkim"
 	"golang.org/x/net/idna"
 	"golang.org/x/net/proxy"
 	"io/ioutil"
@@ -159,9 +158,17 @@ func (m *MailData) Send() error {
 }
 
 func (m *MailData) makeMail() string {
-	marker := makeMarker()
 
-	var msg bytes.Buffer
+	var (
+		multipart bool = false
+		msg bytes.Buffer
+		marker string
+	)
+
+	if len(m.Attachments) != 0 {
+		multipart = true
+		marker = makeMarker()
+	}
 
 	if m.From_name == "" {
 		msg.WriteString(`From: ` + m.From_email + "\n")
@@ -181,43 +188,54 @@ func (m *MailData) makeMail() string {
 	msg.WriteString("MIME-Version: 1.0\n")
 	msg.WriteString("X-Mailer: Gonder v" + models.Config.Version + "\n")
 	msg.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\n")
-	msg.WriteString("Content-Type: multipart/mixed;\n	boundary=\"" + marker + "\"\n")
-	msg.WriteString(m.Extra_header + "\n\n")
+	if multipart {
+		msg.WriteString("Content-Type: multipart/mixed;\n	boundary=\"" + marker + "\"\n")
+	} else {
+		msg.WriteString("Content-Transfer-Encoding: base64\nContent-Type: text/html; charset=\"utf-8\"\n")
+	}
+	msg.WriteString(m.Extra_header + "\n")
 	// ------------- /head ---------------------------------------------------------
 
 	// ------------- body ----------------------------------------------------------
-	msg.WriteString("\n--" + marker + "\nContent-Type: text/html; charset=\"utf-8\"\nContent-Transfer-Encoding: 8bit\n\n")
-	msg.WriteString(m.Html)
+	if multipart {
+		msg.WriteString("--" + marker + "\n")
+		msg.WriteString("Content-Transfer-Encoding: base64\nContent-Type: text/html; charset=\"utf-8\"\n\n")
+	}
+	msg.WriteString(base64code([]byte(m.Html)))
+	msg.WriteString("\n")
 	// ------------ /body ---------------------------------------------------------
 
 	// ----------- attachments ----------------------------------------------------
 	for _, file := range m.Attachments {
 
 		msg.WriteString("\n--" + marker)
-		//read and encode attachment
 		content, err := ioutil.ReadFile(file.Location + file.Name)
 		if err != nil {
 			fmt.Println(err)
 		}
-		encoded := base64.StdEncoding.EncodeToString(content)
-
-		//part 3 will be the attachment
 		msg.WriteString(fmt.Sprintf("\nContent-Type: %s;\n	name=\"%s\"\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment;\n	filename=\"%s\"\n\n", http.DetectContentType(content), file.Name, file.Name))
-		//split the encoded file in lines (doesn't matter, but low enough not to hit a max limit)
-		lineMaxLength := 500
-		nbrLines := len(encoded) / lineMaxLength
-		for i := 0; i < nbrLines; i++ {
-			msg.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
-		}
-
-		//append last line in buffer
-		msg.WriteString(encoded[nbrLines*lineMaxLength:])
+		msg.WriteString(base64code(content))
 		msg.WriteString("\n")
-
 	}
 	// ----------- /attachments ---------------------------------------------------
 
 	return msg.String()
+}
+
+func base64code(data []byte) string {
+	var (
+		result bytes.Buffer
+	)
+	encoded := base64.StdEncoding.EncodeToString(data)
+	lineMaxLength := 76
+	nbrLines := len(encoded) / lineMaxLength
+	for i := 0; i < nbrLines; i++ {
+		result.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength])
+		result.WriteString("\n")
+	}
+	result.WriteString(encoded[nbrLines*lineMaxLength:])
+	result.WriteString("\n")
+	return result.String()
 }
 
 func makeMarker() string {
