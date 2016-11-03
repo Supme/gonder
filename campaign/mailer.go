@@ -144,7 +144,7 @@ func (m *MailData) Send() error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (Data)", err))
 	}
-	_, err = fmt.Fprint(w, m.makeMail())
+	_, err = fmt.Fprint(w, m.Data())
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (SendData)", err))
 	}
@@ -157,7 +157,7 @@ func (m *MailData) Send() error {
 	return c.Quit()
 }
 
-func (m *MailData) makeMail() string {
+func (m *MailData) Data() string {
 
 	var (
 		multipart bool = false
@@ -201,41 +201,33 @@ func (m *MailData) makeMail() string {
 		msg.WriteString("--" + marker + "\n")
 		msg.WriteString("Content-Transfer-Encoding: base64\nContent-Type: text/html; charset=\"utf-8\"\n\n")
 	}
-	msg.WriteString(base64code([]byte(m.Html)))
+	line76(&msg, base64.StdEncoding.EncodeToString([]byte(m.Html)))
 	msg.WriteString("\n")
 	// ------------ /body ---------------------------------------------------------
 
 	// ----------- attachments ----------------------------------------------------
 	for _, file := range m.Attachments {
-
 		msg.WriteString("\n--" + marker)
 		content, err := ioutil.ReadFile(file.Location + file.Name)
 		if err != nil {
 			fmt.Println(err)
 		}
 		msg.WriteString(fmt.Sprintf("\nContent-Type: %s;\n	name=\"%s\"\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment;\n	filename=\"%s\"\n\n", http.DetectContentType(content), file.Name, file.Name))
-		msg.WriteString(base64code(content))
+		line76(&msg, base64.StdEncoding.EncodeToString(content))
 		msg.WriteString("\n")
 	}
 	// ----------- /attachments ---------------------------------------------------
-
 	return msg.String()
 }
 
-func base64code(data []byte) string {
-	var (
-		result bytes.Buffer
-	)
-	encoded := base64.StdEncoding.EncodeToString(data)
-	lineMaxLength := 76
-	nbrLines := len(encoded) / lineMaxLength
+func line76(target *bytes.Buffer, encoded string) {
+	nbrLines := len(encoded) / 76
 	for i := 0; i < nbrLines; i++ {
-		result.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength])
-		result.WriteString("\n")
+		target.WriteString(encoded[i*76:(i+1)*76])
+		target.WriteString("\n")
 	}
-	result.WriteString(encoded[nbrLines*lineMaxLength:])
-	result.WriteString("\n")
-	return result.String()
+	target.WriteString(encoded[nbrLines*76:])
+	target.WriteString("\n")
 }
 
 func makeMarker() string {
