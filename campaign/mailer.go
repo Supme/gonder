@@ -138,8 +138,6 @@ func (m *MailData) Send() error {
 		return errors.New(fmt.Sprintf("%v (Rcpt)", err))
 	}
 
-	//dkim.New()
-
 	w, err := c.Data()
 	if err != nil {
 		return errors.New(fmt.Sprintf("%v (Data)", err))
