@@ -151,7 +151,7 @@ func getCampaigns(group, offset, limit string) (Campaigns, error) {
 		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND "+where+" LIMIT ? OFFSET ?", group, auth.userId, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND "+where+" ORDER BY `id` DESC LIMIT ? OFFSET ?", group, auth.userId, limit, offset)
 	if err != nil {
 		return cs, err
 	}

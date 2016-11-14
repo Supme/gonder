@@ -431,6 +431,7 @@
                     { field: 'name', caption: w2utils.lang('Name'), size: '100%',  editable: { type: 'text' }}
                 ],
                 multiSelect: false,
+                sortData: [{ field: 'recid', direction: 'DESC' }],
                 url: '/api/groups',
                 method: 'GET',
                 onSelect: function (event) {
@@ -511,6 +512,7 @@
                     { field: 'name', caption: w2utils.lang('Name'), size: '100%', editable: { type: 'text' } }
                 ],
                 multiSelect: false,
+                sortData: [{ field: 'recid', direction: 'DESC' }],
                 method: 'GET',
                 toolbar: {
                     items: [
