@@ -169,6 +169,17 @@ func (m *Message) RenderMessage() (string, error) {
 	m.RecipientParam["RecipientName"] = m.RecipientName
 	m.RecipientParam["CampaignId"] = m.CampaignId
 
+	// render subject
+	subj := template.New("subject" + m.RecipientId)
+	subj, err = subj.Parse(m.CampaignSubject)
+	if err != nil {
+		e := fmt.Sprintf("Error parse subject: %v", err)
+		return e, err
+	}
+	tSubj := bytes.NewBufferString("")
+	subj.Execute(tSubj, m.RecipientParam)
+	m.CampaignSubject = tSubj.String()
+
 	if !web {
 		m.RecipientParam["WebUrl"] = m.WebLink()
 
@@ -214,15 +225,14 @@ func (m *Message) RenderMessage() (string, error) {
 	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "\"/files/", "\""+Config.Url+"/files/", -1)
 	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "'/files/", "'"+Config.Url+"'/files/", -1)
 
+	// render template
 	tmpl := template.New("mail" + m.RecipientId)
-
 	tmpl, err = tmpl.Parse(m.CampaignTemplate)
 	if err != nil {
 		e := fmt.Sprintf("Error parse template: %v", err)
 		return e, err
 	}
-
-	t := bytes.NewBufferString("")
-	tmpl.Execute(t, m.RecipientParam)
-	return t.String(), nil
+	tTempl := bytes.NewBufferString("")
+	tmpl.Execute(tTempl, m.RecipientParam)
+	return tTempl.String(), nil
 }
