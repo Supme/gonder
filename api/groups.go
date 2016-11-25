@@ -32,16 +32,23 @@ func groups(w http.ResponseWriter, r *http.Request) {
 	var groups Groups
 	var err error
 	var js []byte
-	if err = r.ParseForm(); err != nil {
+
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	switch r.Form["cmd"][0] {
+	switch req.Cmd {
 
-	case "get-records":
+	case "get":
 		if auth.Right("get-groups") {
-			groups, err = getGroups(r.Form["offset"][0], r.Form["limit"][0])
+			groups, err = getGroups(req.Offset, req.Limit)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -55,15 +62,14 @@ func groups(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden get group"}`)
 		}
 
-	case "save-records":
+	case "save":
 		if auth.Right("save-groups") {
-			arrForm := parseArrayForm(r.Form)
-			err := saveGroups(arrForm["changes"])
+			err := saveGroups(req.Changes)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			groups, err = getGroups(r.Form["offset"][0], r.Form["limit"][0])
+			groups, err = getGroups(req.Offset, req.Limit)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -77,7 +83,7 @@ func groups(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
 		}
 
-	case "add-record":
+	case "add":
 		if auth.Right("add-groups") {
 			group, err := addGroup()
 			if err != nil {
@@ -92,7 +98,6 @@ func groups(w http.ResponseWriter, r *http.Request) {
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden add groups"}`)
 		}
-
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -114,7 +119,7 @@ func addGroup() (Group, error) {
 	return g, nil
 }
 
-func saveGroups(changes map[string]map[string][]string) (err error) {
+func saveGroups(changes []map[string]interface{}) (err error) {
 	var e error
 	var where string
 	err = nil
@@ -126,7 +131,7 @@ func saveGroups(changes map[string]map[string][]string) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"][0], change["recid"][0], auth.userId)
+		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], auth.userId)
 		if e != nil {
 			err = e
 		}
@@ -134,7 +139,8 @@ func saveGroups(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-func getGroups(offset, limit string) (Groups, error) {
+// ToDo order by reqest
+func getGroups(offset, limit int64) (Groups, error) {
 	var g Group
 	var gs Groups
 	var where string

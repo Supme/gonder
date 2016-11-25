@@ -26,12 +26,23 @@ type SenderList struct {
 func senderList(w http.ResponseWriter, r *http.Request) {
 	var js []byte
 
-	if auth.Right("get-groups") && auth.GroupRight(r.FormValue("groupId")) {
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if auth.Right("get-groups") && auth.GroupRight(req.Id) {
 		var id int64
 		var email, name string
 		var fs []SenderList
 		fs = []SenderList{}
-		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", r.FormValue("groupId"))
+		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", req.Id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

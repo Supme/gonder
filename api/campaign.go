@@ -18,13 +18,12 @@ import (
 	"github.com/supme/gonder/models"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
 
 type Data struct {
-	Id              string `json:"recid"` //ToDo Id is int64
+	Id              int64 `json:"recid"`
 	Name            string `json:"name"`
 	ProfileId       int    `json:"profileId"`
 	Subject         string `json:"subject"`
@@ -39,42 +38,46 @@ type Data struct {
 func campaign(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
-	var data Data
-	data = Data{}
 
-	if err = r.ParseForm(); err != nil {
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	switch r.Form["cmd"][0] {
-	case "get-data":
-		data.Id = r.Form["recid"][0]
-		dataId, err := strconv.ParseInt(data.Id, 10, 64)
+
+	switch req.Cmd {
+	case "get":
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if auth.Right("get-campaign") && auth.CampaignRight(dataId) {
+		if auth.Right("get-campaign") && auth.CampaignRight(req.Id) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", data.Id).Scan(
-				&data.Name,
-				&data.ProfileId,
-				&data.Subject,
-				&data.SenderId,
+			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.Id).Scan(
+				&req.Content.Id,
+				&req.Content.Name,
+				&req.Content.ProfileId,
+				&req.Content.Subject,
+				&req.Content.SenderId,
 				&start,
 				&end,
-				&data.SendUnsubscribe,
-				&data.Template,
-				&data.Accepted,
+				&req.Content.SendUnsubscribe,
+				&req.Content.Template,
+				&req.Content.Accepted,
 			)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			data.StartDate = start.Time.Unix()
-			data.EndDate = end.Time.Unix()
+			req.Content.StartDate = start.Time.Unix()
+			req.Content.EndDate = end.Time.Unix()
 
-			js, err = json.Marshal(data)
+			js, err = json.Marshal(req.Content)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -83,39 +86,34 @@ func campaign(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden get campaign"}`)
 		}
 
-	case "save-data":
-		decoder := json.NewDecoder(r.Body)
+	case "save":
+		/*decoder := json.NewDecoder(req.Content)
 		err = decoder.Decode(&data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
-		}
+		}*/
 
-		dataId, err := strconv.ParseInt(data.Id, 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if auth.Right("save-campaign") && auth.CampaignRight(dataId) {
-			start := time.Unix(data.StartDate, 0).Format(time.RFC3339)
-			end := time.Unix(data.EndDate, 0).Format(time.RFC3339)
+		if auth.Right("save-campaign") && auth.CampaignRight(req.Id) {
+			start := time.Unix(req.Content.StartDate, 0).Format(time.RFC3339)
+			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)
 
 			// fix visual editor replace &amp;
 			r := regexp.MustCompile(`(href|src)=["'](.*?)["']`)
-			data.Template = r.ReplaceAllStringFunc(data.Template, func(str string) string {
+			req.Content.Template = r.ReplaceAllStringFunc(req.Content.Template, func(str string) string {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
 
 			_, err := models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
-				data.Name,
-				data.ProfileId,
-				data.Subject,
-				data.SenderId,
+				req.Content.Name,
+				req.Content.ProfileId,
+				req.Content.Subject,
+				req.Content.SenderId,
 				start,
 				end,
-				data.SendUnsubscribe,
-				data.Template,
-				data.Id,
+				req.Content.SendUnsubscribe,
+				req.Content.Template,
+				req.Id,
 			)
 
 			if err != nil {
@@ -123,7 +121,7 @@ func campaign(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			js, err = json.Marshal(data)
+			js, err = json.Marshal(req.Content)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -133,27 +131,16 @@ func campaign(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "accept":
-		decoder := json.NewDecoder(r.Body)
-		err = decoder.Decode(&data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		dataId, err := strconv.ParseInt(data.Id, 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if auth.Right("accept-campaign") && auth.CampaignRight(dataId) {
+		if auth.Right("accept-campaign") && auth.CampaignRight(req.Id) {
 			var accepted int
-			if data.Accepted {
+			apilog.Print(req)
+			if req.Select {
 				accepted = 1
 			} else {
 				accepted = 0
 			}
 
-			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, data.Id)
+			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.Id)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

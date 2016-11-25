@@ -33,21 +33,22 @@ func campaigns(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 
-	if err = r.ParseForm(); err != nil {
-		//handle error http.Error() for example
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
-	group := "0"
-	if r.Form["group"] != nil {
-		group = r.Form["group"][0]
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	switch r.Form["cmd"][0] {
+	switch req.Cmd {
 
-	case "get-records":
+	case "get":
 		if auth.Right("get-campaigns") {
-			campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
+			campaigns, err = getCampaigns(req.Id, req.Offset, req.Limit)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -61,15 +62,14 @@ func campaigns(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden get campaigns"}`)
 		}
 
-	case "save-records":
+	case "save":
 		if auth.Right("save-campaigns") {
-			arrForm := parseArrayForm(r.Form)
-			err := saveCampaigns(arrForm["changes"])
+			err := saveCampaigns(req.Changes)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			campaigns, err = getCampaigns(group, r.Form["offset"][0], r.Form["limit"][0])
+			campaigns, err = getCampaigns(req.Group, req.Offset, req.Limit)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -83,9 +83,9 @@ func campaigns(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden save campaigns"}`)
 		}
 
-	case "add-record":
+	case "add":
 		if auth.Right("add-campaigns") {
-			campaign, err := addCampaign(r.Form["group"][0])
+			campaign, err := addCampaign(req.Id)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -104,7 +104,7 @@ func campaigns(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func addCampaign(groupId string) (Campaign, error) {
+func addCampaign(groupId int64) (Campaign, error) {
 	c := Campaign{}
 	c.Name = "New campaign"
 	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupId, c.Name)
@@ -119,7 +119,7 @@ func addCampaign(groupId string) (Campaign, error) {
 	return c, nil
 }
 
-func saveCampaigns(changes map[string]map[string][]string) (err error) {
+func saveCampaigns(changes []map[string]interface{}) (err error) {
 	var e error
 	err = nil
 	var where string
@@ -131,7 +131,7 @@ func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"][0], change["recid"][0], auth.userId)
+		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], auth.userId)
 		if e != nil {
 			err = e
 		}
@@ -139,7 +139,7 @@ func saveCampaigns(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-func getCampaigns(group, offset, limit string) (Campaigns, error) {
+func getCampaigns(group, offset, limit int64) (Campaigns, error) {
 	var c Campaign
 	var cs Campaigns
 	var where string

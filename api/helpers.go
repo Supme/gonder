@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"encoding/json"
 )
 
 func parseArrayForm(r url.Values) map[string]map[string]map[string][]string {
@@ -38,4 +39,33 @@ func parseArrayForm(r url.Values) map[string]map[string]map[string][]string {
 		}
 	}
 	return dblarr
+}
+
+type request struct {
+	Cmd string `json:"cmd"`
+	Selected []interface{} `json:"selected"`
+	Limit int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+	Sort []struct{
+		Field string `json:"field"`
+		Direction string `json:"direction"`
+	} `json:"sort"`
+	Changes []map[string]interface{} `json:"changes"`
+
+	Group int64 `json:"group"`
+	Campaign int64 `json:"campaign"`
+	Recipient int64 `json:"recipient"`
+	FileName string `json:"fileName"`
+	FileContent string `json:"fileContent"`
+	Id int64 `json:"id"`
+	Email string `json:"email"`
+	Name string `json:"name"`
+	Content Data `json:"content"`
+	Select bool `json:"select"`
+}
+
+func parseRequest(js string) (request, error) {
+	var req request
+	err := json.Unmarshal([]byte(js), &req)
+	return req, err
 }

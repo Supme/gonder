@@ -16,7 +16,6 @@ import (
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"github.com/supme/gonder/models"
 	"github.com/tealeg/xlsx"
 	"io/ioutil"
@@ -52,16 +51,22 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 
-	if err = r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
-	if r.Form["content"][0] == "recipients" {
-		switch r.Form["cmd"][0] {
-		case "get-records":
-			if auth.Right("get-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
-				rs, err := getRecipients(r.Form["campaign"][0], r.Form["offset"][0], r.Form["limit"][0])
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if req.Recipient == 0 {
+		switch req.Cmd {
+		case "get":
+			if auth.Right("get-recipients") && auth.CampaignRight(req.Campaign) {
+				rs, err := getRecipients(req.Campaign, req.Offset, req.Limit)
 				js, err = json.Marshal(rs)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -72,8 +77,8 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "upload":
-			if auth.Right("upload-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
-				content, err := base64.StdEncoding.DecodeString(r.FormValue("base64"))
+			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
+				content, err := base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
 				}
@@ -82,29 +87,27 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Write file"}`)
 				}
-
-				if path.Ext(r.Form["name"][0]) == ".csv" {
-					err = recipientCsv(r.FormValue("campaign"), file)
+				apilog.Print(auth.Name,"upload file", req.FileName)
+				if path.Ext(req.FileName) == ".csv" {
+					err = recipientCsv(req.Campaign, file)
 					if err != nil {
 						js = []byte(`{"status": "error", "message": "Add recipients csv"}`)
 					}
-				} else if path.Ext(r.Form["name"][0]) == ".xlsx" {
-					err = recipientXlsx(r.FormValue("campaign"), file)
+				} else if path.Ext(req.FileName) == ".xlsx" {
+					err = recipientXlsx(req.Campaign, file)
 					if err != nil {
 						js = []byte(`{"status": "error", "message": "Add recipients xlsx"}`)
 					}
 				} else {
-					fmt.Println("this other file")
 					js = []byte(`{"status": "error", "message": "This not csv or xlsx file"}`)
 				}
-
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden upload recipients"}`)
 			}
 
-		case "deleteAll":
-			if auth.Right("delete-recipients") && auth.CampaignRight(r.Form["campaign"][0]) {
-				err = delRecipients(r.Form["campaign"][0])
+		case "clear":
+			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
+				err = delRecipients(req.Campaign)
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Can't delete all recipients"}`)
 				}
@@ -113,8 +116,8 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "resend4x1":
-			if auth.Right("accept-campaign") && auth.CampaignRight(r.Form["campaign"][0]) {
-				err = resendCampaign(r.Form["campaign"][0])
+			if auth.Right("accept-campaign") && auth.CampaignRight(req.Campaign) {
+				err = resendCampaign(req.Campaign)
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Can't resend"}`)
 				}
@@ -122,18 +125,15 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 				js = []byte(`{"status": "error", "message": "Forbidden resend campaign"}`)
 			}
 		}
-	}
-
-	if r.Form["content"][0] == "parameters" {
-		switch r.Form["cmd"][0] {
-		case "get-records":
-			rId, err := getRecipientCampaign(r.Form["recipient"][0])
+	} else {
+		if req.Cmd == "get" {
+			rId, err := getRecipientCampaign(req.Recipient)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			if auth.Right("get-recipient-parameters") && auth.CampaignRight(rId) {
-				ps, err := getRecipientParams(r.Form["recipient"][0], r.Form["offset"][0], r.Form["limit"][0])
+				ps, err := getRecipientParams(req.Recipient, req.Offset, req.Limit)
 				js, err = json.Marshal(ps)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -149,21 +149,21 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func resendCampaign(campaignId string) error {
+func resendCampaign(campaignId int64) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND (`status` LIKE '421%' OR `status` LIKE '451%')", campaignId)
 	c, _ := res.RowsAffected()
 	apilog.Printf("User %s resend by 4x1 code for campaign %s. Resend count %d", auth.Name, campaignId, c)
 	return err
 }
 
-func getRecipientCampaign(recipientId string) (int64, error) {
+func getRecipientCampaign(recipientId int64) (int64, error) {
 	var id int64
 	err := models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", recipientId).Scan(&id)
 	return id, err
 }
 
 //ToDo check right errors
-func getRecipients(campaign, offset, limit string) (Recipients, error) {
+func getRecipients(campaign, offset, limit int64) (Recipients, error) {
 	var err error
 	var rs Recipients
 	rs.Records = []Recipient{}
@@ -183,7 +183,7 @@ func getRecipients(campaign, offset, limit string) (Recipients, error) {
 }
 
 //ToDo check right errors
-func getRecipientParams(recipient, offset, limit string) (RecipientParams, error) {
+func getRecipientParams(recipient, offset, limit int64) (RecipientParams, error) {
 	var err error
 	var p RecipientParam
 	var ps RecipientParams
@@ -201,13 +201,13 @@ func getRecipientParams(recipient, offset, limit string) (RecipientParams, error
 	return ps, err
 }
 
-func delRecipients(campaignId string) error {
+func delRecipients(campaignId int64) error {
 	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=?", campaignId)
 	return err
 }
 
 // ToDo optimize this
-func recipientCsv(campaignId string, file string) error {
+func recipientCsv(campaignId int64, file string) error {
 
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -267,7 +267,7 @@ func recipientCsv(campaignId string, file string) error {
 	return err
 }
 
-func recipientXlsx(campaignId string, file string) error {
+func recipientXlsx(campaignId int64, file string) error {
 
 	title := make(map[int]string)
 	data := make(map[string]string)

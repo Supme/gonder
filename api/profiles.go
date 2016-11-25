@@ -45,14 +45,20 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 
 	ps.Status = "success"
 
-	if err = r.ParseForm(); err != nil {
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	switch r.Form["cmd"][0] {
+	switch req.Cmd {
 
-	case "get-records":
+	case "get":
 		if auth.Right("get-profiles") {
 			ps, err = getProfiles()
 			if err != nil {
@@ -68,7 +74,7 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
 
-	case "add-records":
+	case "add":
 		if auth.Right("add-profiles") {
 			p, err = addProfile()
 			if err != nil {
@@ -84,19 +90,18 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
 
-	case "delete-records":
+	case "delete":
 		if auth.Right("delete-profiles") {
-			fmt.Print(r.Form["selected[]"])
-			deleteProfiles(r.Form["selected[]"])
+			fmt.Print(req.Selected)
+			deleteProfiles(req.Selected)
 			js, err = json.Marshal(ps)
 		} else {
 			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
 		}
 
-	case "save-records":
+	case "save":
 		if auth.Right("save-profiles") {
-			arrForm := parseArrayForm(r.Form)
-			err = saveProfiles(arrForm["changes"])
+			err = saveProfiles(req.Changes)
 			if err != nil {
 				ps.Status = "error"
 				ps.Message = err.Error()
@@ -116,12 +121,12 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func saveProfiles(changes map[string]map[string][]string) (err error) {
+func saveProfiles(changes []map[string]interface{}) (err error) {
 	var e error
 	err = nil
 	var p Profile
 	for c := range changes {
-		p.Id, e = strconv.ParseInt(changes[c]["recid"][0], 10, 64)
+		p.Id, e = strconv.ParseInt(fmt.Sprint(changes[c]["recid"]), 10, 64)
 		if e != nil {
 			err = e
 		}
@@ -132,17 +137,17 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 		for i := range changes[c] {
 			switch i {
 			case "name":
-				p.Name = changes[c][i][0]
+				p.Name = fmt.Sprint(changes[c][i])
 			case "iface":
-				p.Iface = changes[c][i][0]
+				p.Iface = fmt.Sprint(changes[c][i])
 			case "host":
-				p.Host = changes[c][i][0]
+				p.Host = fmt.Sprint(changes[c][i])
 			case "stream":
-				p.Stream, _ = strconv.Atoi(changes[c][i][0])
+				p.Stream, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			case "resend_delay":
-				p.ResendDelay, _ = strconv.Atoi(changes[c][i][0])
+				p.ResendDelay, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			case "resend_count":
-				p.ResendCount, _ = strconv.Atoi(changes[c][i][0])
+				p.ResendCount, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			}
 		}
 		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name, p.Iface, p.Host, p.Stream, p.ResendDelay, p.ResendCount, p.Id)
@@ -153,9 +158,9 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-func deleteProfiles(selected []string) {
-	for s := range selected {
-		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", selected[s])
+func deleteProfiles(selected []interface{}) {
+	for _, s := range selected {
+		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", s)
 	}
 }
 
