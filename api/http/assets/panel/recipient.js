@@ -50,7 +50,7 @@ $('#campaignRecipient').w2grid({
 // --- /Recipients table ---
 
 // --- Recipient upload ---
-$('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false/*placeholder: 'Select file'*/});
+$('#recipientUploadFile').w2field('file', {max: 1});
 $("#recipientUploadButton").html(w2utils.lang('Upload'));
 $('#recipientUploadButton').click(
     function () {
@@ -75,8 +75,7 @@ $('#recipientUploadButton').click(
                     if (data['status'] == 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
-                }).complete(function() {
-                    $('#recipientUploadFile').w2field('file', {accept:'.csv', silent: false});
+                    $('#recipientUploadFile').w2field('file', {max: 1});
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
                 });
@@ -102,10 +101,9 @@ $("#recipientClearButton").click(
                     if (data['status'] == 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
-                }).complete(function() {
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
-                })
+                });
             }
         })
     }

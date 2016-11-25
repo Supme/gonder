@@ -66,7 +66,6 @@ $('#campaign').w2grid({
             CKEDITOR.instances.campaignTemplate.setData(data["template"]);
 
             w2ui['recipient'].postData["campaign"] = parseInt(event.recid)
-        }).complete(function() {
             w2ui.layout.unlock('main');
             w2ui['sidebar'].click('parameter');
         });

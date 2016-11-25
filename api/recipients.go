@@ -50,6 +50,7 @@ type RecipientParams struct {
 func recipients(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
+	js = []byte(`{"status": "success", "message": ""}`)
 
 	if r.FormValue("request") == "" {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -87,7 +88,7 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Write file"}`)
 				}
-				apilog.Print(auth.Name,"upload file", req.FileName)
+				apilog.Print(auth.Name," upload file ", req.FileName)
 				if path.Ext(req.FileName) == ".csv" {
 					err = recipientCsv(req.Campaign, file)
 					if err != nil {
