@@ -133,7 +133,6 @@ func campaign(w http.ResponseWriter, r *http.Request) {
 	case "accept":
 		if auth.Right("accept-campaign") && auth.CampaignRight(req.Id) {
 			var accepted int
-			apilog.Print(req)
 			if req.Select {
 				accepted = 1
 			} else {
