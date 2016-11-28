@@ -16,6 +16,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"github.com/supme/gonder/models"
+	mailer "github.com/supme/gonder/campaign"
 	"net/http"
 )
 
@@ -32,7 +33,24 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 		a.userId, a.unitId, authorize = check(user, password)
 		if !authorize {
 			if user != "" {
-				apilog.Printf("%s bad auth login '%s'", models.GetIP(r), user)
+				ip := models.GetIP(r)
+				apilog.Printf("%s bad auth login '%s'", ip , user)
+				if models.Config.GonderMail != "" && models.Config.GonderMail != "" {
+					go func() {
+						_, iface, host := models.ProfileNext(models.Config.DefaultProfile)
+						m := mailer.MailData{
+							Iface: iface,
+							Host: host,
+							From_email: models.Config.GonderMail,
+							To_email: models.Config.AdminMail,
+							Subject: "Bad login to Gonder",
+							Html: ip + " bad auth login '" + user + "'",
+						}
+						if err := m.Send(); err != nil {
+							apilog.Print("Error send mail:", err)
+						}
+					}()
+				}
 			}
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)

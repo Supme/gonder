@@ -84,13 +84,11 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if path.Ext(r.Form["name"][0]) == ".csv" {
-					fmt.Println("this csv file")
 					err = recipientCsv(r.FormValue("campaign"), file)
 					if err != nil {
 						js = []byte(`{"status": "error", "message": "Add recipients csv"}`)
 					}
 				} else if path.Ext(r.Form["name"][0]) == ".xlsx" {
-					fmt.Println("this xlsx file")
 					err = recipientXlsx(r.FormValue("campaign"), file)
 					if err != nil {
 						js = []byte(`{"status": "error", "message": "Add recipients xlsx"}`)
@@ -169,7 +167,7 @@ func getRecipients(campaign, offset, limit string) (Recipients, error) {
 	var err error
 	var rs Recipients
 	rs.Records = []Recipient{}
-	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=?  LIMIT ? OFFSET ?", campaign, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=? LIMIT ? OFFSET ?", campaign, limit, offset)
 	if err != nil {
 		return rs, err
 	}

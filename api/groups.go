@@ -146,7 +146,7 @@ func getGroups(offset, limit string) (Groups, error) {
 		where = "id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE "+where+" LIMIT ? OFFSET ?", auth.userId, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE "+where+" ORDER BY `id` DESC LIMIT ? OFFSET ?", auth.userId, limit, offset)
 	if err != nil {
 		return gs, err
 	}

@@ -88,7 +88,11 @@ func Run() {
 
 	// Reports
 	// Example:
-	// Get reports: http://host/api/report?campaign=4
+	//   Get reports: http://host/api/report?campaign=4
+	// /api/report?campaign=xxx
+	// /api/report/jump?campaign=xxx
+	// /api/report/unsubscribed?group=xxx
+	// /api/report/unsubscribed?campaign=xxx
 	api.HandleFunc("/api/report", auth.Check(report))
 	api.HandleFunc("/api/report/jump", auth.Check(reportJumpDetailedCount))
 	api.HandleFunc("/api/report/unsubscribed", auth.Check(reportUnsubscribed))

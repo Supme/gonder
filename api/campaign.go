@@ -100,7 +100,8 @@ func campaign(w http.ResponseWriter, r *http.Request) {
 			start := time.Unix(data.StartDate, 0).Format(time.RFC3339)
 			end := time.Unix(data.EndDate, 0).Format(time.RFC3339)
 
-			r := regexp.MustCompile(`href=["'](.*?)["']`)
+			// fix visual editor replace &amp;
+			r := regexp.MustCompile(`(href|src)=["'](.*?)["']`)
 			data.Template = r.ReplaceAllStringFunc(data.Template, func(str string) string {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})

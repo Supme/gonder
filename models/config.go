@@ -35,6 +35,9 @@ type config struct {
 	MaxCampaingns    int
 	RealSend         bool
 	DnsCache         bool
+	DefaultProfile	 int
+	AdminMail	 string
+	GonderMail	 string
 }
 
 var (
@@ -93,6 +96,14 @@ func (c *config) Update() {
 
 	mainConfig, err := config.Section("Main")
 	checkErr(err)
+
+	c.DefaultProfile, err = strconv.Atoi(mainConfig.ValueOf("defaultProfile"))
+	if err != nil {
+		panic("Error parse config parametr 'defaultProfile'")
+	}
+	c.AdminMail = mainConfig.ValueOf("adminMail")
+	c.GonderMail = mainConfig.ValueOf("gonderMail")
+
 
 	dbConfig, err := config.Section("Database")
 	checkErr(err)
