@@ -60,19 +60,7 @@ var config = {
                             if ( btn == 'Yes') {
                                 // ---Save campaign data ---
                                 w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
-/*
-                                data = {
-                                    "recid": $('#campaignId').val(),
-                                    "profileId": $('#campaignProfileId').data('selected').id,
-                                    "name": $('#campaignName').val(),
-                                    "subject": $("#campaignSubject").val(),
-                                    "senderId": $('#campaignSenderId').data('selected').id,
-                                    "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime()/1000,
-                                    "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime()/1000,
-                                    "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                    "template": CKEDITOR.instances.campaignTemplate.getData() == ''?$("#campaignTemplate").val():CKEDITOR.instances.campaignTemplate.getData(),
-                                };
-*/
+
                                 $.ajax({
                                     type: "POST",
                                     url: '/api/campaign',
@@ -184,9 +172,9 @@ $('#campaignSendUnsubscribe').click(function(data) {
 $('#campaignAcceptSend').click(function(data) {
     var confirm;
     if ($('#campaignAcceptSend').is(':checked')) {
-        confirm = 'You are sure to activate campaign?';
+        confirm = w2utils.lang('You are sure to activate campaign?');
     } else {
-        confirm = 'You are sure to deactivate campaign?';
+        confirm = w2utils.lang('You are sure to deactivate campaign?');
     }
     w2confirm(w2utils.lang(confirm), function (btn) {
         if (btn == 'Yes') {

@@ -87,6 +87,8 @@
         "Parameters": "Параметры",
         "Editor": "Редактор",
         "Recipients": "Получатели",
+        "Sender": "Отправитель",
+        "Senders": "Отправители",
         "Saved": "Сохранено",
         "Value": "Значение",
         "Group": "Группа",
@@ -109,7 +111,18 @@
         "Forbidden add groups": "Запрещено добавлять группы",
         "Forbidden save groups": "Запрещено сохранять группы",
         "Forbidden add campaigns": "Запрещено добавлять кампании",
-        "Forbidden save campaigns": "Запрещено сохранять кампании"
-
+        "Forbidden save campaigns": "Запрещено сохранять кампании",
+        "Accept send": "Разрешить отправку",
+        "Status": "Статус",
+        "Upload": "Загрузить",
+        "Clear": "Очистить",
+        "Save changes in campaign?": "Сохранить изменения в кампании?",
+        "Select group and campaign, before select action.": "Выберите группу и кампанию, перед выбором действия.",
+        "Select group.": "Выберите группу.",
+        "Edit record": "Редактировать запись",
+        "Sender list editor": "Редактор списка отправителей",
+        "Resend by 4x1 code": "Переслать по 4х1 коду",
+        "Resend by 421 and 451 code?": "Переслать по 421 и 451 коду?",
+        "You are sure send mail for unsubscribed?": "Вы уверены, что хотите слать отписавшимся?"
     }
 }

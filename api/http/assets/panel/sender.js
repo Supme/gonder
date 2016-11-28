@@ -48,7 +48,7 @@ $().w2grid({
     }
 });
 $().w2form({
-    header: w2utils.lang('Edit Record'),
+    header: w2utils.lang('Edit record'),
     name: 'senderForm',
     fields: [
         { name: 'recid', type: 'text', html: { caption: 'ID', attr: 'size="10" readonly' } },

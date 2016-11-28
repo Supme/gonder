@@ -42,7 +42,7 @@ $('#group').w2grid({
     },
     toolbar: {
         items: [
-            {id: 'sender', type: 'button', caption: w2utils.lang('Emails'), icon: 'w2ui-icon-pencil'}
+            {id: 'sender', type: 'button', caption: w2utils.lang('Senders'), icon: 'w2ui-icon-pencil'}
         ],
         onClick: function (event) {
             if (event.target == 'sender') {
@@ -51,7 +51,7 @@ $('#group').w2grid({
                 } else {
                     w2ui['senderGrid'].postData["id"] = parseInt(w2ui['group'].getSelection()[0]);
                     w2popup.open({
-                        title   : w2utils.lang('Email list editor'),
+                        title   : w2utils.lang('Sender list editor'),
                         width   : 900,
                         height  : 600,
                         showMax : true,
