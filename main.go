@@ -27,9 +27,13 @@ import (
 	"runtime"
 	"strconv"
 	"syscall"
+	"github.com/google/gops/agent"
 )
 
 func main() {
+	if err := agent.Start(); err != nil {
+		log.Fatal(err)
+	}
 
 	l, err := os.OpenFile(models.FromRootDir("log/main.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
