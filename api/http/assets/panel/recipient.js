@@ -57,7 +57,7 @@ $('#recipientUploadButton').click(
         if ($('#recipientUploadFile').data("selected").length == 0) {
             w2alert(w2utils.lang('No one file selected.'), w2utils.lang('Error'));
         } else {
-            w2ui.layout.lock('main', w2utils.lang('Uploading...'), true);
+            w2ui.layout.lock('main', "<span id='uploadProgress'>"+ w2utils.lang("Uploading 0%") + "</span>", true);
             $.each($('#recipientUploadFile').data('selected'), function(index, file){
                 $.ajax({
                     url: "api/recipients",
@@ -74,10 +74,39 @@ $('#recipientUploadButton').click(
                 }).done(function(data) {
                     if (data['status'] == 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                        $('#recipientUploadFile').w2field('file', {max: 1});
+                        w2ui['recipient'].reload();
+                        w2ui.layout.unlock('main');
+                    } else {
+                        var finish = false;
+                        prs = setInterval(function(){
+                            $.ajax({
+                                url: "api/recipients",
+                                type: "GET",
+                                dataType: "json",
+                                data: {
+                                    "request": JSON.stringify({
+                                        "cmd": "progress",
+                                        "name": data["message"]
+                                    })
+                                }
+                            }).done(function(req) {
+                                if (req["status"] == "loading") {
+                                    console.log("loading: " + req["message"]);
+                                    $('#uploadProgress').text("Uploading: " + req["message"] + "%");
+                                } else {
+                                    finish = true;
+                                    console.log(req["status"]);
+                                }
+                                if (finish) {
+                                    clearInterval(prs);
+                                    $('#recipientUploadFile').w2field('file', {max: 1});
+                                    w2ui['recipient'].reload();
+                                    w2ui.layout.unlock('main');
+                                };
+                            });
+                        }, 2000);
                     }
-                    $('#recipientUploadFile').w2field('file', {max: 1});
-                    w2ui['recipient'].reload();
-                    w2ui.layout.unlock('main');
                 });
             });
         }

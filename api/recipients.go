@@ -23,6 +23,8 @@ import (
 	"os"
 	"path"
 	"time"
+	"fmt"
+	"strconv"
 )
 
 type Recipient struct {
@@ -46,6 +48,8 @@ type RecipientParams struct {
 	Total   int              `json:"total"`
 	Records []RecipientParam `json:"records"`
 }
+
+var progress = map[string]int{}
 
 func recipients(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -83,27 +87,50 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
 				}
-				file := models.FromRootDir("tmp/" + time.Now().String())
+				filename := strconv.FormatInt(time.Now().UnixNano(), 10)
+				file := models.FromRootDir("tmp/" + filename)
 				err = ioutil.WriteFile(file, content, 0644)
 				if err != nil {
 					js = []byte(`{"status": "error", "message": "Write file"}`)
 				}
 				apilog.Print(auth.Name," upload file ", req.FileName)
+
 				if path.Ext(req.FileName) == ".csv" {
-					err = recipientCsv(req.Campaign, file)
-					if err != nil {
-						js = []byte(`{"status": "error", "message": "Add recipients csv"}`)
-					}
+					go func() {
+						progress[filename] = 0
+						err = recipientCsv(req.Campaign, filename)
+						if err != nil {
+							apilog.Println(err)
+						}
+						delete(progress, filename)
+					}()
+					js = []byte(fmt.Sprintf(`{"status": "ok", "message": "%s"}`, filename))
+
 				} else if path.Ext(req.FileName) == ".xlsx" {
-					err = recipientXlsx(req.Campaign, file)
-					if err != nil {
-						js = []byte(`{"status": "error", "message": "Add recipients xlsx"}`)
-					}
+					go func() {
+						progress[filename] = 0
+						err = recipientXlsx(req.Campaign, filename)
+						if err != nil {
+							apilog.Println(err)
+						}
+						delete(progress, filename)
+					}()
+					js = []byte(fmt.Sprintf(`{"status": "ok", "message": "%s"}`, filename))
+
 				} else {
 					js = []byte(`{"status": "error", "message": "This not csv or xlsx file"}`)
 				}
 			} else {
 				js = []byte(`{"status": "error", "message": "Forbidden upload recipients"}`)
+			}
+
+		case "progress":
+			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
+				if val, ok := progress[req.Name]; ok {
+					js = []byte(fmt.Sprintf(`{"status": "loading", "message": %d}`, val))
+				} else {
+					js = []byte(`{"status": "not found", "message": ""}`)
+				}
 			}
 
 		case "clear":
@@ -213,8 +240,8 @@ func recipientCsv(campaignId int64, file string) error {
 	title := make(map[int]string)
 	data := make(map[string]string)
 	var email, name string
-
-	csvfile, err := os.Open(file)
+	f := models.FromRootDir("tmp/" + file)
+	csvfile, err := os.Open(f)
 	if err != nil {
 		return err
 	}
@@ -225,6 +252,8 @@ func recipientCsv(campaignId int64, file string) error {
 	if err != nil {
 		return err
 	}
+
+	total := len(rawCSVdata)
 	for k, v := range rawCSVdata {
 		if k == 0 {
 			for i, t := range v {
@@ -259,11 +288,12 @@ func recipientCsv(campaignId int64, file string) error {
 				}
 			}
 		}
+		progress[file] = int(k) * 100 / total
 	}
 
 	csvfile.Close()
 
-	os.Remove(file)
+	os.Remove(f)
 
 	return err
 }
@@ -274,12 +304,13 @@ func recipientXlsx(campaignId int64, file string) error {
 	data := make(map[string]string)
 	var email, name string
 
-	xlFile, err := xlsx.OpenFile(file)
+	f := models.FromRootDir("tmp/" + file)
+	xlFile, err := xlsx.OpenFile(f)
 	if err != nil {
 		return err
 	}
-
 	if xlFile.Sheets[0] != nil {
+		total := len(xlFile.Sheets[0].Rows)
 		for k, v := range xlFile.Sheets[0].Rows {
 			if k == 0 {
 				for i, cell := range v.Cells {
@@ -323,9 +354,10 @@ func recipientXlsx(campaignId int64, file string) error {
 				}
 
 			}
+			progress[file] = int(k) * 100 / total
 		}
 	}
 
-	os.Remove(file)
+	os.Remove(f)
 	return err
 }
