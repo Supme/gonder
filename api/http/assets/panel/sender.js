@@ -1,20 +1,3 @@
-function refreshSenderList(selectedSender){
-    var sender;
-    $.ajax({
-        type: "GET",
-        async: false,
-        url: '/api/senderlist',
-        dataType: "json",
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})},
-    }).done(function(data) {
-        sender = data;
-    });
-    console.log(sender);
-    w2ui['parameter'].set('campaignSenderId', { options: { items: sender } });
-    w2ui['parameter'].record['campaignSenderId'] = selectedSender;
-    w2ui['parameter'].refresh();
-}
-
 // --- Sender emails editor ---
 $().w2layout({
     name: 'senderEditor',
@@ -69,7 +52,6 @@ $().w2form({
             } else {
                 cmd = 'save'
             }
-            console.log(i);
             $.ajax({
                 type: "GET",
                 url: '/api/sender',

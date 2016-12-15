@@ -40,8 +40,7 @@ func senderList(w http.ResponseWriter, r *http.Request) {
 	if auth.Right("get-groups") && auth.GroupRight(req.Id) {
 		var id int64
 		var email, name string
-		var fs []SenderList
-		fs = []SenderList{}
+		var fs = []SenderList{}
 		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", req.Id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

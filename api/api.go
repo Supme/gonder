@@ -49,50 +49,33 @@ func Run() {
 	})
 
 	// Groups
-	// Example:
-	// Get groups: http://host/api/groups?cmd=get-records&limit=100&offset=0
-	// Rename groups: http://host/api/groups?cmd=save-records&selected[]=20&limit=100&offset=0&changes[0][recid]=1&changes[0][name]=Test+1&changes[1][recid]=2&changes[1][name]=Test+2
-	// ...
 	api.HandleFunc("/api/groups", auth.Check(groups))
 
 	// Campaigns from group
-	// Example:
-	// Get campaigns: http://host/api/campaigns?group=2&cmd=get-records&limit=100&offset=0
-	// Rename campaign: http://host/api/campaigns?cmd=save-records&selected[]=6&limit=100&offset=0&changes[0][recid]=6&changes[0][name]=Test+campaign
-	// ...
 	api.HandleFunc("/api/campaigns", auth.Check(campaigns))
 
 	// Campaign data
-	// Example:
-	// Get data: http://host/api/campaign?cmd=get-data&recid=4
-	// ...
 	api.HandleFunc("/api/campaign", auth.Check(campaign))
 
 	api.HandleFunc("/api/profilelist", auth.Check(profilesList))
 
 	// Profiles
-	// Example:
-	// Get list http://host/api/profiles?cmd=get-list
-	// ...
 	api.HandleFunc("/api/profiles", auth.Check(profiles))
 
 	// Get recipients from campaign
-	// Example:
-	// Get list recipients: http://host/api/recipients?content=recipients&campaign=4&cmd=get-records&limit=100&offset=0
-	// Get recipient parameters: http://host/api/recipients?content=parameters&recipient=149358&cmd=get-records&limit=100&offset=0
-	// ...
 	api.HandleFunc("/api/recipients", auth.Check(recipients))
 
+	// Sender email
 	api.HandleFunc("/api/sender", auth.Check(sender))
 	api.HandleFunc("/api/senderlist", auth.Check(senderList))
 
+	// Users
+	api.HandleFunc("/api/users", auth.Check(users))
+
+	// Units
+	api.HandleFunc("/api/units", auth.Check(units))
+
 	// Reports
-	// Example:
-	//   Get reports: http://host/api/report?campaign=4
-	// /api/report?campaign=xxx
-	// /api/report/jump?campaign=xxx
-	// /api/report/unsubscribed?group=xxx
-	// /api/report/unsubscribed?campaign=xxx
 	api.HandleFunc("/api/report", auth.Check(report))
 	api.HandleFunc("/api/report/jump", auth.Check(reportJumpDetailedCount))
 	api.HandleFunc("/api/report/unsubscribed", auth.Check(reportUnsubscribed))

@@ -62,6 +62,7 @@ type request struct {
 	Name string `json:"name"`
 	Content Data `json:"content"`
 	Select bool `json:"select"`
+	Record interface{} `json:"record"`
 }
 
 func parseRequest(js string) (request, error) {

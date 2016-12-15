@@ -24,19 +24,21 @@ var config = {
             {
                 id: 'settings', text: w2utils.lang('Settings'), group: true, expanded: false, nodes:
                 [
-                    {id: 'profile', text: w2utils.lang('Profiles'), img: 'icon-page'},
-                    {id: 'status', text: w2utils.lang('Status'), img: 'w2ui-icon-columns'}
+                    {id: 'status', text: w2utils.lang('Status'), img: 'w2ui-icon-info'},
+                    {id: 'users', text: w2utils.lang('Users'), img: 'w2ui-icon-columns'},
+                    {id: 'profile', text: w2utils.lang('Profiles'), img: 'icon-page'}
                 ]
             }
         ],
         onClick: function (event) {
-            if ($('#campaignId').val() != '' || event.target =='profile'  || event.target =='status') {
+            if ($('#campaignId').val() != '' || event.target =='profile'  || event.target =='status' || event.target =='users') {
                 switch (event.target) {
                     case 'parameter':
                         $('#template').hide();
                         $('#recipient').hide();
                         $('#parameter').show();
                         $('#profile').hide();
+                        $('#users').hide();
                         $('#status').hide();
                         break;
                     case 'editor':
@@ -44,6 +46,7 @@ var config = {
                         $('#recipient').hide();
                         $('#template').show();
                         $('#profile').hide();
+                        $('#users').hide();
                         $('#status').hide();
                         break;
                     case 'recipient':
@@ -53,6 +56,7 @@ var config = {
                         $('#parameter').hide();
                         $('#recipient').show();
                         $('#profile').hide();
+                        $('#users').hide();
                         $('#status').hide();
                         break;
                     case 'save':
@@ -105,6 +109,15 @@ var config = {
                         $('#parameter').hide();
                         $('#recipient').hide();
                         $('#profile').show();
+                        $('#users').hide();
+                        $('#status').hide();
+                        break;
+                    case 'users':
+                        $('#template').hide();
+                        $('#parameter').hide();
+                        $('#recipient').hide();
+                        $('#profile').hide();
+                        $('#users').show();
                         $('#status').hide();
                         break;
                     case 'status':
@@ -112,6 +125,7 @@ var config = {
                         $('#parameter').hide();
                         $('#recipient').hide();
                         $('#profile').hide();
+                        $('#users').hide();
                         $('#status').show();
                         break;
                 }
@@ -198,10 +212,13 @@ $('#campaignAcceptSend').click(function(data) {
 
 // --- /Parameters form ---
 
+// --- Init ---
 $('#template').hide();
 $('#recipient').hide();
 $('#parameter').hide();
 $('#profile').hide();
 $('#status').hide();
+$('#users').hide();
+// --- /Init ---
 
 // --- /Layout ---

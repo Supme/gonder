@@ -1,19 +1,3 @@
-function refreshProfilesList(selectedProfile){
-    var profile;
-    $.ajax({
-        type: "GET",
-        async: false,
-        url: '/api/profilelist',
-//        contentType: "application/json; charset=utf-8",
-        dataType: "json"
-    }).done(function(data) {
-        profile = data;
-    });
-    w2ui['parameter'].set('campaignProfileId', { options: { items: profile } });
-    w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
-    w2ui['parameter'].refresh();
-}
-
 // --- Profile table ---
 $('#profile').w2grid({
     name: 'profile',
@@ -39,7 +23,6 @@ $('#profile').w2grid({
     ],
     method: 'GET',
     onAdd: function(event) {
-        console.log(event);
         $.ajax({
             url: "api/profiles",
             type: "GET",
@@ -49,7 +32,6 @@ $('#profile').w2grid({
             if (data['status'] == 'error') {
                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
             } else {
-                console.log(data);
                 w2ui.profile.add({ recid: data.recid });
             }
         }).complete(function(data) {

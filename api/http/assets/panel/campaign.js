@@ -71,8 +71,40 @@ $('#campaign').w2grid({
         });
         // --- /Get campaign data ---
     },
-    onSave: function(event) {
-        console.log(event);
-    }
+    onSave: function(event) {}
 });
 // --- /Campaign table ---
+
+function refreshProfilesList(selectedProfile){
+    var profile;
+    $.ajax({
+        type: "GET",
+        async: false,
+        url: '/api/profilelist',
+//        contentType: "application/json; charset=utf-8",
+        dataType: "json"
+    }).done(function(data) {
+        profile = data;
+    });
+    console.log(profile);
+    w2ui['parameter'].set('campaignProfileId', { options: { items: profile } });
+    w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
+    w2ui['parameter'].refresh();
+}
+
+function refreshSenderList(selectedSender){
+    var sender;
+    $.ajax({
+        type: "GET",
+        async: false,
+        url: '/api/senderlist',
+        dataType: "json",
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})},
+    }).done(function(data) {
+        sender = data;
+    });
+    console.log(sender);
+    w2ui['parameter'].set('campaignSenderId', { options: { items: sender } });
+    w2ui['parameter'].record['campaignSenderId'] = selectedSender;
+    w2ui['parameter'].refresh();
+}

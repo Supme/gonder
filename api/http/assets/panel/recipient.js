@@ -92,11 +92,9 @@ $('#recipientUploadButton').click(
                                 }
                             }).done(function(req) {
                                 if (req["status"] == "loading") {
-                                    console.log("loading: " + req["message"]);
                                     $('#uploadProgress').text("Uploading: " + req["message"] + "%");
                                 } else {
                                     finish = true;
-                                    console.log(req["status"]);
                                 }
                                 if (finish) {
                                     clearInterval(prs);
@@ -143,7 +141,6 @@ $("#recipientClearButton").click(
 $("#recipientResend").html(w2utils.lang('Resend by 4x1 code'));
 $('#recipientResend').click(
     function () {
-        console.log("click resend");
         w2confirm(w2utils.lang('Resend by 421 and 451 code?'), function (btn) {
             if (btn == 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);

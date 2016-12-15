@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
 	"net/http"
+	"strings"
 )
 
 type Group struct {
@@ -48,7 +49,22 @@ func groups(w http.ResponseWriter, r *http.Request) {
 
 	case "get":
 		if auth.Right("get-groups") {
-			groups, err = getGroups(req.Offset, req.Limit)
+			if req.Limit == 0 {
+				req.Limit=100
+				req.Offset=0
+			}
+			var direction string
+			if len(req.Sort) == 1 {
+				// ToDo helpers for create ORDER BY : func(cols []string, []struct{ Field string `json:"field"` Direction string `json:"direction"`})
+				if strings.ToUpper(req.Sort[0].Direction) == "DESC" {
+					direction = "DESC"
+				} else {
+					direction = "ASC"
+				}
+			} else {
+				direction = "ASC"
+			}
+			groups, err = getGroups(req.Offset, req.Limit, direction)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -69,7 +85,7 @@ func groups(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			groups, err = getGroups(req.Offset, req.Limit)
+			groups, err = getGroups(req.Offset, req.Limit, req.Sort[0].Direction)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -140,7 +156,7 @@ func saveGroups(changes []map[string]interface{}) (err error) {
 }
 
 // ToDo order by reqest
-func getGroups(offset, limit int64) (Groups, error) {
+func getGroups(offset, limit int64, direction string) (Groups, error) {
 	var g Group
 	var gs Groups
 	var where string
@@ -152,7 +168,7 @@ func getGroups(offset, limit int64) (Groups, error) {
 		where = "id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE "+where+" ORDER BY `id` DESC LIMIT ? OFFSET ?", auth.userId, limit, offset)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` WHERE "+where+" ORDER BY `id` "+direction+" LIMIT ? OFFSET ?", auth.userId, limit, offset)
 	if err != nil {
 		return gs, err
 	}
