@@ -23,7 +23,6 @@ $('#campaign').w2grid({
         var id, name;
         $.ajax({
             type: "GET",
-            //async: false,
             dataType: 'json',
             data: {"request": JSON.stringify({"cmd": "add", "id": parseInt(w2ui['group'].getSelection()[0])})},
             url: '/api/campaigns'
@@ -70,9 +69,6 @@ $('#campaign').w2grid({
             w2ui['sidebar'].click('parameter');
         });
         // --- /Get campaign data ---
-    },
-    onSave: function(event) {
-        console.log(event);
     }
 });
 // --- /Campaign table ---

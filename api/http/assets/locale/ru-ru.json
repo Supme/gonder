@@ -2,8 +2,6 @@
     "locale"         : "ru-RU",
     "dateFormat"    : "dd/mm/yyyy",
     "timeFormat"    : "hh24:mm",
-    "date_format"    : "dd/mm/yyyy",
-    "time_format"    : "h24",
     "currency"       : "^[-+]?[0-9]*[\\.]?[0-9]+RUB$",
     "currencyPrefix" : "",
     "currencySuffix" : "RUB",
