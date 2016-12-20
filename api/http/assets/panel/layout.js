@@ -1,9 +1,19 @@
 function getDate(dateStr, timeStr) {
     //ToDo parse config format
     //w2utils.settings.dateFormat
+    /*
     var dateParts = dateStr.split("/");
     var timeParts = timeStr.split(":");
     return new Date(dateParts[2],(dateParts[1] - 1),dateParts[0],timeParts[0],timeParts[1],0);
+    */
+    var d = new Date(w2utils.isDateTime(dateStr+' '+timeStr, 'd/m/yyyy | h24', true));
+/*
+    var offset = d.getTimezoneOffset() / 60;
+    var hours = d.getHours();
+    d.setHours(hours - offset);
+*/
+
+    return d.getTime()/1000;
 }
 
 // --- Config for layout ---
@@ -77,8 +87,8 @@ var config = {
                                                 "name": $('#campaignName').val(),
                                                 "subject": $("#campaignSubject").val(),
                                                 "senderId": $('#campaignSenderId').data('selected').id,
-                                                "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()).getTime() / 1000,
-                                                "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()).getTime() / 1000,
+                                                "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
+                                                "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
                                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
                                                 "template": CKEDITOR.instances.campaignTemplate.getData() == '' ? $("#campaignTemplate").val() : CKEDITOR.instances.campaignTemplate.getData()
                                             }
@@ -165,9 +175,9 @@ $('#parameter').w2form({
         { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40"' } },
         { name: 'campaignSenderId', type: 'list', html: { caption: w2utils.lang('Sender'), attr: 'size="40"' }, minLength: 0},
         { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' } },
-        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"' } },
+        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: 'h24' } },
         { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
-        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' } },
+        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: 'h24' } },
         { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
         { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }
     ]

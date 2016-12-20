@@ -3,10 +3,10 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
+    <link rel="stylesheet" type="text/css" href="assets/w3ui/w2ui-1.5.rc1.min.css" />
     <script src="assets/jquery/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="assets/w2ui/w2ui-1.5.rc1.min.js"></script>
+    <script type="text/javascript" src="assets/w3ui/w2ui-1.5.rc1.min.js"></script>
     <script src="assets/ckeditor/ckeditor.js"></script>
-    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui-1.5.rc1.min.css" />
 </head>
 <body>
 
@@ -38,7 +38,6 @@
             </div>
         </div>
         <div id="profile" style="height: 100%"></div>
-        <div id="users" style="height: 95%"></div>
         <div id="status" style="height: 100%">
             <div>
                 <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
@@ -56,6 +55,8 @@
 
             w2utils.locale('/assets/locale/ru-ru.json');
 
+
+
             $.getScript('assets/panel/layout.js');
             $.getScript('assets/panel/group.js');
             $.getScript('assets/panel/sender.js');
@@ -63,7 +64,6 @@
             $.getScript('assets/panel/recipient.js');
             $.getScript('assets/panel/profile.js');
             $.getScript('assets/panel/editor.js');
-            $.getScript('assets/panel/users.js');
 
         });
 
