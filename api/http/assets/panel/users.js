@@ -76,7 +76,6 @@ function findRecId(data, id) {
     var i = false;
     $.each(data, function (k, v) {
         if(v.id == id) {
-            console.log('find id '+id+' in '+k+' element');
             i = k;
         }
     });
