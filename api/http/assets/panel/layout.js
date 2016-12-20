@@ -1,18 +1,10 @@
 function getDate(dateStr, timeStr) {
-    //ToDo parse config format
-    //w2utils.settings.dateFormat
-    /*
-    var dateParts = dateStr.split("/");
-    var timeParts = timeStr.split(":");
-    return new Date(dateParts[2],(dateParts[1] - 1),dateParts[0],timeParts[0],timeParts[1],0);
-    */
     var d = new Date(w2utils.isDateTime(dateStr+' '+timeStr, 'd/m/yyyy | h24', true));
 /*
     var offset = d.getTimezoneOffset() / 60;
     var hours = d.getHours();
     d.setHours(hours - offset);
 */
-
     return d.getTime()/1000;
 }
 

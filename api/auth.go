@@ -77,7 +77,7 @@ func (a *Auth) GroupRight(group interface{}) bool {
 		return true
 	}
 
-	var r bool
+	var r = true
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=?", a.userId, group).Scan(&c)
 	if err != nil {
