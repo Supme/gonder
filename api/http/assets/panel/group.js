@@ -2,6 +2,7 @@
 $('#group').w2grid({
     name: 'group',
     header: w2utils.lang('Group'),
+    keyboard : false,
     show: {
         header: true,
         toolbar: true,
