@@ -1,6 +1,8 @@
 // --- Campaign table ---
 $('#campaign').w2grid({
+    name: 'campaign',
     header: w2utils.lang('Campaign'),
+    keyboard : false,
     show: {
         header: true,
         toolbar: true,
@@ -10,7 +12,6 @@ $('#campaign').w2grid({
         toolbarSave: true,
         toolbarSearch: false
     },
-    name: 'campaign',
     columns: [
         { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
         { field: 'name', caption: w2utils.lang('Name'), size: '100%', editable: { type: 'text' } }
