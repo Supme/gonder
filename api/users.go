@@ -73,6 +73,7 @@ func users(w http.ResponseWriter, r *http.Request) {
 		case "save":
 
 			apilog.Print(req.Record)
+			js = []byte(`{"status": "error", "message": "Test save campaign"}`)
 		/*
 			for _, change := range req.Changes {
 				if change["name"] != nil {

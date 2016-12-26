@@ -38,6 +38,7 @@
             </div>
         </div>
         <div id="profile" style="height: 100%"></div>
+        <div id="users" style="height: 95%"></div>
         <div id="status" style="height: 100%">
             <div>
                 <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
@@ -52,11 +53,7 @@
 
     <script type="text/javascript">
         $(function () {
-
             w2utils.locale('/assets/locale/ru-ru.json');
-
-
-
             $.getScript('assets/panel/layout.js');
             $.getScript('assets/panel/group.js');
             $.getScript('assets/panel/sender.js');
@@ -65,7 +62,6 @@
             $.getScript('assets/panel/profile.js');
             $.getScript('assets/panel/editor.js');
             $.getScript('assets/panel/users.js');
-
         });
 
         var ws = null;

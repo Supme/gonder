@@ -6,7 +6,7 @@ $().w2grid({
         header: true,
         toolbar: true,
         footer: false,
-        toolbarSave: true,
+        toolbarSave: false,
         toolbarAdd: true,
         toolbarSearch: false
     },
@@ -18,31 +18,31 @@ $().w2grid({
     url: '/api/users',
     method: 'GET',
     onDblClick: function (event){
+        var record = w2ui.userList.get(event.recid);
         w2popup.open({
             width   : 400,
             height  : 480,
-            title   : w2utils.lang('User editor'),
+            title   : record.name,
             body    : '<div id="userEditor" style="width: 100%; height: 100%;"></div>',
             onOpen  : function (event) {
                 event.onComplete = function () {
                     $('#userEditor').w2render('userEditor');
                 }
+            },
+            onClose : function (event) {
+                w2ui.userEditor.clear();
             }
         });
-        w2ui.userEditor.clear();
-
-        var record = w2ui.userList.get(event.recid);
-        w2ui.userEditor.record['userEditorId'] = event.recid;
-        w2ui.userEditor.record['userEditorName'] = record.name;
-        w2ui.userEditor.record['userEditorPassword'] = record.password;
+        w2ui.userEditor.record['userId'] = event.recid;
+        w2ui.userEditor.record['userPassword'] = record.password;
 
         var unit = [];
         $.each(w2ui.unitList.records, function(k, v){
             unit[k] = {id:v.recid, text:v.name}
         });
-        w2ui.userEditor.set('userEditorUnit', {options: {items: unit}});
+        w2ui.userEditor.set('userUnit', {options: {items: unit}});
         setTimeout(function () {
-            $('#userEditorUnit').w2field().setIndex(findRecId(unit, record.unitid));
+            $('#userUnit').w2field().setIndex(findRecId(unit, record.unitid));
         }, 500);
 
         var groups = [];
@@ -52,24 +52,23 @@ $().w2grid({
             data: {"request": JSON.stringify({"cmd": "get"})},
             url: '/api/groups'
         }).done(function(data) {
-            console.log(data);
             $.each(data.records, function(k, v){
                 groups[k] = {id:v.recid, text:v.name}
             });
         });
         console.log(groups);
-        w2ui.userEditor.set('userEditorGroup', {options: {items: groups, openOnFocus:true}});
+        w2ui.userEditor.set('userGroup', {options: {items: groups, openOnFocus:true}});
         setTimeout(function() {
             $.each(record.groupsid, function (k, v) {
-                $('#userEditorGroup').w2field().setIndex(findRecId(groups, v), true);
+                $('#userGroup').w2field().setIndex(findRecId(groups, v), true);
             })
         }, 500);
         w2ui.userEditor.refresh();
-    },
+    }/*,
     onSave: function (event) {
         console.log(event);
         w2ui.userList.reload();
-    }
+    }*/
 });
 
 function findRecId(data, id) {
@@ -85,19 +84,26 @@ function findRecId(data, id) {
 $().w2form({
     name: 'userEditor',
     fields: [
-        {name: 'userEditorName', html: {caption: w2utils.lang('Name'), attr: 'readonly'}, type: 'text'},
-        {name: 'userEditorPassword', caption: w2utils.lang('Password'), type: 'pass'},
-        {name: 'userEditorUnit', caption: w2utils.lang('Unit'), type: 'list'},
-        {name: 'userEditorGroup', caption: w2utils.lang('Group'), type: 'enum'}
+        {name: 'userPassword', caption: w2utils.lang('Password'), type: 'pass'},
+        {name: 'userUnit', caption: w2utils.lang('Unit'), type: 'list'},
+        {name: 'userGroup', caption: w2utils.lang('Group'), type: 'enum'}
     ],
     url: 'api/users',
     method: 'POST',
+/*    onSave: function(event) {
+        console.log(event);
+        if (event.status == "success") {
+            w2popup.close();
+        } else {
+            //w2alert(event);
+        }
+    },*/
     actions: {
-        reset: function () {
-            this.clear();
-        },
-        save: function () {
+        save: function (target, data) {
             this.save();
+            console.log(target);
+            console.log(data);
+            //w2popup.close();
         }
     }
 });
