@@ -143,7 +143,7 @@ $('#recipientResend').click(
     function () {
         w2confirm(w2utils.lang('Resend by 421 and 451 code?'), function (btn) {
             if (btn == 'Yes') {
-                w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);
+                w2ui.layout.lock('main', w2utils.lang('Update...'), true);
                 $.ajax({
                     url: "api/recipients",
                     type: "GET",
