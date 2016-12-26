@@ -147,23 +147,13 @@ $('#recipientResend').click(
                 $.ajax({
                     url: "api/recipients",
                     type: "GET",
-                    data: {
-                        content: "recipients",
-                        cmd: "resend4x1",
-                        campaign: $('#campaignId').val(),
-                    },
+                    data: {"request": JSON.stringify({"cmd": "resend4x1", "campaign": parseInt($('#campaignId').val())}),
                     dataType: "json",
-                    data: {
-                        "request": JSON.stringify({
-                            "cmd": "resend4x1",
-                            "campaign": parseInt($('#campaignId').val())
-                        })
-                    }
+                   }
                 }).done(function(data) {
                     if (data['status'] == 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
-                }).complete(function() {
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
                 })
