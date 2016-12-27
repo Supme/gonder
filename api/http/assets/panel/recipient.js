@@ -140,18 +140,18 @@ $("#recipientClearButton").click(
 // --- /Recipient delete all ---
 
 // --- Recipient resend ---
-$("#recipientResend").html(w2utils.lang('Resend by 4x1 code'));
+$("#recipientResend").html(w2utils.lang('Resend by 4xx code'));
 $('#recipientResend').click(
     function () {
         console.log("click resend");
-        w2confirm(w2utils.lang('Resend by 421 and 451 code?'), function (btn) {
+        w2confirm(w2utils.lang('Resend by 4xx code') + '?', function (btn) {
             if (btn == 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Update...'), true);
                 $.ajax({
                     url: "api/recipients",
                     type: "GET",
-                    data: {"request": JSON.stringify({"cmd": "resend4x1", "campaign": parseInt($('#campaignId').val())}),
-                    dataType: "json",
+                    data: {"request": JSON.stringify({"cmd": "resend4xx", "campaign": parseInt($('#campaignId').val())}),
+                    dataType: "json"
                    }
                 }).done(function(data) {
                     if (data['status'] == 'error') {
