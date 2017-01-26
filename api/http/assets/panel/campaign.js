@@ -10,11 +10,11 @@ $('#campaign').w2grid({
         toolbarDelete: false,
         toolbarAdd: true,
         toolbarSave: true,
-        toolbarSearch: false
+        toolbarSearch: true
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-        { field: 'name', caption: w2utils.lang('Name'), size: '100%', editable: { type: 'text' } }
+        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
+        { field: 'name', caption: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' } }
     ],
     multiSelect: false,
     sortData: [{ field: 'recid', direction: 'DESC' }],
@@ -84,12 +84,11 @@ function refreshProfilesList(selectedProfile){
         type: "GET",
         async: false,
         url: '/api/profilelist',
-//        contentType: "application/json; charset=utf-8",
+        data: {"request": JSON.stringify({"cmd": "get"})},
         dataType: "json"
     }).done(function(data) {
         profile = data;
     });
-    console.log(profile);
     w2ui['parameter'].set('campaignProfileId', { options: { items: profile } });
     w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
     w2ui['parameter'].refresh();
@@ -106,7 +105,6 @@ function refreshSenderList(selectedSender){
     }).done(function(data) {
         sender = data;
     });
-    console.log(sender);
     w2ui['parameter'].set('campaignSenderId', { options: { items: sender } });
     w2ui['parameter'].record['campaignSenderId'] = selectedSender;
     w2ui['parameter'].refresh();

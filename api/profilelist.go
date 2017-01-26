@@ -15,7 +15,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
-	"net/http"
+	"errors"
 )
 
 type ProfileList struct {
@@ -23,25 +23,18 @@ type ProfileList struct {
 	Name string `json:"text"`
 }
 
-func profilesList(w http.ResponseWriter, r *http.Request) {
-	var js []byte
+func profilesList(req request) (js []byte, err error) {
 	if auth.Right("get-campaign") {
 		psl, err := getProfilesList()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return js, err
 		}
 		js, err = json.Marshal(psl)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		return js, err
 	} else {
-		js = []byte(`{"status": "error", "message": "Forbidden get campaign"}`)
+		return js, errors.New("Forbidden get campaign")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
 
 func getProfilesList() ([]ProfileList, error) {

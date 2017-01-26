@@ -15,7 +15,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
-	"net/http"
+	"errors"
 )
 
 type SenderList struct {
@@ -23,28 +23,14 @@ type SenderList struct {
 	Text string `json:"text"`
 }
 
-func senderList(w http.ResponseWriter, r *http.Request) {
-	var js []byte
-
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+func senderList(req request) (js []byte, err error) {
 	if auth.Right("get-groups") && auth.GroupRight(req.Id) {
 		var id int64
 		var email, name string
 		var fs = []SenderList{}
 		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", req.Id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return js, err
 		}
 		defer query.Close()
 		for query.Next() {
@@ -56,14 +42,9 @@ func senderList(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 		js, err = json.Marshal(fs)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		return js, err
 	} else {
-		js = []byte(`{"status": "error", "message": "Forbidden get from this group"}`)
+		return js, errors.New("Forbidden get from this group")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }

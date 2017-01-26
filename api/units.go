@@ -1,29 +1,14 @@
 package api
 
 import (
-"net/http"
-"github.com/supme/gonder/models"
-"encoding/json"
+	"github.com/supme/gonder/models"
+	"encoding/json"
 )
 
-type UnitList struct {
-	Id   int64  `json:"recid"`
-	Name string `json:"name"`
-}
-
-func units(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	var js []byte
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func units(req request) (js []byte, err error) {
+	type UnitList struct {
+		Id   int64  `json:"recid"`
+		Name string `json:"name"`
 	}
 
 	if auth.IsAdmin() {
@@ -37,8 +22,7 @@ func units(w http.ResponseWriter, r *http.Request) {
 		case "get":
 			query, err := models.Db.Query("SELECT `id`, `name` FROM `auth_unit`")
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 			defer query.Close()
 			for query.Next() {
@@ -51,8 +35,7 @@ func units(w http.ResponseWriter, r *http.Request) {
 			}
 			js, err = json.Marshal(sl)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 
 
@@ -61,7 +44,5 @@ func units(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }

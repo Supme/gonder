@@ -15,9 +15,9 @@ package api
 import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
-	"net/http"
 	"strconv"
 	"log"
+	"errors"
 )
 
 type Sender struct {
@@ -30,20 +30,7 @@ type Senders struct {
 	Records []Sender `json:"records"`
 }
 
-func sender(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	var js []byte
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+func sender(req request) (js []byte, err error) {
 
 	switch req.Cmd {
 
@@ -54,7 +41,7 @@ func sender(w http.ResponseWriter, r *http.Request) {
 			fs.Records = []Sender{}
 			query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", req.Id, req.Limit, req.Offset)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			defer query.Close()
 
@@ -64,11 +51,9 @@ func sender(w http.ResponseWriter, r *http.Request) {
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", req.Group).Scan(&fs.Total)
 			js, err = json.Marshal(fs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get groups"}`)
+			return js, errors.New("Forbidden get groups")
 		}
 
 	case "save":
@@ -77,37 +62,36 @@ func sender(w http.ResponseWriter, r *http.Request) {
 			var group int64
 			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.Id).Scan(&group)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			if auth.GroupRight(group) {
 				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=? WHERE `id`=?", req.Email, req.Name, req.Id)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return js, err
 				}
-				js = []byte(`{"status": "success", "message": ""}`)
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden right to this group"}`)
+				return js, errors.New("Forbidden right to this group")
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
+			return js, errors.New("Forbidden save groups")
 		}
 
 	case "add":
 		if auth.Right("save-groups") && auth.GroupRight(req.Id) {
 			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`) VALUES (?, ?, ?);", req.Id, req.Email, req.Name)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			recid, err := res.LastInsertId()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			js = []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(recid, 10) + `}`)
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
+			return js, errors.New("Forbidden save groups")
 		}
+	default:
+		err = errors.New("Command not found")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }

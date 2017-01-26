@@ -22,6 +22,8 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"fmt"
+	"errors"
 )
 
 var (
@@ -48,37 +50,15 @@ func Run() {
 		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
 
-	// Groups
-	api.HandleFunc("/api/groups", auth.Check(groups))
 
-	// Campaigns from group
-	api.HandleFunc("/api/campaigns", auth.Check(campaigns))
 
-	// Campaign data
-	api.HandleFunc("/api/campaign", auth.Check(campaign))
-
-	api.HandleFunc("/api/profilelist", auth.Check(profilesList))
-
-	// Profiles
-	api.HandleFunc("/api/profiles", auth.Check(profiles))
-
-	// Get recipients from campaign
-	api.HandleFunc("/api/recipients", auth.Check(recipients))
-
-	// Sender email
-	api.HandleFunc("/api/sender", auth.Check(sender))
-	api.HandleFunc("/api/senderlist", auth.Check(senderList))
-
-	// Users
-	api.HandleFunc("/api/users", auth.Check(users))
-
-	// Units
-	api.HandleFunc("/api/units", auth.Check(units))
+	// API
+	api.HandleFunc("/api/", auth.Check(apiRequest))
 
 	// Reports
-	api.HandleFunc("/api/report", auth.Check(report))
-	api.HandleFunc("/api/report/jump", auth.Check(reportJumpDetailedCount))
-	api.HandleFunc("/api/report/unsubscribed", auth.Check(reportUnsubscribed))
+	api.HandleFunc("/report", auth.Check(report))
+	api.HandleFunc("/report/jump", auth.Check(reportJumpDetailedCount))
+	api.HandleFunc("/report/unsubscribed", auth.Check(reportUnsubscribed))
 
 	api.HandleFunc("/preview", auth.Check(getMailPreview))
 	api.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
@@ -118,4 +98,50 @@ func Run() {
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
 	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
+}
+
+func apiRequest(w http.ResponseWriter, r *http.Request) {
+	var js []byte
+	if r.FormValue("request") == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	req, err := parseRequest(r.FormValue("request"))
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": "%s"}`, err)))
+		return
+	}
+
+	switch r.URL.Path {
+	case "/api/users":
+		js, err = users(req)
+	case "/api/groups":
+		js, err = groups(req)
+	case "/api/campaign":
+		js, err = campaign(req)
+	case "/api/campaigns":
+		js, err = campaigns(req)
+	case "/api/profilelist":
+		js, err = profilesList(req)
+	case "/api/recipients":
+		js, err = recipients(req)
+	case "/api/sender":
+		js, err = sender(req)
+	case "/api/senderlist":
+		js, err = senderList(req)
+	case "/api/units":
+		js, err = units(req)
+	default:
+		err = errors.New("Path not defined")
+	}
+
+	if err != nil {
+		js = []byte(fmt.Sprintf(`{"status": "error", "message": "%s"}`, err))
+	} else if js == nil {
+		js = []byte(`{"status": "succes", "message": ""}`)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }

@@ -19,12 +19,12 @@ import (
 	"github.com/supme/gonder/models"
 	"github.com/tealeg/xlsx"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"time"
 	"fmt"
 	"strconv"
+	"errors"
 )
 
 type Recipient struct {
@@ -51,47 +51,33 @@ type RecipientParams struct {
 
 var progress = map[string]int{}
 
-func recipients(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var js []byte
-	js = []byte(`{"status": "success", "message": ""}`)
-
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+func recipients(req request) (js []byte, err error) {
 
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
 			if auth.Right("get-recipients") && auth.CampaignRight(req.Campaign) {
-				rs, err := getRecipients(req.Campaign, req.Offset, req.Limit)
-				js, err = json.Marshal(rs)
+				rs, err := getRecipients(req)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+					return js, err
 				}
+				js, err = json.Marshal(rs)
+				return js, err
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden get recipients"}`)
+				return js, errors.New("Forbidden get recipients")
 			}
 
 		case "upload":
 			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
 				content, err := base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
-					js = []byte(`{"status": "error", "message": "Base64 decode"}`)
+					return js, err
 				}
 				filename := strconv.FormatInt(time.Now().UnixNano(), 10)
 				file := models.FromRootDir("tmp/" + filename)
 				err = ioutil.WriteFile(file, content, 0644)
 				if err != nil {
-					js = []byte(`{"status": "error", "message": "Write file"}`)
+					return js, err
 				}
 				apilog.Print(auth.Name," upload file ", req.FileName)
 
@@ -104,7 +90,7 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 						}
 						delete(progress, filename)
 					}()
-					js = []byte(fmt.Sprintf(`{"status": "ok", "message": "%s"}`, filename))
+					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
 				} else if path.Ext(req.FileName) == ".xlsx" {
 					go func() {
@@ -115,21 +101,21 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 						}
 						delete(progress, filename)
 					}()
-					js = []byte(fmt.Sprintf(`{"status": "ok", "message": "%s"}`, filename))
+					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
 				} else {
-					js = []byte(`{"status": "error", "message": "This not csv or xlsx file"}`)
+					return js, errors.New("This not csv or xlsx file")
 				}
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden upload recipients"}`)
+				return js, errors.New("Forbidden upload recipients")
 			}
 
 		case "progress":
 			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
 				if val, ok := progress[req.Name]; ok {
-					js = []byte(fmt.Sprintf(`{"status": "loading", "message": %d}`, val))
+					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
 				} else {
-					js = []byte(`{"status": "not found", "message": ""}`)
+					js = []byte(`{"status": "error", "message": "not found"}`)
 				}
 			}
 
@@ -137,44 +123,43 @@ func recipients(w http.ResponseWriter, r *http.Request) {
 			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
 				err = delRecipients(req.Campaign)
 				if err != nil {
-					js = []byte(`{"status": "error", "message": "Can't delete all recipients"}`)
+					return js, errors.New("Can't delete all recipients")
 				}
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden delete recipients"}`)
+				return js, errors.New("Forbidden delete recipients")
 			}
 
 		case "resend4xx":
 			if auth.Right("accept-campaign") && auth.CampaignRight(req.Campaign) {
 				err = resendCampaign(req.Campaign)
 				if err != nil {
-					js = []byte(`{"status": "error", "message": "Can't resend"}`)
+					return js, errors.New("Can't resend")
 				}
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden resend campaign"}`)
+				return js, errors.New("Forbidden resend campaign")
 			}
+
+		default:
+			err = errors.New("Command not found")
 		}
 	} else {
 		if req.Cmd == "get" {
 			rId, err := getRecipientCampaign(req.Recipient)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 			if auth.Right("get-recipient-parameters") && auth.CampaignRight(rId) {
 				ps, err := getRecipientParams(req.Recipient, req.Offset, req.Limit)
 				js, err = json.Marshal(ps)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+					return js, err
 				}
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden get recipient parameters"}`)
+				return js, errors.New("Forbidden get recipient parameters")
 			}
 		}
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
 
 func resendCampaign(campaignId int64) error {
@@ -191,9 +176,17 @@ func getRecipientCampaign(recipientId int64) (int64, error) {
 }
 
 //ToDo check right errors
-func getRecipients(campaign, offset, limit int64) (Recipients, error) {
-	var err error
-	var rs Recipients
+func getRecipients(req request) (Recipients, error) {
+	var (
+		err error
+		rs Recipients
+		campaign, offset, limit int64
+	)
+
+	campaign = req.Campaign
+	offset = req.Offset
+	limit = req.Limit
+
 	rs.Records = []Recipient{}
 	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=? LIMIT ? OFFSET ?", campaign, limit, offset)
 	if err != nil {

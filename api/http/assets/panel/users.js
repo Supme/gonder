@@ -17,59 +17,76 @@ $().w2grid({
     sortData: [{field: 'recid', direction: 'ASC'}],
     url: '/api/users',
     method: 'GET',
-    onDblClick: function (event){
-        var record = w2ui.userList.get(event.recid);
-        w2popup.open({
-            width   : 400,
-            height  : 480,
-            title   : record.name,
-            body    : '<div id="userEditor" style="width: 100%; height: 100%;"></div>',
-            onOpen  : function (event) {
-                event.onComplete = function () {
-                    $('#userEditor').w2render('userEditor');
-                }
-            },
-            onClose : function (event) {
-                w2ui.userEditor.clear();
-            }
-        });
-        w2ui.userEditor.record['userId'] = event.recid;
-        w2ui.userEditor.record['userPassword'] = record.password;
-
-        var unit = [];
-        $.each(w2ui.unitList.records, function(k, v){
-            unit[k] = {id:v.recid, text:v.name}
-        });
-        w2ui.userEditor.set('userUnit', {options: {items: unit}});
-        setTimeout(function () {
-            $('#userUnit').w2field().setIndex(findRecId(unit, record.unitid));
-        }, 500);
-
-        var groups = [];
-        $.ajax({
-            type: "GET",
-            dataType: 'json',
-            data: {"request": JSON.stringify({"cmd": "get"})},
-            url: '/api/groups'
-        }).done(function(data) {
-            $.each(data.records, function(k, v){
-                groups[k] = {id:v.recid, text:v.name}
-            });
-        });
-        console.log(groups);
-        w2ui.userEditor.set('userGroup', {options: {items: groups, openOnFocus:true}});
-        setTimeout(function() {
-            $.each(record.groupsid, function (k, v) {
-                $('#userGroup').w2field().setIndex(findRecId(groups, v), true);
-            })
-        }, 500);
-        w2ui.userEditor.refresh();
-    }/*,
+    onDblClick: userEditorPopup,
+    onAdd: userEditorPopup
+    /*,
     onSave: function (event) {
         console.log(event);
         w2ui.userList.reload();
     }*/
 });
+
+function userEditorPopup(event){
+    console.log(event);
+    var record = w2ui.userList.get(event.recid);
+
+    if (event.type == 'dblClick') {
+        w2ui.userEditor.record['id'] = parseInt(event.recid);
+        setTimeout(function() {
+            $(w2ui.userEditor.get('name').el).prop('disabled', true);
+        }, 500);
+    }
+    if (event.type == 'add'){
+        w2ui.userEditor.record['id'] = null;
+    }
+
+    w2popup.open({
+        width   : 400,
+        height  : 480,
+        title   : event.type == 'add'?'New user':record.name,
+        body    : '<div id="userEditor" style="width: 100%; height: 100%;"></div>',
+        onOpen  : function (event) {
+            event.onComplete = function () {
+                $('#userEditor').w2render('userEditor');
+            }
+        },
+        onClose : function (event) {
+            w2ui.userEditor.clear();
+        }
+    });
+
+    var unit = [];
+    $.each(w2ui.unitList.records, function(k, v){
+        unit[k] = {id:v.recid, text:v.name}
+    });
+    w2ui.userEditor.set('unit', {options: {items: unit}});
+    if (event.type == 'dblClick') {
+        setTimeout(function () {
+            $('#userEditor #unit').w2field().setIndex(findRecId(unit, record.unitid));
+        }, 500);
+    }
+
+    var groups = [];
+    $.ajax({
+        type: "GET",
+        dataType: 'json',
+        data: {"request": JSON.stringify({"cmd": "get"})},
+        url: '/api/groups'
+    }).done(function(data) {
+        $.each(data.records, function(k, v){
+            groups[k] = {id:v.recid, text:v.name}
+        });
+    });
+    w2ui.userEditor.set('group', {options: {items: groups, openOnFocus:true}});
+    if (event.type == 'dblClick') {
+        setTimeout(function() {
+            $.each(record.groupsid, function (k, v) {
+                $('#userEditor #group').w2field().setIndex(findRecId(groups, v), true);
+            })
+        }, 500);
+    }
+    w2ui.userEditor.refresh();
+}
 
 function findRecId(data, id) {
     var i = false;
@@ -84,25 +101,26 @@ function findRecId(data, id) {
 $().w2form({
     name: 'userEditor',
     fields: [
-        {name: 'userPassword', caption: w2utils.lang('Password'), type: 'pass'},
-        {name: 'userUnit', caption: w2utils.lang('Unit'), type: 'list'},
-        {name: 'userGroup', caption: w2utils.lang('Group'), type: 'enum'}
+        {name: 'name', html: {caption: 'Name'}, type: 'text'},
+        {name: 'password', html: {caption: w2utils.lang('Password')}, type: 'pass'},
+        {name: 'unit', html: {caption: w2utils.lang('Unit')}, type: 'list'},
+        {name: 'group', html: {caption: w2utils.lang('Group')}, type: 'enum'}
     ],
     url: 'api/users',
     method: 'POST',
-/*    onSave: function(event) {
+    onSave: function(event) {
         console.log(event);
         if (event.status == "success") {
+            w2ui['userList'].reload();
             w2popup.close();
         } else {
             //w2alert(event);
         }
-    },*/
+    },
     actions: {
         save: function (target, data) {
             this.save();
-            console.log(target);
-            console.log(data);
+            //w2ui['userList'].reload();
             //w2popup.close();
         }
     }

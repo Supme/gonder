@@ -15,7 +15,8 @@ package api
 import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
-	"net/http"
+	"errors"
+	"fmt"
 )
 
 type Campaign struct {
@@ -27,81 +28,63 @@ type Campaigns struct {
 	Records []Campaign `json:"records"`
 }
 
-func campaigns(w http.ResponseWriter, r *http.Request) {
+func campaigns(req request) (js []byte, err error) {
 
 	var campaigns Campaigns
-	var err error
-	var js []byte
-
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	switch req.Cmd {
 
 	case "get":
 		if auth.Right("get-campaigns") {
-			campaigns, err = getCampaigns(req.Id, req.Offset, req.Limit)
+			campaigns, err = getCampaigns(req)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
+				return js, err
 			}
 			js, err = json.Marshal(campaigns)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get campaigns"}`)
+			return js, errors.New("Forbidden get campaigns")
 		}
 
 	case "save":
 		if auth.Right("save-campaigns") {
 			err := saveCampaigns(req.Changes)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
+				return js, err
 			}
-			campaigns, err = getCampaigns(req.Group, req.Offset, req.Limit)
+			campaigns, err = getCampaigns(req)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
+				return js, err
 			}
 			js, err = json.Marshal(campaigns)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save campaigns"}`)
+			return js, errors.New("Forbidden save campaigns")
 		}
 
 	case "add":
 		if auth.Right("add-campaigns") {
 			campaign, err := addCampaign(req.Id)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
+				return js, err
 			}
 			js, err = json.Marshal(campaign)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden add campaigns"}`)
+			return js, errors.New("Forbidden add campaigns")
 		}
+
+	default:
+		err = errors.New("Command not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
 
 func addCampaign(groupId int64) (Campaign, error) {
@@ -139,19 +122,27 @@ func saveCampaigns(changes []map[string]interface{}) (err error) {
 	return
 }
 
-func getCampaigns(group, offset, limit int64) (Campaigns, error) {
-	var c Campaign
-	var cs Campaigns
-	var where string
+func getCampaigns(req request) (Campaigns, error) {
+	var (
+		c Campaign
+		cs Campaigns
+		partWhere, where string
+		partParams, params []interface{}
+		err error
+	)
 	cs.Records = []Campaign{}
-
+	params = append(params, req.Id)
 	if auth.IsAdmin() {
-		where = "?"
+		where = "`group_id`=?"
 	} else {
-		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
+		where = "`group_id`=? AND `group_id` IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
+		params = append(params, auth.userId)
 	}
-
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE `group_id`=? AND "+where+" ORDER BY `id` DESC LIMIT ? OFFSET ?", group, auth.userId, limit, offset)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, true)
+	if err != nil {
+		fmt.Println("Create SQL Part error:", err)
+	}
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE " + partWhere, partParams...)
 	if err != nil {
 		return cs, err
 	}
@@ -160,6 +151,10 @@ func getCampaigns(group, offset, limit int64) (Campaigns, error) {
 		err = query.Scan(&c.Id, &c.Name)
 		cs.Records = append(cs.Records, c)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE `group_id`=? AND "+where, group, auth.userId).Scan(&cs.Total)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, false)
+	if err != nil {
+		apilog.Print(err)
+	}
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE " + partWhere, partParams...).Scan(&cs.Total)
 	return cs, err
 }

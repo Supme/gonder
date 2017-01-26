@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/supme/gonder/models"
-	"net/http"
 	"strconv"
+	"errors"
 )
 
 type Profile struct {
@@ -37,24 +37,9 @@ type Profiles struct {
 	Records []Profile `json:"records"`
 }
 
-func profiles(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var js []byte
+func profiles(req request) (js []byte, err error) {
 	var ps Profiles
 	var p Profile
-
-	ps.Status = "success"
-
-	if r.FormValue("request") == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	req, err := parseRequest(r.FormValue("request"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	switch req.Cmd {
 
@@ -62,41 +47,33 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 		if auth.Right("get-profiles") {
 			ps, err = getProfiles()
 			if err != nil {
-				ps.Status = "error"
-				ps.Message = err.Error()
+				return js, err
 			}
 			js, err = json.Marshal(ps)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
 	case "add":
 		if auth.Right("add-profiles") {
 			p, err = addProfile()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 			js, err = json.Marshal(p)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
 	case "delete":
 		if auth.Right("delete-profiles") {
-			fmt.Print(req.Selected)
 			deleteProfiles(req.Selected)
 			js, err = json.Marshal(ps)
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
 	case "save":
@@ -108,17 +85,14 @@ func profiles(w http.ResponseWriter, r *http.Request) {
 			}
 			js, err = json.Marshal(ps)
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	default:
+		err = errors.New("Command not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
 
 func saveProfiles(changes []map[string]interface{}) (err error) {
@@ -160,7 +134,7 @@ func saveProfiles(changes []map[string]interface{}) (err error) {
 
 func deleteProfiles(selected []interface{}) {
 	for _, s := range selected {
-		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", s)
+		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", fmt.Sprintf("%d", s))
 	}
 }
 

@@ -7,7 +7,19 @@ $('#campaignRecipient').w2grid({
         footer: true
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '5%' },
+        { field: 'recid', caption: w2utils.lang('Id'), size: '5%'/*,
+            info: {
+                icon   : 'icon-info',
+                render : function (rec) {
+                    var name = rec.fname + ' ' + rec.lname;
+                    return  '<table>'+
+                        '   <tr><td>Name</td><td>'+ name +'</td></tr>'+
+                        '   <tr><td>Field1</td><td>Value1</td></tr>'+
+                        '   <tr><td>Field2</td><td>Some value</td></tr>'+
+                        '</table>';
+                }
+            }*/
+        },
         { field: 'email', caption: w2utils.lang('Email'), size: '15%' },
         { field: 'name', caption: w2utils.lang('Name'), size: '20%' },
         { field: 'result', caption: w2utils.lang('Result'), size: '60%' }
@@ -91,8 +103,7 @@ $('#recipientUploadButton').click(
                                     })
                                 }
                             }).done(function(req) {
-                                if (req["status"] == "loading") {
-                                    console.log("loading: " + req["message"]);
+                                if (req["status"] == "success") {
                                     $('#uploadProgress').text("Uploading: " + req["message"] + "%");
                                 } else {
                                     finish = true;
