@@ -149,7 +149,7 @@ func recipients(req request) (js []byte, err error) {
 				return js, err
 			}
 			if auth.Right("get-recipient-parameters") && auth.CampaignRight(rId) {
-				ps, err := getRecipientParams(req.Recipient, req.Offset, req.Limit)
+				ps, err := getRecipientParams(req.Recipient)
 				js, err = json.Marshal(ps)
 				if err != nil {
 					return js, err
@@ -204,12 +204,12 @@ func getRecipients(req request) (Recipients, error) {
 }
 
 //ToDo check right errors
-func getRecipientParams(recipient, offset, limit int64) (RecipientParams, error) {
+func getRecipientParams(recipient int64) (RecipientParams, error) {
 	var err error
 	var p RecipientParam
 	var ps RecipientParams
 	ps.Records = []RecipientParam{}
-	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=? LIMIT ? OFFSET ?", recipient, limit, offset)
+	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {
 		return ps, err
 	}

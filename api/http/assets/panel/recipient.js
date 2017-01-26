@@ -7,18 +7,25 @@ $('#campaignRecipient').w2grid({
         footer: true
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '5%'/*,
+        { field: 'recid', caption: w2utils.lang('Id'), size: '5%',
             info: {
-                icon   : 'icon-info',
                 render : function (rec) {
-                    var name = rec.fname + ' ' + rec.lname;
-                    return  '<table>'+
-                        '   <tr><td>Name</td><td>'+ name +'</td></tr>'+
-                        '   <tr><td>Field1</td><td>Value1</td></tr>'+
-                        '   <tr><td>Field2</td><td>Some value</td></tr>'+
-                        '</table>';
+                    var table;
+                    $.ajax({
+                        type: "GET",
+                        async: false,
+                        url: '/api/recipients',
+                        data: {"request": JSON.stringify({"cmd": "get", "recipient": rec.recid})},
+                        dataType: "json"
+                    }).done(function(data) {
+                        table = '<table>';
+                        $.each(data.records, function (i, val) {
+                           table += '<tr><td>' + val["key"] + '</td><td>' + val["value"] + '</td></tr>';
+                        });
+                    });
+                    return table;
                 }
-            }*/
+            }
         },
         { field: 'email', caption: w2utils.lang('Email'), size: '15%' },
         { field: 'name', caption: w2utils.lang('Name'), size: '20%' },
@@ -26,6 +33,7 @@ $('#campaignRecipient').w2grid({
     ],
     multiSelect: false,
     method: 'GET',
+/*
     onExpand: function (event) {
         if (w2ui.hasOwnProperty('subgrid-' + event.recid)) w2ui['subgrid-' + event.recid].destroy();
         $('#'+ event.box_id).css({ margin: '0px', padding: '0px', width: '100%' }).animate({ height: '100px' }, 100);
@@ -35,7 +43,7 @@ $('#campaignRecipient').w2grid({
                 fixedBody: true,
                 columns: [
                     { field: 'key', caption: w2utils.lang('Parameter'), size: '30%' },
-                    { field: 'value', caption: w2utils.lang('Value'), size: '70%' },
+                    { field: 'value', caption: w2utils.lang('Value'), size: '70%' }
                 ],
                 multiSelect: false,
                 postData: { "recipient": parseInt(event.recid) },
@@ -45,6 +53,7 @@ $('#campaignRecipient').w2grid({
             w2ui['subgrid-' + event.recid].resize();
         }, 300);
     },
+*/
     onDblClick: function (event) {
         /*w2popup.load({
          title: 'Mail preview',

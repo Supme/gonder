@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
 	"errors"
-	"fmt"
 )
 
 type Group struct {
