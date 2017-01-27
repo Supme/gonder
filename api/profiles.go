@@ -45,7 +45,7 @@ func profiles(req request) (js []byte, err error) {
 
 	case "get":
 		if auth.Right("get-profiles") {
-			ps, err = getProfiles()
+			ps, err = getProfiles(req)
 			if err != nil {
 				return js, err
 			}
@@ -152,11 +152,23 @@ func addProfile() (Profile, error) {
 	return p, nil
 }
 
-func getProfiles() (Profiles, error) {
-	var p Profile
-	var ps Profiles
+func getProfiles(req request) (Profiles, error) {
+	var (
+		p Profile
+		ps Profiles
+		partWhere string
+		partParams, params []interface{}
+		err error
+	)
 	ps.Records = []Profile{}
-	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`")
+
+	partWhere, partParams, err = createSqlPart(req, " WHERE 1=1", params, map[string]string{
+		"recid":"id","name":"name","iface":"iface","host":"host","stream":"stream","resend_delay":"resend_delay","resend_count":"resend_count",
+	}, true)
+	if err != nil {
+		apilog.Print(err)
+	}
+	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`" + partWhere, partParams...)
 	if err != nil {
 		return ps, err
 	}
@@ -166,6 +178,6 @@ func getProfiles() (Profiles, error) {
 		err = query.Scan(&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
 		ps.Records = append(ps.Records, p)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`").Scan(&ps.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`" + partWhere, partParams...).Scan(&ps.Total)
 	return ps, err
 }

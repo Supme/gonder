@@ -35,15 +35,17 @@ function userEditorPopup(event){
         setTimeout(function() {
             $(w2ui.userEditor.get('name').el).prop('disabled', true);
         }, 500);
+        w2ui.userEditor.record['name'] = record.name;
+        w2ui.userEditor.record['action'] = 'save';
     }
     if (event.type == 'add'){
-        w2ui.userEditor.record['id'] = null;
+        w2ui.userEditor.record['action'] = 'add';
     }
 
     w2popup.open({
         width   : 400,
         height  : 480,
-        title   : event.type == 'add'?'New user':record.name,
+        title   : event.type == 'add'?'New user':"Edit user",
         body    : '<div id="userEditor" style="width: 100%; height: 100%;"></div>',
         onOpen  : function (event) {
             event.onComplete = function () {

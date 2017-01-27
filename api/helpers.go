@@ -20,6 +20,7 @@ import (
 	"strings"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 func parseArrayForm(r url.Values) map[string]map[string]map[string][]string {
@@ -55,8 +56,9 @@ type request struct {
 	} `json:"sort"`
 	Search []struct{
 		Field string `json:"field"`
+		Type string `json:"type"`
 		Operator string `json:"operator"`
-		Value string `json:"value"`
+		Value interface{} `json:"value"`
 	} `json:"search,omitempty"`
 	SearchLogic string `json:"searchLogic,omitempty"`
 	Changes []map[string]interface{} `json:"changes,omitempty"`
@@ -108,16 +110,42 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 		for _, s := range req.Search {
 			if filed, ok := mapping[s.Field]; ok {
 				if s.Value != "" {
-					srhStr = append(srhStr, "`" + filed + "` LIKE ?")
-					if strings.ToLower(s.Operator) == "begins" {
-						params = append(params, s.Value + "%")
-					} else if strings.ToLower(s.Operator) == "ends" {
-						params = append(params, "%" + s.Value)
-					} else if strings.ToLower(s.Operator) == "contains" {
-						params = append(params, "%" + s.Value + "%")
-					} else {
-						params = append(params, s.Value)
+					var qs string
+					fmt.Println("V:", s.Value)
+					if strings.ToLower(s.Type) == "int" {
+						if  strings.ToLower(s.Operator) == "more" {
+							params = append(params, fmt.Sprintf("%v",s.Value))
+							qs = "`" + filed + "`>?"
+						} else if  strings.ToLower(s.Operator) == "less" {
+							params = append(params, fmt.Sprintf("%v",s.Value))
+							qs = "`" + filed + "`<?"
+						} else if strings.ToLower(s.Operator) == "between" {
+							i := reflect.ValueOf(s.Value).Interface().([]interface{})
+							params = append(params, i[0])
+							params = append(params, i[1])
+							qs = "`" + filed + "` BETWEEN ? AND ?"
+
+						} else {
+							params = append(params, fmt.Sprintf("%v",s.Value))
+							qs = "`" + filed + "`=?"
+						}
+					} else if strings.ToLower(s.Type) == "text" {
+						if strings.ToLower(s.Operator) == "begins" {
+							params = append(params, reflect.ValueOf(s.Value).Interface().(string) + "%")
+							qs = "`" + filed + "` LIKE ?"
+						} else if strings.ToLower(s.Operator) == "ends" {
+							params = append(params, "%" + reflect.ValueOf(s.Value).Interface().(string))
+							qs = "`" + filed + "` LIKE ?"
+						} else if strings.ToLower(s.Operator) == "contains" {
+							params = append(params, "%" + reflect.ValueOf(s.Value).Interface().(string) + "%")
+							qs = "`" + filed + "` LIKE ?"
+						} else {
+							params = append(params, reflect.ValueOf(s.Value).Interface().(string))
+							qs = "`" + filed + "`=?"
+						}
 					}
+
+					srhStr = append(srhStr, qs)
 				}
 			} else {
 				return "", params, errors.New(fmt.Sprintf("field '%s' not in mapping", s.Field))
@@ -156,5 +184,7 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 	}
 
 	query = queryStr + " " + strings.Join(result, " ")
+//	fmt.Println("Query:", query)
+//	fmt.Println("Param:",params)
 	return query, params, nil
 }

@@ -180,15 +180,21 @@ func getRecipients(req request) (Recipients, error) {
 	var (
 		err error
 		rs Recipients
-		campaign, offset, limit int64
+		partWhere, where string
+		partParams, params []interface{}
 	)
 
-	campaign = req.Campaign
-	offset = req.Offset
-	limit = req.Limit
+	params = append(params, req.Campaign)
 
 	rs.Records = []Recipient{}
-	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=? LIMIT ? OFFSET ?", campaign, limit, offset)
+	where = " WHERE `removed`!=1 AND `campaign_id`=?"
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
+		"recid":"id", "name":"name", "email":"email", "result":"status",
+	}, true)
+	if err != nil {
+		return rs, err
+	}
+	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient`" + partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
@@ -198,7 +204,13 @@ func getRecipients(req request) (Recipients, error) {
 		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result)
 		rs.Records = append(rs.Records, r)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `removed`!=1 AND `campaign_id`=?", campaign).Scan(&rs.Total)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
+		"recid":"id", "name":"name", "email":"email", "result":"status",
+	}, false)
+	if err != nil {
+		return rs, err
+	}
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`" + partWhere, partParams...).Scan(&rs.Total)
 	return rs, nil
 
 }

@@ -4,10 +4,18 @@ $('#campaignRecipient').w2grid({
     name: 'recipient',
     show: {
         header: true,
+        toolbar: true,
         footer: true
     },
+    multiSearch: true,
+    searches: [
+        { field: 'recid', caption: w2utils.lang('Id'), type: 'int' },
+        { field: 'email', caption: w2utils.lang('Email'), type: 'text' },
+        { field: 'name', caption: w2utils.lang('Name'), type: 'text' },
+        { field: 'result', caption: w2utils.lang('Result'), type: 'text' },
+    ],
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '5%',
+        { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '5%',
             info: {
                 render : function (rec) {
                     var table;
@@ -27,9 +35,9 @@ $('#campaignRecipient').w2grid({
                 }
             }
         },
-        { field: 'email', caption: w2utils.lang('Email'), size: '15%' },
-        { field: 'name', caption: w2utils.lang('Name'), size: '20%' },
-        { field: 'result', caption: w2utils.lang('Result'), size: '60%' }
+        { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '15%' },
+        { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '20%' },
+        { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '60%' }
     ],
     multiSelect: false,
     method: 'GET',

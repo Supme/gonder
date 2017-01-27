@@ -12,13 +12,13 @@ $('#profile').w2grid({
         toolbarSearch: false
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
-        { field: 'name', caption: w2utils.lang('Name'), size: '30%', editable: { type: 'text' }},
-        { field: 'host', caption: w2utils.lang('Host'), size: '20%', editable: { type: 'text' }},
-        { field: 'iface', caption: w2utils.lang('Interface'), size: '20%',  editable: { type: 'text' }},
-        { field: 'stream', caption: w2utils.lang('Stream'), render: 'int', size: '10%', editable: { type: 'int' }},
-        { field: 'resend_delay', caption: w2utils.lang('Resend delay'), render: 'int', size: '10%', editable: { type: 'int' }},
-        { field: 'resend_count', caption: w2utils.lang('Resend count'), render: 'int', size: '10%', editable: { type: 'int' }}
+        { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '50px', style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
+        { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '30%', editable: { type: 'text' }},
+        { field: 'host', caption: w2utils.lang('Host'), sortable: true, size: '20%', editable: { type: 'text' }},
+        { field: 'iface', caption: w2utils.lang('Interface'), sortable: true, size: '20%',  editable: { type: 'text' }},
+        { field: 'stream', caption: w2utils.lang('Stream'), sortable: true, render: 'int', size: '10%', editable: { type: 'int' }},
+        { field: 'resend_delay', caption: w2utils.lang('Resend delay'), sortable: true, render: 'int', size: '10%', editable: { type: 'int' }},
+        { field: 'resend_count', caption: w2utils.lang('Resend count'), sortable: true, render: 'int', size: '10%', editable: { type: 'int' }}
 
     ],
     method: 'GET',
