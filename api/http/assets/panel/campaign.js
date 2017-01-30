@@ -13,7 +13,7 @@ $('#campaign').w2grid({
         toolbarSearch: true
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, style: 'background-color: #efefef; border-bottom: 1px solid white; padding-right: 5px;', attr: "align=right" },
+        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
         { field: 'name', caption: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' } }
     ],
     multiSelect: false,

@@ -83,7 +83,7 @@ type request struct {
 		} `json:"unit,omitempty"`
 		Group []struct{
 			Id int64 `json:"id,omitempty,-"`
-		} `json:"group,omitempty"`
+		} `json:"group,omitempty,-"`
 	} `json:"record,omitempty"`
 }
 

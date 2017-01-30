@@ -142,7 +142,7 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		js = []byte(fmt.Sprintf(`{"status": "error", "message": "%s"}`, err))
 	} else if js == nil {
-		js = []byte(`{"status": "succes", "message": ""}`)
+		js = []byte(`{"status": "success", "message": ""}`)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)

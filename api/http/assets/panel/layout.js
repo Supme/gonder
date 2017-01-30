@@ -13,6 +13,7 @@ var config = {
     sidebar: {
         name: 'sidebar',
         topHTML: '<div style="padding: 10px 5px; border-bottom: 1px solid #99bbe8";><span style="text-transform: uppercase;">'+w2utils.lang("Menu")+'</span></div>',
+        flatButton: true,
         nodes: [
             {
                 id: 'campaign', text: w2utils.lang('Campaign'), group: true, expanded: true, nodes:
@@ -32,6 +33,10 @@ var config = {
                 ]
             }
         ],
+        onFlat: function (event) {
+            //$('.w2ui-sidebar').css('width', (event.goFlat ? '35px' : '200px'));
+            w2ui['layout'].sizeTo('left', (event.goFlat ? '50px' : '200px'));
+        },
         onClick: function (event) {
             if ($('#campaignId').val() != '' || event.target =='profile'  || event.target =='status' || event.target =='users') {
                 switch (event.target) {
@@ -142,14 +147,14 @@ var config = {
 // --- /Config for layout ---
 
 // --- Layout ---
-var pstyle = 'border: 1px solid #dfdfdf; padding: 2px;';
+//var pstyle = 'border: 1px solid #dfdfdf; padding: 2px;';
 $('#layout').w2layout({
     name: 'layout',
     panels: [
-        { type: 'top', size:32, style: pstyle, content: "<div style='text-align: center;'><img src='/assets/img/logo.png' height='20px' border='0px'/><span style='font-size: 20px;'> Mass email sender</span></div>" },
-        { type: 'left', size: 200, resizable: true, style: pstyle },
-        { type: 'main', hidden: true, style: pstyle},
-        { type: 'bottom', size: 250, resizable: true, style: pstyle }
+        { type: 'top', size: 32,  content: "<div style='text-align: center; vertical-align: middle'><img style='vertical-align: middle;' src='/assets/img/logo.png' height='20px' border='0px'/><span style='font-size: 20px;'> Mass email sender</span></div>" },
+        { type: 'left', size: 200, resizable: true },
+        { type: 'main', hidden: true},
+        { type: 'bottom', size: 250, resizable: true }
     ]
 });
 w2ui.layout.content('left', $().w2sidebar(config.sidebar));

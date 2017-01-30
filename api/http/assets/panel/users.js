@@ -19,15 +19,10 @@ $().w2grid({
     method: 'GET',
     onDblClick: userEditorPopup,
     onAdd: userEditorPopup
-    /*,
-    onSave: function (event) {
-        console.log(event);
-        w2ui.userList.reload();
-    }*/
 });
 
 function userEditorPopup(event){
-    console.log(event);
+    //console.log(event);
     var record = w2ui.userList.get(event.recid);
 
     if (event.type == 'dblClick') {
@@ -36,11 +31,8 @@ function userEditorPopup(event){
             $(w2ui.userEditor.get('name').el).prop('disabled', true);
         }, 500);
         w2ui.userEditor.record['name'] = record.name;
-        w2ui.userEditor.record['action'] = 'save';
     }
-    if (event.type == 'add'){
-        w2ui.userEditor.record['action'] = 'add';
-    }
+    if (event.type == 'add'){}
 
     w2popup.open({
         width   : 400,
@@ -106,24 +98,20 @@ $().w2form({
         {name: 'name', html: {caption: 'Name'}, type: 'text'},
         {name: 'password', html: {caption: w2utils.lang('Password')}, type: 'pass'},
         {name: 'unit', html: {caption: w2utils.lang('Unit')}, type: 'list'},
-        {name: 'group', html: {caption: w2utils.lang('Group')}, type: 'enum'}
+        {name: 'group', html: {caption: w2utils.lang('Group')}, type: 'enum'}//, required: true}
     ],
     url: 'api/users',
     method: 'POST',
-    onSave: function(event) {
-        console.log(event);
-        if (event.status == "success") {
-            w2ui['userList'].reload();
-            w2popup.close();
-        } else {
-            //w2alert(event);
-        }
+    onError: function(event){
+        // ToDo alert not close...
+        w2alert(w2utils.lang(event.message));
     },
     actions: {
-        save: function (target, data) {
-            this.save();
-            //w2ui['userList'].reload();
-            //w2popup.close();
+        save: function () {
+            this.save(this.record.id == undefined?{cmd:'add'}:undefined, function () {
+                w2ui['userList'].reload();
+                w2popup.close();
+            });
         }
     }
 });
