@@ -120,6 +120,10 @@ var config = {
                         $('#status').hide();
                         break;
                     case 'users':
+                        w2ui['userList'].url = '/api/users';
+                        w2ui['userList'].reload();
+                        w2ui['unitList'].url = '/api/units';
+                        w2ui['unitList'].reload();
                         $('#template').hide();
                         $('#parameter').hide();
                         $('#recipient').hide();

@@ -82,8 +82,30 @@ type request struct {
 			Id int64 `json:"id"`
 		} `json:"unit,omitempty"`
 		Group []struct{
-			Id int64 `json:"id,omitempty,-"`
-		} `json:"group,omitempty,-"`
+			Id int64 `json:"id"`
+		} `json:"group,omitempty"`
+		// Unit rights
+		GetGroups int8 `json:"get-groups,omitempty"`
+		SaveGroups int8 `json:"save-groups,omitempty"`
+		AddGroups int8 `json:"add-groups,omitempty"`
+		GetCampaigns int8 `json:"get-campaigns,omitempty"`
+		SaveCampaigns int8 `json:"save-campaigns,omitempty"`
+		AddCampaigns int8 `json:"add-campaigns,omitempty"`
+		GetCampaign int8 `json:"get-campaign,omitempty"`
+		SaveCampaign int8 `json:"save-campaign,omitempty"`
+		GetRecipients int8 `json:"get-recipients,omitempty"`
+		GetRecipientParameters int8 `json:"get-recipient-parameters,omitempty"`
+		UploadRecipients int8 `json:"upload-recipients,omitempty"`
+		DeleteRecipients int8 `json:"delete-recipients,omitempty"`
+		GetProfiles int8 `json:"get-profiles,omitempty"`
+		AddProfiles int8 `json:"add-profiles,omitempty"`
+		DeleteProfiles int8 `json:"delete-profiles,omitempty"`
+		SaveProfiles int8 `json:"save-profiles,omitempty"`
+		AcceptCampaign int8 `json:"accept-campaign,omitempty"`
+		GetLogMain int8 `json:"get-log-main,omitempty"`
+		GetLogApi int8 `json:"get-log-api,omitempty"`
+		GetLogCampaign int8 `json:"get-log-campaign,omitempty"`
+		GetLogUtm int8 `json:"get-log-utm,omitempty"`
 	} `json:"record,omitempty"`
 }
 
