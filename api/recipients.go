@@ -163,7 +163,7 @@ func recipients(req request) (js []byte, err error) {
 }
 
 func resendCampaign(campaignId int64) error {
-	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(proxy)|(eof)).+'", campaignId)
+	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignId)
 	c, _ := res.RowsAffected()
 	apilog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", auth.Name, campaignId, c)
 	return err
