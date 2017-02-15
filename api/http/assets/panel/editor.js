@@ -17,6 +17,7 @@ var editor = CKEDITOR.replace(
         'floatpanel,' +
         'colorbutton,' +
         'colordialog,' +
+        'codemirror,' +
         'templates,' +
         'menu,' +
         'contextmenu,' +
