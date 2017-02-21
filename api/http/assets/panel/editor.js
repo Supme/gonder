@@ -2,14 +2,16 @@
 var editor = CKEDITOR.replace(
     'campaignTemplate', {
         filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
+        extraPlugins:
+        'codemirror',
         plugins:
         //'dialogui,' +
         'dialog,' +
-        'a11yhelp,' +
-        'dialogadvtab,' +
+        //'a11yhelp,' +
+        //'dialogadvtab,' +
         'basicstyles,' +
-        'bidi,' +
-        'blockquote,' +
+        //'bidi,' +
+        //'blockquote,' +
         'clipboard,' +
         'button,' +
         'panelbutton,' +
@@ -17,11 +19,10 @@ var editor = CKEDITOR.replace(
         'floatpanel,' +
         'colorbutton,' +
         'colordialog,' +
-        'codemirror,' +
         'templates,' +
         'menu,' +
         'contextmenu,' +
-        'div,' +
+        //'div,' +
         'resize,' +
         'toolbar,' +
         'elementspath,' +
@@ -54,37 +55,37 @@ var editor = CKEDITOR.replace(
         'list,' +
         'liststyle,' +
         'magicline,' +
-        'maximize,' +
-        'pagebreak,' +
+        //'maximize,' +
+        //'pagebreak,' +
         'pastetext,' +
         'pastefromword,' +
-        'preview,' +
-        'print,' +
+        //'preview,' +
+        //'print,' +
         'removeformat,' +
         'selectall,' +
         'showblocks,' +
         'showborders,' +
         'sourcearea,' +
         'specialchar,' +
-        'scayt,' +
+        //'scayt,' +
         'stylescombo,' +
         'tab,' +
         'table,' +
         'tabletools,' +
         'undo,' +
-        'wsc,' +
+        //'wsc,' +
         'docprops,',
 
         allowedContent:  true,
         removeFormatAttributes: '',
-        height: 400,
+        height: 450,
         entities:false
     }
 );
 
 /*
- editor.on( 'instanceReady', function() {
- console.log( editor.filter.allowedContent );
- } );
- */
+editor.on( 'instanceReady', function() {
+    editor.resize("100%", $("#template").height()-24)
+} );
+*/
 // --- /CKEditor ---

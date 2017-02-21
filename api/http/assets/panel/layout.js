@@ -55,6 +55,10 @@ var config = {
                         $('#profile').hide();
                         $('#users').hide();
                         $('#status').hide();
+                        editor.commands.source.exec();
+                        setTimeout(function(){
+                            if (editor.mode == "source") editor.commands.source.exec();
+                        }, 10);
                         break;
                     case 'recipient':
                         w2ui['recipient'].url = '/api/recipients';
@@ -87,7 +91,7 @@ var config = {
                                                 "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
                                                 "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
                                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                                "template": CKEDITOR.instances.campaignTemplate.getData() == '' ? $("#campaignTemplate").val() : CKEDITOR.instances.campaignTemplate.getData()
+                                                "template": editor.getData() == '' ? $("#campaignTemplate").val() : editor.getData()
                                             }
                                         }
                                     )},

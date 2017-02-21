@@ -64,9 +64,9 @@ $('#campaign').w2grid({
             $("#campaignTemplate").val(data["template"]);
             $('#campaignAcceptSend').prop('checked', data["accepted"]);
 
-            CKEDITOR.instances.campaignTemplate.setData(data["template"]);
+            editor.setData(data["template"]);
 
-            w2ui['recipient'].postData["campaign"] = parseInt(event.recid)
+            w2ui['recipient'].postData["campaign"] = parseInt(event.recid);
             w2ui.layout.unlock('main');
             w2ui['sidebar'].click('parameter');
         });
