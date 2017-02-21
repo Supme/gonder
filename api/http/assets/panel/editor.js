@@ -4,6 +4,32 @@ var editor = CKEDITOR.replace(
         filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
         extraPlugins:
         'codemirror',
+        codemirror: {
+            autoCloseBrackets: true,
+            autoCloseTags: true,
+            autoFormatOnStart: true,
+            autoFormatOnUncomment: true,
+            continueComments: true,
+            enableCodeFolding: true,
+            enableCodeFormatting: true,
+            enableSearchTools: true,
+            highlightMatches: true,
+            indentWithTabs: false,
+            lineNumbers: true,
+            lineWrapping: true,
+            mode: 'htmlmixed',
+            matchBrackets: true,
+            matchTags: true,
+            showAutoCompleteButton: true,
+            showCommentButton: true,
+            showFormatButton: true,
+            showSearchButton: true,
+            showTrailingSpace: true,
+            showUncommentButton: true,
+            styleActiveLine: true,
+            theme: 'default',
+            useBeautifyOnStart: false
+        },
         plugins:
         //'dialogui,' +
         'dialog,' +
