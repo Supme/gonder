@@ -133,7 +133,6 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 			if filed, ok := mapping[s.Field]; ok {
 				if s.Value != "" {
 					var qs string
-					fmt.Println("V:", s.Value)
 					if strings.ToLower(s.Type) == "int" {
 						if  strings.ToLower(s.Operator) == "more" {
 							params = append(params, fmt.Sprintf("%v",s.Value))
@@ -206,7 +205,5 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 	}
 
 	query = queryStr + " " + strings.Join(result, " ")
-//	fmt.Println("Query:", query)
-//	fmt.Println("Param:",params)
 	return query, params, nil
 }
