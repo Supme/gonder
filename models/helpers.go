@@ -15,6 +15,8 @@ package models
 import (
 	"net"
 	"net/http"
+	"reflect"
+	"unsafe"
 )
 
 func GetIP(r *http.Request) string {
@@ -23,4 +25,24 @@ func GetIP(r *http.Request) string {
 	}
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return ip
+}
+
+// ToDo use this in campaign sender
+// Null memory allocate convert
+func BytesToString(b []byte) string {
+	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	stringHeader := reflect.StringHeader{
+		Data: sliceHeader.Data,
+		Len: sliceHeader.Len,
+	}
+	return *(*string)(unsafe.Pointer(&stringHeader))
+}
+func StringToBytes(s string) []byte {
+	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	sliceHeader := reflect.SliceHeader{
+		Data: stringHeader.Data,
+		Len: stringHeader.Len,
+		Cap: stringHeader.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&sliceHeader))
 }

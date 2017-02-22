@@ -204,6 +204,7 @@ func (m *MailData) Data() string {
 	// ------------ /body ---------------------------------------------------------
 
 	// ----------- attachments ----------------------------------------------------
+	// ToDo cache base64 file content
 	for _, file := range m.Attachments {
 		msg.WriteString("\n--" + marker)
 		content, err := ioutil.ReadFile(file.Location + file.Name)

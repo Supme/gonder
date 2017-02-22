@@ -23,7 +23,11 @@ import (
 
 func getMailPreview(w http.ResponseWriter, r *http.Request) {
 	if auth.Right("get-recipients") {
-		cId, err := getRecipientCampaign(r.FormValue("id"))
+		id64, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		cId, err := getRecipientCampaign(id64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}

@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/supme/gonder/models"
-	"net/http"
 	"strconv"
+	"errors"
 )
 
 type Profile struct {
@@ -37,91 +37,70 @@ type Profiles struct {
 	Records []Profile `json:"records"`
 }
 
-func profiles(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var js []byte
+func profiles(req request) (js []byte, err error) {
 	var ps Profiles
 	var p Profile
 
-	ps.Status = "success"
+	switch req.Cmd {
 
-	if err = r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	switch r.Form["cmd"][0] {
-
-	case "get-records":
+	case "get":
 		if auth.Right("get-profiles") {
-			ps, err = getProfiles()
+			ps, err = getProfiles(req)
 			if err != nil {
-				ps.Status = "error"
-				ps.Message = err.Error()
+				return js, err
 			}
 			js, err = json.Marshal(ps)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
-	case "add-records":
+	case "add":
 		if auth.Right("add-profiles") {
 			p, err = addProfile()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				return js, err
 			}
 			js, err = json.Marshal(p)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
-	case "delete-records":
+	case "delete":
 		if auth.Right("delete-profiles") {
-			fmt.Print(r.Form["selected[]"])
-			deleteProfiles(r.Form["selected[]"])
+			deleteProfiles(req.Selected)
 			js, err = json.Marshal(ps)
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
-	case "save-records":
+	case "save":
 		if auth.Right("save-profiles") {
-			arrForm := parseArrayForm(r.Form)
-			err = saveProfiles(arrForm["changes"])
+			err = saveProfiles(req.Changes)
 			if err != nil {
 				ps.Status = "error"
 				ps.Message = err.Error()
 			}
 			js, err = json.Marshal(ps)
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get profiles"}`)
+			return js, errors.New("Forbidden get profiles")
 		}
 
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	default:
+		err = errors.New("Command not found")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
 
-func saveProfiles(changes map[string]map[string][]string) (err error) {
+func saveProfiles(changes []map[string]interface{}) (err error) {
 	var e error
 	err = nil
 	var p Profile
 	for c := range changes {
-		p.Id, e = strconv.ParseInt(changes[c]["recid"][0], 10, 64)
+		p.Id, e = strconv.ParseInt(fmt.Sprint(changes[c]["recid"]), 10, 64)
 		if e != nil {
 			err = e
 		}
@@ -132,17 +111,17 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 		for i := range changes[c] {
 			switch i {
 			case "name":
-				p.Name = changes[c][i][0]
+				p.Name = fmt.Sprint(changes[c][i])
 			case "iface":
-				p.Iface = changes[c][i][0]
+				p.Iface = fmt.Sprint(changes[c][i])
 			case "host":
-				p.Host = changes[c][i][0]
+				p.Host = fmt.Sprint(changes[c][i])
 			case "stream":
-				p.Stream, _ = strconv.Atoi(changes[c][i][0])
+				p.Stream, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			case "resend_delay":
-				p.ResendDelay, _ = strconv.Atoi(changes[c][i][0])
+				p.ResendDelay, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			case "resend_count":
-				p.ResendCount, _ = strconv.Atoi(changes[c][i][0])
+				p.ResendCount, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			}
 		}
 		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name, p.Iface, p.Host, p.Stream, p.ResendDelay, p.ResendCount, p.Id)
@@ -153,9 +132,9 @@ func saveProfiles(changes map[string]map[string][]string) (err error) {
 	return
 }
 
-func deleteProfiles(selected []string) {
-	for s := range selected {
-		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", selected[s])
+func deleteProfiles(selected []interface{}) {
+	for _, s := range selected {
+		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", fmt.Sprintf("%d", s))
 	}
 }
 
@@ -173,11 +152,23 @@ func addProfile() (Profile, error) {
 	return p, nil
 }
 
-func getProfiles() (Profiles, error) {
-	var p Profile
-	var ps Profiles
+func getProfiles(req request) (Profiles, error) {
+	var (
+		p Profile
+		ps Profiles
+		partWhere string
+		partParams, params []interface{}
+		err error
+	)
 	ps.Records = []Profile{}
-	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`")
+
+	partWhere, partParams, err = createSqlPart(req, " WHERE 1=1", params, map[string]string{
+		"recid":"id","name":"name","iface":"iface","host":"host","stream":"stream","resend_delay":"resend_delay","resend_count":"resend_count",
+	}, true)
+	if err != nil {
+		apilog.Print(err)
+	}
+	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`" + partWhere, partParams...)
 	if err != nil {
 		return ps, err
 	}
@@ -187,6 +178,6 @@ func getProfiles() (Profiles, error) {
 		err = query.Scan(&p.Id, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
 		ps.Records = append(ps.Records, p)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`").Scan(&ps.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`" + partWhere, partParams...).Scan(&ps.Total)
 	return ps, err
 }

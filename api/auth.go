@@ -18,6 +18,8 @@ import (
 	"github.com/supme/gonder/models"
 	mailer "github.com/supme/gonder/campaign"
 	"net/http"
+	"net/url"
+	"log"
 )
 
 type Auth struct {
@@ -141,7 +143,6 @@ func check(user, password string) (int64, int64, bool) {
 	hash.Write([]byte(password))
 	md := hash.Sum(nil)
 	shaPassword := hex.EncodeToString(md)
-	//log.Print(string(shaPassword))
 
 	err := models.Db.QueryRow("SELECT `id`, `auth_unit_id`, `password` FROM `auth_user` WHERE `name`=?", user).Scan(&userId, &unitId, &passwordHash)
 	if err != nil {
@@ -162,5 +163,9 @@ func (a *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func logging(r *http.Request) {
-	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.Name, r.Method, r.RequestURI)
+	uri, err := url.QueryUnescape(r.RequestURI)
+	if err != nil {
+		log.Print(err)
+	}
+	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.Name, r.Method, uri)
 }

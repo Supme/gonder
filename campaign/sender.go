@@ -71,7 +71,8 @@ func (c campaign) resend() {
 			return
 		}
 		time.Sleep(time.Duration(c.resendDelay) * time.Second)
-		query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+		//query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
+		query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'")
 		checkErr(err)
 		defer query.Close()
 
@@ -98,7 +99,8 @@ func (c campaign) resend() {
 
 func (c *campaign) countSoftBounce() int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
+	//err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(proxy)|(eof)).+'", c.id).Scan(&count)
 	if err != nil {
 		camplog.Print(err)
 	}

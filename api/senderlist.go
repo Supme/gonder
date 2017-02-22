@@ -1,7 +1,7 @@
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License	
+// License http://opensource.org/licenses/MIT MIT License
 //
 //  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
 //  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,46 +13,38 @@
 package api
 
 import (
-	"net/http"
 	"encoding/json"
 	"github.com/supme/gonder/models"
+	"errors"
 )
 
 type SenderList struct {
-	Id   int64 `json:"id"`
+	Id   int64  `json:"id"`
 	Text string `json:"text"`
 }
 
-func senderList(w http.ResponseWriter, r *http.Request)  {
-	var js []byte
-	if auth.Right("get-groups") && auth.GroupRight(r.FormValue("groupId")){
+func senderList(req request) (js []byte, err error) {
+	if auth.Right("get-groups") && auth.GroupRight(req.Id) {
 		var id int64
 		var email, name string
-		var fs []SenderList
-		fs = []SenderList{}
-		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", r.FormValue("groupId"))
+		var fs = []SenderList{}
+		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", req.Id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return js, err
 		}
 		defer query.Close()
 		for query.Next() {
 			err = query.Scan(&id, &name, &email)
 
 			fs = append(fs, SenderList{
-				Id: id,
+				Id:   id,
 				Text: name + " (" + email + ")",
 			})
 		}
 		js, err = json.Marshal(fs)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		return js, err
 	} else {
-		js = []byte(`{"status": "error", "message": "Forbidden get from this group"}`)
+		return js, errors.New("Forbidden get from this group")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }

@@ -15,8 +15,9 @@ package api
 import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
-	"net/http"
 	"strconv"
+	"log"
+	"errors"
 )
 
 type Sender struct {
@@ -29,25 +30,18 @@ type Senders struct {
 	Records []Sender `json:"records"`
 }
 
-func sender(w http.ResponseWriter, r *http.Request) {
+func sender(req request) (js []byte, err error) {
 
-	var err error
-	var js []byte
-	if err = r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	switch req.Cmd {
 
-	switch r.Form["cmd"][0] {
-
-	case "get-records":
-		if auth.Right("get-groups") && auth.GroupRight(r.Form["groupId"][0]) {
+	case "get":
+		if auth.Right("get-groups") && auth.GroupRight(req.Id) {
 			var f Sender
 			var fs Senders
 			fs.Records = []Sender{}
-			query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", r.Form["groupId"][0], r.Form["limit"][0], r.Form["offset"][0])
+			query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", req.Id, req.Limit, req.Offset)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			defer query.Close()
 
@@ -55,51 +49,49 @@ func sender(w http.ResponseWriter, r *http.Request) {
 				err = query.Scan(&f.Id, &f.Email, &f.Name)
 				fs.Records = append(fs.Records, f)
 			}
-			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", r.Form["groupId"][0]).Scan(&fs.Total)
+			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", req.Group).Scan(&fs.Total)
 			js, err = json.Marshal(fs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+			return js, err
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden get groups"}`)
+			return js, errors.New("Forbidden get groups")
 		}
 
-	case "save-record":
-		if auth.Right("save-groups") {
+	case "save":
+		if auth.Right("save") {
+			log.Print(req)
 			var group int64
-			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", r.FormValue("recid")).Scan(&group)
+			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.Id).Scan(&group)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			if auth.GroupRight(group) {
-				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=? WHERE `id`=?", r.Form["email"][0], r.Form["name"][0], r.Form["recid"][0])
+				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=? WHERE `id`=?", req.Email, req.Name, req.Id)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return js, err
 				}
-				js = []byte(`{"status": "success", "message": ""}`)
 			} else {
-				js = []byte(`{"status": "error", "message": "Forbidden right to this group"}`)
+				return js, errors.New("Forbidden right to this group")
 			}
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
+			return js, errors.New("Forbidden save groups")
 		}
 
-	case "add-record":
-		if auth.Right("save-groups") && auth.GroupRight(r.Form["groupId"][0]) {
-			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`) VALUES (?, ?, ?);", r.Form["groupId"][0], r.Form["email"][0], r.Form["name"][0])
+	case "add":
+		if auth.Right("save-groups") && auth.GroupRight(req.Id) {
+			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`) VALUES (?, ?, ?);", req.Id, req.Email, req.Name)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			recid, err := res.LastInsertId()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return js, err
 			}
 			js = []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(recid, 10) + `}`)
 		} else {
-			js = []byte(`{"status": "error", "message": "Forbidden save groups"}`)
+			return js, errors.New("Forbidden save groups")
 		}
+	default:
+		err = errors.New("Command not found")
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	return js, err
 }
