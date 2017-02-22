@@ -44,7 +44,7 @@ type oldJson struct {
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Println("error opening utm log file: %v", err)
+		log.Printf("error opening utm log file: %v", err)
 	}
 	defer l.Close()
 

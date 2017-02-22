@@ -37,7 +37,7 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 			if user != "" {
 				ip := models.GetIP(r)
 				apilog.Printf("%s bad auth login '%s'", ip , user)
-				if models.Config.GonderMail != "" && models.Config.GonderMail != "" {
+				if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
 					go func() {
 						_, iface, host := models.ProfileNext(models.Config.DefaultProfile)
 						m := mailer.MailData{
