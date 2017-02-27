@@ -1,0 +1,94 @@
+{
+    "memo": "26db18fb5f1c9647964ace6a6ba30df813917db0dcb6afbcdd92118991af4bfc",
+    "projects": [
+        {
+            "name": "github.com/alyu/configparser",
+            "branch": "master",
+            "revision": "26b2fe18bee125de2a3090d6fadb7e280e63eba6",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/go-sql-driver/mysql",
+            "branch": "master",
+            "revision": "2e00b5cd70399450106cec6431c2e2ce3cae5034",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gorilla/websocket",
+            "branch": "master",
+            "revision": "3f3e394da2b801fbe732a935ef40724762a67a07",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/hpcloud/tail",
+            "branch": "master",
+            "revision": "faf842bde7ed83bbc3c65a2c454fae39bc29a95f",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/kardianos/osext",
+            "branch": "master",
+            "revision": "9b883c5eb462dd5cb1b0a7a104fe86bc6b9bd391",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/nfnt/resize",
+            "branch": "master",
+            "revision": "891127d8d1b52734debe1b3c3d7e747502b6c366",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/tealeg/xlsx",
+            "branch": "master",
+            "revision": "47e33bbbedd12ad4f29abb9e7e894b3a1969c0fc",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "golang.org/x/net",
+            "branch": "master",
+            "revision": "10c134ea0df15f7e34d789338c7a2d76cc7a3ab9",
+            "packages": [
+                "idna",
+                "proxy"
+            ]
+        },
+        {
+            "name": "golang.org/x/sys",
+            "branch": "master",
+            "revision": "62bee037599929a6e9146f29d10dd5208c43507d",
+            "packages": [
+                "unix"
+            ]
+        },
+        {
+            "name": "gopkg.in/fsnotify.v1",
+            "branch": "master",
+            "revision": "a8a77c9133d2d6fd8334f3260d06f60e8d80a5fb",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "gopkg.in/tomb.v1",
+            "branch": "v1",
+            "revision": "dd632973f1e7218eb1089048e0798ec9ae7dceb8",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}

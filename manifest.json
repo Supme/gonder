@@ -1,0 +1,28 @@
+{
+    "dependencies": {
+        "github.com/alyu/configparser": {
+            "branch": "master"
+        },
+        "github.com/go-sql-driver/mysql": {
+            "branch": "master"
+        },
+        "github.com/gorilla/websocket": {
+            "branch": "master"
+        },
+        "github.com/hpcloud/tail": {
+            "branch": "master"
+        },
+        "github.com/kardianos/osext": {
+            "branch": "master"
+        },
+        "github.com/nfnt/resize": {
+            "branch": "master"
+        },
+        "github.com/tealeg/xlsx": {
+            "branch": "master"
+        },
+        "golang.org/x/net": {
+            "branch": "master"
+        }
+    }
+}
