@@ -259,9 +259,9 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (20, 'get-log-campaign'),
   (21, 'get-log-utm');
 
-INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
-  (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
-  (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
+INSERT INTO `auth_unit` (`id`, `name`) VALUES
+  (0, 'administrator'),
+  (1, 'accepter');
 
 INSERT INTO `auth_unit_right` (`id`, `auth_unit_id`, `auth_right_id`) VALUES
   (1, 1, 1),
@@ -270,6 +270,10 @@ INSERT INTO `auth_unit_right` (`id`, `auth_unit_id`, `auth_right_id`) VALUES
   (4, 1, 9),
   (5, 1, 10),
   (6, 1, 17);
+
+INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
+  (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
+  (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
 
 INSERT INTO `status` (`id`, `pattern`, `bounce_id`) VALUES
   (4, 'OK', 1),

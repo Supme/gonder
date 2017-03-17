@@ -239,17 +239,19 @@ func delRecipients(campaignId int64) error {
 	return err
 }
 
-// ToDo optimize this
 func recipientCsv(campaignId int64, file string) error {
 
 	title := make(map[int]string)
 	data := make(map[string]string)
 	var email, name string
 	f := models.FromRootDir("tmp/" + file)
+	defer os.Remove(f)
+
 	csvfile, err := os.Open(f)
 	if err != nil {
 		return err
 	}
+	defer csvfile.Close()
 
 	reader := csv.NewReader(csvfile)
 	reader.FieldsPerRecord = -1
@@ -257,6 +259,23 @@ func recipientCsv(campaignId int64, file string) error {
 	if err != nil {
 		return err
 	}
+
+	tx, err := models.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stRecipient.Close()
+	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stParameter.Close()
 
 	total := len(rawCSVdata)
 	for k, v := range rawCSVdata {
@@ -278,7 +297,7 @@ func recipientCsv(campaignId int64, file string) error {
 				}
 			}
 
-			res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
+			res, err := stRecipient.Exec(campaignId, email, name)
 			if err != nil {
 				return err
 			}
@@ -287,7 +306,7 @@ func recipientCsv(campaignId int64, file string) error {
 				return err
 			}
 			for i, t := range data {
-				_, err := models.Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
+				_, err := stParameter.Exec(id, i, t)
 				if err != nil {
 					return err
 				}
@@ -296,9 +315,7 @@ func recipientCsv(campaignId int64, file string) error {
 		progress[file] = int(k) * 100 / total
 	}
 
-	csvfile.Close()
-
-	os.Remove(f)
+	err = tx.Commit()
 
 	return err
 }
@@ -314,7 +331,27 @@ func recipientXlsx(campaignId int64, file string) error {
 	if err != nil {
 		return err
 	}
+	defer os.Remove(f)
+
 	if xlFile.Sheets[0] != nil {
+
+		tx, err := models.Db.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+		if err != nil {
+			return err
+		}
+		defer stRecipient.Close()
+		stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+		if err != nil {
+			return err
+		}
+		defer stParameter.Close()
+
 		total := len(xlFile.Sheets[0].Rows)
 		for k, v := range xlFile.Sheets[0].Rows {
 			if k == 0 {
@@ -343,7 +380,7 @@ func recipientXlsx(campaignId int64, file string) error {
 					}
 				}
 
-				res, err := models.Db.Exec("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)", campaignId, email, name)
+				res, err := stRecipient.Exec(campaignId, email, name)
 				if err != nil {
 					return err
 				}
@@ -352,7 +389,7 @@ func recipientXlsx(campaignId int64, file string) error {
 					return err
 				}
 				for i, t := range data {
-					_, err := models.Db.Exec("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)", id, i, t)
+					_, err := stParameter.Exec(id, i, t)
 					if err != nil {
 						return err
 					}
@@ -361,8 +398,8 @@ func recipientXlsx(campaignId int64, file string) error {
 			}
 			progress[file] = int(k) * 100 / total
 		}
+		err = tx.Commit()
 	}
 
-	os.Remove(f)
 	return err
 }
