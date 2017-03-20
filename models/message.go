@@ -77,18 +77,27 @@ func DecodeData(base64data string) (message Message, data string, err error) {
 
 func (m *Message) Unsubscribe(extra map[string]string) error {
 	r, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignId, m.CampaignId, m.RecipientEmail)
-	id, e := r.LastInsertId();
-	if e != nil {
+	if err != nil {
 		log.Print(err)
 	}
+	id, e := r.LastInsertId();
+	if e != nil {
+		log.Print(e)
+	}
 	for name, value := range extra {
-		Db.Exec("INSERT INTO unsubscribe_extra (`unsubscribe_id`, `name`, `value`) VALUE (?, ?, ?)", id, name, value)
+		_, err = Db.Exec("INSERT INTO unsubscribe_extra (`unsubscribe_id`, `name`, `value`) VALUE (?, ?, ?)", id, name, value)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 	return err
 }
 
 func (m *Message) UnsubscribeTemplateDir() (name string) {
-	Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignId).Scan(&name)
+	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignId).Scan(&name)
+	if err != nil {
+		log.Print(err)
+	}
 	if name == "" {
 		name = "default"
 	} else {

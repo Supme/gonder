@@ -14,7 +14,6 @@ package utm
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"github.com/supme/gonder/models"
 	"html/template"
 	"io"
@@ -30,16 +29,6 @@ import (
 var (
 	utmlog *log.Logger
 )
-
-// todo remove later
-type oldJson struct {
-	Campaign    string `json:"c"`
-	Recipient   string `json:"r"`
-	Url         string `json:"u"`
-	Webver      string `json:"w"`
-	Opened      string `json:"o"`
-	Unsubscribe string `json:"s"`
-}
 
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -60,9 +49,10 @@ func Run() {
 		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
 
+	// ToDo disallow all
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /unsubscribe\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
+		w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
 	})
 
 	utm.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -157,12 +147,18 @@ func Run() {
 	utm.HandleFunc("/redirect/", func(w http.ResponseWriter, r *http.Request) {
 		message, data, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
-			utmlog.Println(err)
+			utmlog.Print(err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, data)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, data)
+		if err != nil {
+			utmlog.Print(err)
+		}
+		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		if err != nil {
+			utmlog.Print(err)
+		}
 		url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(data, 2)
 		http.Redirect(w, r, strings.TrimSpace(url[len(url)-1]), http.StatusFound)
 	})
@@ -175,8 +171,14 @@ func Run() {
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
+		if err != nil {
+			utmlog.Print(err)
+		}
+		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		if err != nil {
+			utmlog.Print(err)
+		}
 		data, err := message.RenderMessage()
 		if err != nil {
 			utmlog.Println(err)
@@ -193,88 +195,19 @@ func Run() {
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'open_trace')", message.CampaignId, message.RecipientId)
-		models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
-		//w.Header().Set("Content-Type", "image/png")
-		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
-		//w.Write(png)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'open_trace')", message.CampaignId, message.RecipientId)
+		if err != nil {
+			utmlog.Print(err)
+		}
+		_, err = models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		if err != nil {
+			utmlog.Print(err)
+		}
 		w.Header().Set("Content-Type", "image/gif")
+		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		w.Write(gif)
 	})
-
-	// Old statistic todo delete later
-	utm.HandleFunc("/data/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			var param *oldJson
-
-			data, err := base64.URLEncoding.DecodeString(strings.Split(strings.Split(r.URL.Path, "/")[2], ".")[0])
-			if err != nil {
-				utmlog.Println(err)
-				http.Error(w, "", http.StatusInternalServerError)
-				return
-			}
-
-			err = json.Unmarshal([]byte(data), &param)
-			if err != nil {
-				utmlog.Println(err)
-				http.Error(w, "", http.StatusInternalServerError)
-				return
-			}
-
-			userAgent := models.GetIP(r) + " " + r.UserAgent()
-
-			if param.Opened != "" {
-				models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", param.Campaign, param.Recipient, "open_trace")
-				models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", userAgent, param.Recipient)
-				w.Header().Set("Content-Type", "image/gif")
-				gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-				w.Write(gif)
-			} else if param.Url != "" {
-				models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", param.Campaign, param.Recipient, param.Url)
-				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
-				http.Redirect(w, r, param.Url, http.StatusFound)
-			} else if param.Webver != "" {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", param.Campaign, param.Recipient, "web_version")
-				models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", userAgent, param.Recipient)
-				var m models.Message
-				m.New(param.Recipient)
-				message, err := m.RenderMessage()
-				if err != nil {
-					utmlog.Println(err)
-					http.Error(w, "", http.StatusInternalServerError)
-					return
-				}
-				w.Write([]byte(message))
-			} else if param.Unsubscribe != "" {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				var name string
-				models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", param.Campaign).Scan(&name)
-				if name == "" {
-					name = "default"
-				} else {
-					if _, err := os.Stat(models.FromRootDir("templates/" + name + "/accept.html")); err != nil {
-						name = "default"
-					}
-					if _, err := os.Stat(models.FromRootDir("templates/" + name + "/success.html")); err != nil {
-						name = "default"
-					}
-				}
-				if t, err := template.ParseFiles(models.FromRootDir("templates/" + name + "/accept.html")); err != nil {
-					utmlog.Println(err)
-					http.Error(w, "", http.StatusInternalServerError)
-					return
-				} else {
-					t.Execute(w, map[string]string{
-						"campaignId":  param.Campaign,
-						"recipientId": param.Recipient,
-					})
-				}
-			}
-		}
-	})
-	// /Old statistic todo delete later
 
 	utmlog.Println("UTM listening on port " + models.Config.StatPort + "...")
 	utmlog.Fatal(http.ListenAndServe(":"+models.Config.StatPort, muxLog(utm)))

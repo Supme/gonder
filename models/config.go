@@ -27,6 +27,7 @@ import (
 
 type config struct {
 	dbType, dbString string
+	dbConnections 	 int
 	RootPath         string
 	Version          string
 	Url              string
@@ -50,8 +51,8 @@ func init() {
 	Config.Update()
 	Db, err = sql.Open(Config.dbType, Config.dbString)
 	checkErr(err)
-	Db.SetMaxIdleConns(10)
-	Db.SetMaxOpenConns(10)
+	Db.SetMaxIdleConns(Config.dbConnections)
+	Db.SetMaxOpenConns(Config.dbConnections)
 	_, err = Db.Query("SELECT 1 FROM `auth_user`")
 	if err != nil {
 		checkErr(createDb())
@@ -109,6 +110,10 @@ func (c *config) Update() {
 	checkErr(err)
 	c.dbType = dbConfig.ValueOf("type")
 	c.dbString = dbConfig.ValueOf("string")
+	c.dbConnections, err = strconv.Atoi(dbConfig.ValueOf("connections"))
+	if err != nil {
+		c.dbConnections = 10
+	}
 
 	mailerConfig, err := config.Section("Mailer")
 	checkErr(err)
@@ -135,7 +140,7 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.ApiPort = apiConfig.ValueOf("port")
 
-	c.Version = "0.7.4"
+	c.Version = "0.8.1"
 }
 
 func FromRootDir(path string) string {

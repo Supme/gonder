@@ -24,29 +24,28 @@ func (c campaign) send() {
 	var r recipient
 	var wg sync.WaitGroup
 
-	query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL")
+	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.id)
 	checkErr(err)
 	defer query.Close()
 
-	q, err := query.Query(c.id)
-	checkErr(err)
-	defer q.Close()
-
-	for q.Next() {
-		err = q.Scan(&r.id, &r.to_email, &r.to_name)
+	for query.Next() {
+		err = query.Scan(&r.id, &r.to_email, &r.to_name)
 		checkErr(err)
 		if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
-			models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+			_, err = models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+			checkErr(err)
 			pid, iface, host := models.ProfileNext(c.profileId)
 			go func(d recipient, p int, i, h string) {
 				wg.Add(1)
 				rs := d.send(&c, i, h)
 				wg.Done()
 				models.ProfileFree(p)
-				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
+				_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
+				checkErr(err)
 			}(r, pid, iface, host)
 		} else {
-			models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+			_, err = models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+			checkErr(err)
 			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
 		}
 	}
@@ -71,26 +70,25 @@ func (c campaign) resend() {
 			return
 		}
 		time.Sleep(time.Duration(c.resendDelay) * time.Second)
-		//query, err := models.Db.Prepare("SELECT DISTINCT r.`id`, r.`email`, r.`name` FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT(\"%\",s.`pattern`,\"%\")")
-		query, err := models.Db.Prepare("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'")
+
+		query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", c.id)
 		checkErr(err)
 		defer query.Close()
 
-		q, err := query.Query(c.id)
-		checkErr(err)
-		defer q.Close()
-
-		for q.Next() {
-			err = q.Scan(&r.id, &r.to_email, &r.to_name)
+		for query.Next() {
+			err = query.Scan(&r.id, &r.to_email, &r.to_name)
 			checkErr(err)
 			if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
-				models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+				_, err = models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+				checkErr(err)
 				p, i, h := models.ProfileNext(c.profileId)
 				rs := r.send(&c, i, h)
 				models.ProfileFree(p)
-				models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
+				_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
+				checkErr(err)
 			} else {
-				models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+				_, err = models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+				checkErr(err)
 				camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
 			}
 		}
@@ -101,9 +99,7 @@ func (c *campaign) countSoftBounce() int {
 	var count int
 	//err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
 	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(proxy)|(eof)).+'", c.id).Scan(&count)
-	if err != nil {
-		camplog.Print(err)
-	}
+	checkErr(err)
 	return count
 }
 
@@ -120,22 +116,17 @@ func (c *campaign) get(id string) {
 		&c.resendDelay,
 		&c.resendCount,
 	)
-
 	checkErr(err)
 
-	attachment, err := models.Db.Prepare("SELECT `path`, `file` FROM attachment WHERE campaign_id=?")
+	attachment, err := models.Db.Query("SELECT `path`, `file` FROM attachment WHERE campaign_id=?", c.id)
 	checkErr(err)
 	defer attachment.Close()
-
-	attach, err := attachment.Query(c.id)
-	checkErr(err)
-	defer attach.Close()
 
 	c.attachments = nil
 	var location string
 	var name string
-	for attach.Next() {
-		err = attach.Scan(&location, &name)
+	for attachment.Next() {
+		err = attachment.Scan(&location, &name)
 		checkErr(err)
 		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
 	}

@@ -27,7 +27,6 @@ func GetIP(r *http.Request) string {
 	return ip
 }
 
-// ToDo use this in campaign sender
 // Null memory allocate convert
 func BytesToString(b []byte) string {
 	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
