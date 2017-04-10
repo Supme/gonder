@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `group_id` int(11) NOT NULL,
   `profile_id` int(11) NOT NULL,
   `sender_id` int(11) NOT NULL,
-  `name` text NOT NULL,
-  `subject` text NOT NULL,
+  `name` varchar(300) NOT NULL,
+  `subject` varchar(300) NOT NULL,
   `body` mediumtext NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
 
 CREATE TABLE IF NOT EXISTS `group` (
   `id` int(11) NOT NULL,
-  `name` text NOT NULL,
-  `template` text
+  `name` VARCHAR(100) NOT NULL,
+  `template` VARCHAR(100)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `jumping` (
@@ -85,20 +85,20 @@ CREATE TABLE IF NOT EXISTS `profile` (
 CREATE TABLE IF NOT EXISTS `recipient` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
-  `email` text NOT NULL,
-  `name` text NOT NULL,
-  `status` text,
+  `email` varchar(100) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `status` varchar(2000) NULL DEFAULT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `client_agent` text,
-  `web_agent` text,
+  `client_agent` varchar(300),
+  `web_agent` varchar(300),
   `removed` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `sender` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
-  `email` text NOT NULL,
-  `name` text NOT NULL
+  `email` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `status` (
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS `unsubscribe` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
-  `email` text NOT NULL,
+  `email` VARCHAR(100) NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
@@ -157,6 +157,7 @@ ADD PRIMARY KEY (`id`), ADD KEY `id` (`id`);
 
 ALTER TABLE `recipient`
 ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
+ALTER TABLE `recipient` ADD INDEX `date_status` (`date`, `status`);
 
 ALTER TABLE `sender`
 ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`);
