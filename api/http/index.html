@@ -4,9 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
     <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css" />
-    <script type="text/javascript" src="assets/jquery/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="assets/w2ui/w2ui.min.js"></script>
-    <script type="text/javascript" src="assets/ckeditor/ckeditor.js"></script>
+    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js"></script>
+    <script type="application/javascript" src="assets/ckeditor/ckeditor.js"></script>
 </head>
 <body>
 
@@ -52,28 +51,30 @@
 
     <script type="text/javascript">
         var editor;
-        window.onload = function () {
-            w2utils.locale('/assets/locale/ru-ru.json');
-
+        $(document).ready(
+            function () {
             $.ajaxSetup({
                 cache: true
             });
-            $.getScript('assets/panel/layout.js', function() {
-                $.getScript('assets/panel/editor.js', function () {
-                    editor.on( 'instanceReady', function() {
-                        editor.commands.source.exec();
-                        //editor.resize("100%", $("#template").height()-24);
-                        $.getScript('assets/panel/group.js', function () {
-                            $.getScript('assets/panel/sender.js');
-                            $.getScript('assets/panel/campaign.js');
+            $.getScript('assets/w2ui/w2ui.min.js', function () {
+                w2utils.locale('/assets/locale/ru-ru.json');
+                $.getScript('assets/panel/layout.js', function() {
+                    $.getScript('assets/panel/editor.js', function () {
+                        editor.on( 'instanceReady', function() {
+                            editor.commands.source.exec();
+                            //editor.resize("100%", $("#template").height()-24);
+                            $.getScript('assets/panel/group.js', function () {
+                                $.getScript('assets/panel/sender.js');
+                                $.getScript('assets/panel/campaign.js');
+                            });
+                            $.getScript('assets/panel/recipient.js');
+                            $.getScript('assets/panel/profile.js');
+                            $.getScript('assets/panel/users.js');
                         });
-                        $.getScript('assets/panel/recipient.js');
-                        $.getScript('assets/panel/profile.js');
-                        $.getScript('assets/panel/users.js');
                     });
                 });
             });
-        };
+        });
 
         var ws = null;
         function startStatusLog(file){

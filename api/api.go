@@ -24,11 +24,6 @@ import (
 	"strconv"
 	"fmt"
 	"errors"
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/js"
-	"github.com/tdewolff/minify/css"
-	"github.com/tdewolff/minify/html"
-	"path"
 )
 
 var (
@@ -71,15 +66,16 @@ func Run() {
 	api.HandleFunc("/filemanager", auth.Check(filemanager))
 
 	// Static dirs
-	//api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	/*
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("application/javascript", js.Minify)
 	api.Handle("/assets/",m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apilog.Println(path.Join(models.FromRootDir("api/http/"), r.URL.Path))
 		http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"), r.URL.Path))
 	})))
+	*/
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
 	api.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -94,27 +90,26 @@ func Run() {
 		w.Write(blank)
 	})
 
-	var pushJs = []string{
-		"/assets/jquery/jquery-3.1.1.min.js",
-		"/assets/w2ui/w2ui.min.js",
-		"/assets/w2ui/w2ui.min.css",
-		"/assets/ckeditor/ckeditor.js",
-		"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
-		"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
-		"/assets/panel/layout.js",
-		"/assets/panel/group.js",
-		"/assets/panel/sender.js",
-		"/assets/panel/campaign.js",
-		"/assets/panel/recipient.js",
-		"/assets/panel/profile.js",
-		"/assets/panel/users.js",
-		"/assets/panel/editor.js",
-	}
-
 	api.HandleFunc("/panel", auth.Check(func(w http.ResponseWriter, r *http.Request) {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
-			for _, p := range pushJs {
+			for _, p := range []string{
+				"/assets/jquery/jquery-3.1.1.min.js",
+				"/assets/w2ui/w2ui.min.js",
+				"/assets/w2ui/w2ui.min.css",
+				"/assets/locale/ru-ru.json",
+				"/assets/ckeditor/ckeditor.js",
+				"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
+				"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
+				"/assets/panel/layout.js",
+				"/assets/panel/group.js",
+				"/assets/panel/sender.js",
+				"/assets/panel/campaign.js",
+				"/assets/panel/recipient.js",
+				"/assets/panel/profile.js",
+				"/assets/panel/users.js",
+				"/assets/panel/editor.js",
+			} {
 				if err := pusher.Push(p, nil); err != nil {
 					apilog.Printf("Failed to push: %v", err)
 				}
