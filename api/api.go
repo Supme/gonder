@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"fmt"
 	"errors"
+	"golang.org/x/crypto/acme/autocert"
+	"crypto/tls"
 )
 
 var (
@@ -43,6 +45,7 @@ func Run() {
 	apilog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	api := http.NewServeMux()
+
 
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
@@ -133,7 +136,7 @@ func Run() {
 	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
+	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
