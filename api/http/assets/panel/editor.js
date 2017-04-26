@@ -2,8 +2,7 @@
 var editor = CKEDITOR.replace(
     'campaignTemplate', {
         filebrowserBrowseUrl: '/assets/filemanager/index.html?config=../../filemanager.config',
-        extraPlugins:
-        'codemirror',
+        extraPlugins: 'codemirror',
         codemirror: {
             autoCloseBrackets: true,
             autoCloseTags: true,
@@ -30,8 +29,7 @@ var editor = CKEDITOR.replace(
             theme: 'default',
             useBeautifyOnStart: false
         },
-        plugins:
-        //'dialogui,' +
+        plugins: //'dialogui,' +
         'dialog,' +
         //'a11yhelp,' +
         //'dialogadvtab,' +
@@ -102,16 +100,11 @@ var editor = CKEDITOR.replace(
         //'wsc,' +
         'docprops,',
 
-        allowedContent:  true,
+        allowedContent: true,
         removeFormatAttributes: '',
         height: 450,
-        entities:false
+        entities: false
     }
 );
 
-/*
-editor.on( 'instanceReady', function() {
-    editor.resize("100%", $("#template").height()-24)
-} );
-*/
 // --- /CKEditor ---

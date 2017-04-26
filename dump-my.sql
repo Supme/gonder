@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS `profile` (
   `stream` int(11) NOT NULL,
   `resend_delay` int(11) NOT NULL,
   `resend_count` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `recipient` (
   `id` int(11) NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE `unsubscribe_extra` (
   `unsubscribe_id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
   `value` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 ALTER TABLE `attachment`
 ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
