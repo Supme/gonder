@@ -24,8 +24,6 @@ import (
 	"strconv"
 	"fmt"
 	"errors"
-	"golang.org/x/crypto/acme/autocert"
-	"crypto/tls"
 )
 
 var (
