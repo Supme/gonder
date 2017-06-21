@@ -61,7 +61,7 @@ func (m *MailData) Send() error {
 	// punycode convert
 	splitEmail := strings.Split(m.To_email, "@")
 	if len(splitEmail) != 2 {
-		return errors.New(fmt.Sprintf("Bad email"))
+		return errors.New("Bad email")
 	}
 	domain, err := idna.ToASCII(splitEmail[1])
 	if err != nil {
@@ -199,7 +199,7 @@ func (m *MailData) Data() string {
 		msg.WriteString("--" + marker + "\n")
 		msg.WriteString("Content-Transfer-Encoding: base64\nContent-Type: text/html; charset=\"utf-8\"\n\n")
 	}
-	line76(&msg, base64.StdEncoding.EncodeToString([]byte(m.Html)))
+	line76(&msg, base64.StdEncoding.EncodeToString(models.StringToBytes(m.Html)))
 	msg.WriteString("\n")
 	// ------------ /body ---------------------------------------------------------
 
@@ -235,7 +235,7 @@ func makeMarker() string {
 	en := base64.StdEncoding // or URLEncoding
 	d := make([]byte, en.EncodedLen(len(b)))
 	en.Encode(d, b)
-	return string(d)
+	return models.BytesToString(d)
 }
 
 func encodeRFC2045(s string) string {

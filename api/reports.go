@@ -226,3 +226,37 @@ func reportRecipientJumpCount(campaignId string) int {
 	}
 	return count
 }
+
+
+/* ToDo add statistic
+
+SELECT DISTINCT
+ lower(`recipient`.`email`) as `email`,
+   (CASE
+        WHEN `statusSmtpRules`.`transcript_id` =  9 THEN 1
+        WHEN `statusSmtpRules`.`transcript_id` = 10 THEN 1
+        WHEN `statusSmtpRules`.`transcript_id` = 20 THEN 2
+        WHEN `statusSmtpRules`.`transcript_id` = 11 THEN 3
+    END) AS `bounceTypeId`,
+   `recipient`.`date` AS `bounceDate`
+FROM `recipient`
+    LEFT JOIN `statusSmtpRules` ON `recipient`.`status` like concat('%',`statusSmtpRules`.`pattern`,'%')
+    JOIN `statusTranscript` ON `statusSmtpRules`.`transcript_id` = `statusTranscript`.`id` AND `statusTranscript`.`bounce_id` = 3
+WHERE
+	`recipient`.`date` >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+    AND
+    (`recipient`.`status` <> 'Ok' OR `recipient`.`status` != NULL)
+    AND
+    `recipient`.`removed`=0
+
+
+
+SELECT DISTINCT
+ lower(`recipient`.`email`) as `email`,
+   `recipient`.`date` AS `bounceDate`
+FROM `recipient`
+WHERE `recipient`.`date` >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+	AND LOWER(`recipient`.`status`) REGEXP '^(5[0-9]{2}).+'
+    AND	`recipient`.`removed`=0
+
+ */

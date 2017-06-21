@@ -43,8 +43,6 @@ func senderList(req request) (js []byte, err error) {
 		}
 		js, err = json.Marshal(fs)
 		return js, err
-	} else {
-		return js, errors.New("Forbidden get from this group")
 	}
-	return js, err
+		return js, errors.New("Forbidden get from this group")
 }

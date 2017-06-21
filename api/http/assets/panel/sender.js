@@ -59,7 +59,7 @@ $().w2form({
                 data: {"request":
                     JSON.stringify({
                         "cmd": cmd,
-                        "id": parseInt(i.record.recid),
+                        "id": cmd == 'save'?parseInt(i.record.recid):parseInt(w2ui['group'].getSelection()[0]),
                         "email": i.record.email,
                         "name": i.record.name
                     }

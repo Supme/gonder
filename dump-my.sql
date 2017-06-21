@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `group_id` int(11) NOT NULL,
   `profile_id` int(11) NOT NULL,
   `sender_id` int(11) NOT NULL,
-  `name` text NOT NULL,
-  `subject` text NOT NULL,
+  `name` varchar(300) NOT NULL,
+  `subject` varchar(300) NOT NULL,
   `body` mediumtext NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
 
 CREATE TABLE IF NOT EXISTS `group` (
   `id` int(11) NOT NULL,
-  `name` text NOT NULL,
-  `template` text
+  `name` VARCHAR(100) NOT NULL,
+  `template` VARCHAR(100)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `jumping` (
@@ -80,25 +80,25 @@ CREATE TABLE IF NOT EXISTS `profile` (
   `stream` int(11) NOT NULL,
   `resend_delay` int(11) NOT NULL,
   `resend_count` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `recipient` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
-  `email` text NOT NULL,
-  `name` text NOT NULL,
-  `status` text,
+  `email` varchar(100) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `status` varchar(2000) NULL DEFAULT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `client_agent` text,
-  `web_agent` text,
+  `client_agent` varchar(300),
+  `web_agent` varchar(300),
   `removed` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `sender` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
-  `email` text NOT NULL,
-  `name` text NOT NULL
+  `email` VARCHAR(100) NOT NULL,
+  `name` VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `status` (
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS `unsubscribe` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
-  `email` text NOT NULL,
+  `email` VARCHAR(100) NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
@@ -120,7 +120,7 @@ CREATE TABLE `unsubscribe_extra` (
   `unsubscribe_id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
   `value` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 ALTER TABLE `attachment`
 ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
@@ -157,6 +157,7 @@ ADD PRIMARY KEY (`id`), ADD KEY `id` (`id`);
 
 ALTER TABLE `recipient`
 ADD PRIMARY KEY (`id`), ADD KEY `campaign_id` (`campaign_id`);
+ALTER TABLE `recipient` ADD INDEX `date_status` (`date`, `status`);
 
 ALTER TABLE `sender`
 ADD PRIMARY KEY (`id`), ADD KEY `group_id` (`group_id`);
@@ -259,9 +260,9 @@ INSERT INTO `auth_right` (`id`, `name`) VALUES
   (20, 'get-log-campaign'),
   (21, 'get-log-utm');
 
-INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
-  (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
-  (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
+INSERT INTO `auth_unit` (`id`, `name`) VALUES
+  (0, 'administrator'),
+  (1, 'accepter');
 
 INSERT INTO `auth_unit_right` (`id`, `auth_unit_id`, `auth_right_id`) VALUES
   (1, 1, 1),
@@ -270,6 +271,10 @@ INSERT INTO `auth_unit_right` (`id`, `auth_unit_id`, `auth_right_id`) VALUES
   (4, 1, 9),
   (5, 1, 10),
   (6, 1, 17);
+
+INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
+  (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
+  (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
 
 INSERT INTO `status` (`id`, `pattern`, `bounce_id`) VALUES
   (4, 'OK', 1),

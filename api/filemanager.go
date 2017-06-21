@@ -52,7 +52,7 @@ type info struct {
 type properties struct {
 	DateCreated  string `json:"Date Created"`
 	DateModified string `json:"Date Modified"`
-	filemtime    string `json:"filemtype"`
+	Filemtime    string `json:"filemtype"`
 	Height       string `json:"Height"`
 	Width        string `json:"Width"`
 	Size         string `json:"Size"`
@@ -63,7 +63,7 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 	var js []byte
 
 	if auth.Right("filemanager") {
-		var mode, path, name, old, new, height, width string
+		var mode, path, name, oldName, newName, height, width string
 		if r.Method == "GET" {
 			if err = r.ParseForm(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -79,10 +79,10 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 				name = r.Form["name"][0]
 			}
 			if r.Form["old"] != nil {
-				old = r.Form["old"][0]
+				oldName = r.Form["old"][0]
 			}
 			if r.Form["new"] != nil {
-				new = r.Form["new"][0]
+				newName = r.Form["new"][0]
 			}
 			if r.Form["height"] != nil {
 				height = r.Form["height"][0]
@@ -105,7 +105,7 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 				}
 				w.Write(d)
 			} else {
-				js, err = json.Marshal(filemanagerAction(mode, path, name, old, new))
+				js, err = json.Marshal(filemanagerAction(mode, path, name, oldName, newName))
 				if err != nil {
 					apilog.Println(err)
 				}
@@ -142,7 +142,7 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func filemanagerAction(mode string, path string, name string, old string, new string) interface{} {
+func filemanagerAction(mode string, path string, name string, oldName string, newName string) interface{} {
 	filemanagerRootPath = "."
 	switch mode {
 	case "getinfo":
@@ -154,7 +154,7 @@ func filemanagerAction(mode string, path string, name string, old string, new st
 	case "addfolder":
 		return filemanagerMkDir(path, name)
 	case "rename":
-		return filemanagerRename(old, new)
+		return filemanagerRename(oldName, newName)
 	}
 
 	return info{Error: "Mode not defined", Code: 1}

@@ -36,7 +36,7 @@ var (
 func Run() {
 	l, err := os.OpenFile("log/campaign.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Println("error opening campaign log file: %v", err)
+		log.Printf("error opening campaign log file: %v", err)
 	}
 	defer l.Close()
 

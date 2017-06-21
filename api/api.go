@@ -34,7 +34,7 @@ var (
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Println("error opening api log file: %v", err)
+		log.Printf("error opening api log file: %v", err)
 	}
 	defer l.Close()
 
@@ -43,6 +43,7 @@ func Run() {
 	apilog = log.New(multi, "", log.Ldate|log.Ltime)
 
 	api := http.NewServeMux()
+
 
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
@@ -67,6 +68,15 @@ func Run() {
 
 	// Static dirs
 	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	/*
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("application/javascript", js.Minify)
+	api.Handle("/assets/",m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"), r.URL.Path))
+	})))
+	*/
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
 	api.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -82,10 +92,37 @@ func Run() {
 	})
 
 	api.HandleFunc("/panel", auth.Check(func(w http.ResponseWriter, r *http.Request) {
+		if pusher, ok := w.(http.Pusher); ok {
+			// Push is supported.
+			for _, p := range []string{
+				"/assets/jquery/jquery-3.1.1.min.js",
+				"/assets/w2ui/w2ui.min.js",
+				"/assets/w2ui/w2ui.min.css",
+				"/assets/locale/ru-ru.json",
+				"/assets/ckeditor/ckeditor.js",
+				"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
+				"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
+				"/assets/panel/layout.js",
+				"/assets/panel/group.js",
+				"/assets/panel/sender.js",
+				"/assets/panel/campaign.js",
+				"/assets/panel/recipient.js",
+				"/assets/panel/profile.js",
+				"/assets/panel/users.js",
+				"/assets/panel/editor.js",
+			} {
+				if err := pusher.Push(p, nil); err != nil {
+					apilog.Printf("Failed to push: %v", err)
+				}
+			}
+		} else {
+			apilog.Print("Push not supported")
+		}
 		if f, err := ioutil.ReadFile(models.FromRootDir("api/http/index.html")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			w.Write(f)
+			//fmt.Fprintf(w, string(f))
 		}
 	}))
 
@@ -97,7 +134,7 @@ func Run() {
 	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, "./cert/server.pem", "./cert/server.key", api))
+	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {

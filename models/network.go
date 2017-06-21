@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"math/rand"
 )
 
 type mxStor struct {
@@ -82,8 +83,8 @@ func ProfileNext(id int) (int, string, string) {
 	profileMutex.Lock()
 
 	// Если есть в массиве, недавно обновлялось
-	_, ok := profileStor[id]
-	if ok && time.Since(profileStor[id].lastUpdate) < 60*time.Second {
+
+	if _, ok := profileStor[id]; ok && time.Since(profileStor[id].lastUpdate) < 60*time.Second {
 
 		// Если это группа кампаний
 		if strings.ToLower(strings.TrimSpace(profileStor[id].host)) == "group" {
@@ -115,6 +116,7 @@ func ProfileNext(id int) (int, string, string) {
 			// достигли максимума потоков, ждём освобождения
 			profileMutex.Unlock()
 			for !profileCheck(id) {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
 			}
 			return ProfileNext(id)
 		}
@@ -126,7 +128,7 @@ func ProfileNext(id int) (int, string, string) {
 		log.Print(err)
 	}
 	// если уже существовало, сохраним
-	if ok {
+	if _, ok := profileStor[id]; ok {
 		res.streamNow = profileStor[id].streamNow
 	}
 	res.lastUpdate = time.Now()

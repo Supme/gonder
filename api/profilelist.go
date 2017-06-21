@@ -31,10 +31,9 @@ func profilesList(req request) (js []byte, err error) {
 		}
 		js, err = json.Marshal(psl)
 		return js, err
-	} else {
-		return js, errors.New("Forbidden get campaign")
 	}
-	return js, err
+	return js, errors.New("Forbidden get campaign")
+
 }
 
 func getProfilesList() ([]ProfileList, error) {

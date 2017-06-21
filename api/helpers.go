@@ -207,3 +207,4 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 	query = queryStr + " " + strings.Join(result, " ")
 	return query, params, nil
 }
+
