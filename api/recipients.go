@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strconv"
 	"errors"
+	"sync"
 )
 
 type Recipient struct {
@@ -49,7 +50,12 @@ type RecipientParams struct {
 	Records []RecipientParam `json:"records"`
 }
 
-var progress = map[string]int{}
+type safeProgress struct {
+	cnt map[string]int
+	sync.RWMutex
+}
+
+var progress = safeProgress{cnt: map[string]int{}}
 
 func recipients(req request) (js []byte, err error) {
 
@@ -73,7 +79,7 @@ func recipients(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
-				filename := strconv.FormatInt(time.Now().UnixNano(), 10)
+				filename := strconv.FormatInt(time.Now().UnixNano(), 16)
 				file := models.FromRootDir("tmp/" + filename)
 				err = ioutil.WriteFile(file, content, 0644)
 				if err != nil {
@@ -83,23 +89,31 @@ func recipients(req request) (js []byte, err error) {
 
 				if path.Ext(req.FileName) == ".csv" {
 					go func() {
-						progress[filename] = 0
+						progress.Lock()
+						progress.cnt[filename] = 0
+						progress.Unlock()
 						err = recipientCsv(req.Campaign, filename)
 						if err != nil {
 							apilog.Println(err)
 						}
-						delete(progress, filename)
+						progress.Lock()
+						delete(progress.cnt, filename)
+						progress.Unlock()
 					}()
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
 				} else if path.Ext(req.FileName) == ".xlsx" {
 					go func() {
-						progress[filename] = 0
+						progress.Lock()
+						progress.cnt[filename] = 0
+						progress.Unlock()
 						err = recipientXlsx(req.Campaign, filename)
 						if err != nil {
 							apilog.Println(err)
 						}
-						delete(progress, filename)
+						progress.Lock()
+						delete(progress.cnt, filename)
+						progress.Unlock()
 					}()
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
@@ -112,11 +126,13 @@ func recipients(req request) (js []byte, err error) {
 
 		case "progress":
 			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
-				if val, ok := progress[req.Name]; ok {
+				progress.RLock()
+				if val, ok := progress.cnt[req.Name]; ok {
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
 				} else {
 					js = []byte(`{"status": "error", "message": "not found"}`)
 				}
+				progress.RUnlock()
 			}
 
 		case "clear":
@@ -312,7 +328,9 @@ func recipientCsv(campaignId int64, file string) error {
 				}
 			}
 		}
-		progress[file] = int(k) * 100 / total
+		progress.Lock()
+		progress.cnt[file] = int(k) * 100 / total
+		progress.Unlock()
 	}
 
 	err = tx.Commit()
@@ -396,7 +414,9 @@ func recipientXlsx(campaignId int64, file string) error {
 				}
 
 			}
-			progress[file] = int(k) * 100 / total
+			progress.Lock()
+			progress.cnt[file] = int(k) * 100 / total
+			progress.Unlock()
 		}
 		err = tx.Commit()
 	}

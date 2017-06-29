@@ -14,7 +14,7 @@ type recipient struct {
 }
 
 // Check recipient for unsubscribe
-func (r *recipient) unsubscribe(campaignId string) bool {
+func (r *recipient) checkUnsubscribe(campaignId string) bool {
 	var unsubscribeCount int
 	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.to_email).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
@@ -24,11 +24,11 @@ func (r *recipient) unsubscribe(campaignId string) bool {
 }
 
 // Send mail for recipient this campaign data
-func (r recipient) send(c *campaign, iface, host string) string {
+func (r *recipient) send(c *campaign, iface, host *string) string {
 	start := time.Now()
 
 	data := new(MailData)
-	data.Iface, data.Host = iface, host
+	data.Iface, data.Host = *iface, *host
 	data.From_email = c.from_email
 	data.From_name = c.from_name
 	data.Attachments = c.attachments
@@ -59,6 +59,7 @@ func (r recipient) send(c *campaign, iface, host string) string {
 			// Send mail
 			res = data.Send()
 		} else {
+			_ = data.Data() // test make mail data
 			wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
 			time.Sleep(wait)
 			res = errors.New("Test send")
