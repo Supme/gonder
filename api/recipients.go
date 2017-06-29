@@ -125,7 +125,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "progress":
-			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
+			if auth.Right("upload-recipients") {
 				progress.RLock()
 				if val, ok := progress.cnt[req.Name]; ok {
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
