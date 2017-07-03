@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"github.com/supme/gonder/models"
 	"strconv"
-	"log"
 	"errors"
 )
 
@@ -58,7 +57,6 @@ func sender(req request) (js []byte, err error) {
 
 	case "save":
 		if auth.Right("save") {
-			log.Print(req)
 			var group int64
 			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.Id).Scan(&group)
 			if err != nil {
