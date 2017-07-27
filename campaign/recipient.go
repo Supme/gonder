@@ -64,7 +64,7 @@ func (r *recipient) send(c *campaign, iface, host *string) (res string) {
 	if c.dkimUse {
 		dkimSelector = c.dkimSelector
 	}
-	err = email.Render(dkimSelector, c.dkimPrivateKey) // ToDo DKIM to database sender
+	err = email.RenderWithDkim(dkimSelector, c.dkimPrivateKey) // ToDo DKIM to database sender
 	if err != nil {
 		res = err.Error()
 		return

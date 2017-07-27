@@ -44,7 +44,7 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 						email.ToName = models.Config.AdminMail
 						email.Subject = "Bad login to Gonder"
 						email.TextPlain(ip + " bad auth login '" + user + "'")
-						email.Render("", []byte{})
+						email.Render()
 						if err := email.Send(); err != nil {
 							apilog.Print("Error send mail:", err)
 						}
