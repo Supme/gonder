@@ -4,8 +4,7 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `attachment` (
   `id` int(11) NOT NULL,
   `campaign_id` int(11) NOT NULL,
-  `path` text NOT NULL,
-  `file` text NOT NULL
+  `path` text NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `auth_right` (
@@ -98,7 +97,10 @@ CREATE TABLE IF NOT EXISTS `sender` (
   `id` int(11) NOT NULL,
   `group_id` int(11) NOT NULL,
   `email` VARCHAR(100) NOT NULL,
-  `name` VARCHAR(100) NOT NULL
+  `name` VARCHAR(100) NOT NULL,
+  `dkim_selector` VARCHAR(20) NOT NULL,
+  `dkim_key` VARCHAR(2000) NOT NULL,
+  `dkim_use` BOOLEAN NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `status` (

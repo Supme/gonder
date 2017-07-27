@@ -3,15 +3,18 @@ $().w2layout({
     name: 'senderEditor',
     padding: 4,
     panels: [
-        { type: 'left', size: '40%', resizable: true, minSize: 300 },
-        { type: 'main', minSize: 300 }
+        { type: 'left', size: '30%', resizable: true, minSize: 300 },
+        { type: 'main', minSize: 400 }
     ]
 });
 $().w2grid({
     name: 'senderGrid',
     columns: [
         { field: 'email', caption: w2utils.lang('Email'), size: '50%' },
-        { field: 'name', caption: w2utils.lang('Name'), size: '50%'}
+        { field: 'name', caption: w2utils.lang('Name'), size: '50%'},
+        { field: 'dkimSelector', hidden: true },
+        { field: 'dkimKey', hidden: true },
+        { field: 'dkimUse', hidden: true }
     ],
     method: 'GET',
     url: '/api/sender',
@@ -36,7 +39,10 @@ $().w2form({
     fields: [
         { name: 'recid', type: 'text', html: { caption: 'ID', attr: 'size="10" readonly' } },
         { name: 'name', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40"' } },
-        { name: 'email', type: 'email', required: true, html: { caption: w2utils.lang('Email'), attr: 'size="30"' } }
+        { name: 'email', type: 'email', required: true, html: { caption: w2utils.lang('Email'), attr: 'size="30"' } },
+        { name: 'dkimSelector', type: 'text', html: { caption: w2utils.lang('DKIM Selector'), attr: 'size="20" maxlength="20"' } },
+        { name: 'dkimKey', type: 'textarea', html: { caption: w2utils.lang('DKIM Private Key'), attr: 'style="width: 420px; height: 280px"' } },
+        { name: 'dkimUse', type: 'checkbox', html: { caption: w2utils.lang('Use DKIM') } }
     ],
     actions: {
         Reset: function () {
@@ -61,7 +67,10 @@ $().w2form({
                         "cmd": cmd,
                         "id": cmd == 'save'?parseInt(i.record.recid):parseInt(w2ui['group'].getSelection()[0]),
                         "email": i.record.email,
-                        "name": i.record.name
+                        "name": i.record.name,
+                        "dkimSelector": i.record.dkimSelector,
+                        "dkimKey": i.record.dkimKey,
+                        "dkimUse": i.record.dkimUse
                     }
                 )}
             }).done(function (data) {

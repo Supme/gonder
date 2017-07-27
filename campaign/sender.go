@@ -7,11 +7,14 @@ import (
 )
 
 type campaign struct {
-	id, from_email, from_name, subject, body string
-	sendUnsubscribe bool
-	profileId, resendDelay, resendCount int
-	attachments []Attachment
-	wg sync.WaitGroup
+	id, fromEmail, fromName, subject, body string
+	dkimSelector	string
+	dkimPrivateKey  []byte
+	dkimUse			bool
+	sendUnsubscribe                        bool
+	profileId, resendDelay, resendCount    int
+	attachments                            []string
+	wg                                     sync.WaitGroup
 }
 
 func (c campaign) run(id string) {
@@ -23,9 +26,9 @@ func (c campaign) run(id string) {
 // Send for recipient from campaign
 func send(camp *campaign, id, email, name string, profileId int, iface, host string) {
 	r := recipient{
-		id: id,
-		to_email: email,
-		to_name: name,
+		id:      id,
+		toEmail: email,
+		toName:  name,
 	}
 
 	if r.checkUnsubscribe(camp.id) == false || camp.sendUnsubscribe {
@@ -40,7 +43,7 @@ func send(camp *campaign, id, email, name string, profileId int, iface, host str
 	} else {
 		_, err := models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
 		checkErr(err)
-		camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
+		camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.toEmail)
 	}
 }
 
@@ -108,10 +111,13 @@ func (c *campaign) countSoftBounce() int {
 
 // Get all info for campaign
 func (c *campaign) get(id string) {
-	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.id,
-		&c.from_email,
-		&c.from_name,
+		&c.fromEmail,
+		&c.fromName,
+		&c.dkimSelector,
+		&c.dkimPrivateKey,
+		&c.dkimUse,
 		&c.subject,
 		&c.body,
 		&c.profileId,
@@ -121,16 +127,15 @@ func (c *campaign) get(id string) {
 	)
 	checkErr(err)
 
-	attachment, err := models.Db.Query("SELECT `path`, `file` FROM attachment WHERE campaign_id=?", c.id)
+	attachment, err := models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.id)
 	checkErr(err)
 	defer attachment.Close()
 
 	c.attachments = nil
 	var location string
-	var name string
 	for attachment.Next() {
-		err = attachment.Scan(&location, &name)
+		err = attachment.Scan(&location)
 		checkErr(err)
-		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
+		c.attachments = append(c.attachments, location)
 	}
 }
