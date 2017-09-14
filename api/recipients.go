@@ -431,10 +431,7 @@ func recipientXlsx(campaignId int64, file string) error {
 		for k, v := range xlFile.Sheets[0].Rows {
 			if k == 0 {
 				for i, cell := range v.Cells {
-					t, err := cell.String()
-					if err != nil {
-						apilog.Println(err)
-					}
+					t := cell.String()
 					title[i] = t
 				}
 			} else {
@@ -442,10 +439,7 @@ func recipientXlsx(campaignId int64, file string) error {
 				name = ""
 				data = map[string]string{}
 				for i, cell := range v.Cells {
-					t, err := cell.String()
-					if err != nil {
-						apilog.Println(err)
-					}
+					t := cell.String()
 					if i == 0 {
 						email = t
 					} else if i == 1 {

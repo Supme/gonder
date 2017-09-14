@@ -195,10 +195,6 @@ func getMaxMinFromDimensionRef(ref string) (minx, miny, maxx, maxy int, err erro
 	if err != nil {
 		return -1, -1, -1, -1, err
 	}
-	if len(parts) == 1 {
-		maxx, maxy = minx, miny
-		return
-	}
 	maxx, maxy, err = GetCoordsFromCellIDString(parts[1])
 	if err != nil {
 		return -1, -1, -1, -1, err
@@ -442,7 +438,7 @@ func shiftCell(cellID string, dx, dy int) string {
 // CSV form from the raw cell value.  Note - this is not actually
 // general enough - we should support retaining tabs and newlines.
 func fillCellData(rawcell xlsxC, reftable *RefTable, sharedFormulas map[int]sharedFormula, cell *Cell) {
-	var data string = rawcell.V
+	var data = rawcell.V
 	if len(data) > 0 {
 		vval := strings.Trim(data, " \t\n\r")
 		switch rawcell.T {
@@ -472,6 +468,23 @@ func fillCellData(rawcell xlsxC, reftable *RefTable, sharedFormulas map[int]shar
 				cell.cellType = CellTypeFormula
 			}
 		}
+	} else {
+		if rawcell.Is != nil {
+			fillCellDataFromInlineString(rawcell, cell)
+		}
+	}
+}
+
+// fillCellDataFromInlineString attempts to get inline string data and put it into a Cell.
+func fillCellDataFromInlineString(rawcell xlsxC, cell *Cell) {
+	if rawcell.Is.T != "" {
+		cell.Value = strings.Trim(rawcell.Is.T, " \t\n\r")
+		cell.cellType = CellTypeInline
+	} else {
+		cell.Value = ""
+		for _, r := range rawcell.Is.R {
+			cell.Value += r.T
+		}
 	}
 }
 
@@ -493,7 +506,7 @@ func readRowsFromSheet(Worksheet *xlsxWorksheet, file *File, sheet *Sheet) ([]*R
 		return nil, nil, 0, 0
 	}
 	reftable = file.referenceTable
-	if len(Worksheet.Dimension.Ref) > 0 {
+	if len(Worksheet.Dimension.Ref) > 0 && len(strings.Split(Worksheet.Dimension.Ref, ":")) == 2 {
 		minCol, minRow, maxCol, maxRow, err = getMaxMinFromDimensionRef(Worksheet.Dimension.Ref)
 	} else {
 		minCol, minRow, maxCol, maxRow, err = calculateMaxMinFromWorksheet(Worksheet)

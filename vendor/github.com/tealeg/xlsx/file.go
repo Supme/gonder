@@ -4,12 +4,12 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
-	"errors"
 )
 
 // File is a high level structure providing a slice of Sheet structs
@@ -123,6 +123,9 @@ func (f *File) AddSheet(sheetName string) (*Sheet, error) {
 	if _, exists := f.Sheet[sheetName]; exists {
 		return nil, fmt.Errorf("duplicate sheet name '%s'.", sheetName)
 	}
+	if len(sheetName) >= 31 {
+		return nil, fmt.Errorf("sheet name must be less than 31 characters long.  It is currently '%d' characters long", len(sheetName))
+	}
 	sheet := &Sheet{
 		Name:     sheetName,
 		File:     f,
@@ -219,8 +222,8 @@ func (f *File) MarshallParts() (map[string]string, error) {
 		f.styles = newXlsxStyleSheet(f.theme)
 	}
 	f.styles.reset()
-	if len(f.Sheets)==0 {
-		err:= errors.New("Workbook must contains atleast one worksheet")
+	if len(f.Sheets) == 0 {
+		err := errors.New("Workbook must contains atleast one worksheet")
 		return nil, err
 	}
 	for _, sheet := range f.Sheets {
@@ -312,7 +315,7 @@ func (file *File) ToSlice() (output [][][]string, err error) {
 			}
 			r := []string{}
 			for _, cell := range row.Cells {
-				str, err := cell.String()
+				str, err := cell.FormattedValue()
 				if err != nil {
 					// Recover from strconv.NumError if the value is an empty string,
 					// and insert an empty string in the output.
