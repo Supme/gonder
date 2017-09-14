@@ -7,10 +7,14 @@ import (
 )
 
 type campaign struct {
-	id, from_email, from_name, subject, body string
-	sendUnsubscribe                          bool
-	profileId, resendDelay, resendCount      int
-	attachments                              []Attachment
+	id, fromEmail, fromName, subject, body string
+	dkimSelector	string
+	dkimPrivateKey  []byte
+	dkimUse			bool
+	sendUnsubscribe                        bool
+	profileId, resendDelay, resendCount    int
+	attachments                            []string
+	wg                                     sync.WaitGroup
 }
 
 func (c campaign) run(id string) {
@@ -19,42 +23,55 @@ func (c campaign) run(id string) {
 	c.resend()
 }
 
+// Send for recipient from campaign
+func send(camp *campaign, id, email, name string, profileId int, iface, host string) {
+	r := recipient{
+		id:      id,
+		toEmail: email,
+		toName:  name,
+	}
+
+	if r.checkUnsubscribe(camp.id) == false || camp.sendUnsubscribe {
+		_, err := models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
+		checkErr(err)
+
+		result := r.send(camp, &iface, &host)
+		models.ProfileFree(profileId)
+
+		_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, r.id)
+		checkErr(err)
+	} else {
+		_, err := models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
+		checkErr(err)
+		camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.toEmail)
+	}
+}
+
 // Send campaign
 func (c campaign) send() {
-	var r recipient
-	var wg sync.WaitGroup
-
 	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.id)
 	checkErr(err)
 	defer query.Close()
 
 	for query.Next() {
-		err = query.Scan(&r.id, &r.to_email, &r.to_name)
+		var id, email, name string
+		err = query.Scan(&id, &email, &name)
 		checkErr(err)
-		if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
-			_, err = models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-			checkErr(err)
-			pid, iface, host := models.ProfileNext(c.profileId)
-			go func(d recipient, p int, i, h string) {
-				wg.Add(1)
-				rs := d.send(&c, i, h)
-				wg.Done()
-				models.ProfileFree(p)
-				_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, d.id)
-				checkErr(err)
-			}(r, pid, iface, host)
-		} else {
-			_, err = models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-			checkErr(err)
-			camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
-		}
+
+		profileId, iface, host := models.ProfileNext(c.profileId)
+		go func(id, email, name string, profileId int, iface, host string) {
+			c.wg.Add(1)
+			defer c.wg.Done()
+			send(&c, id, email, name, profileId, iface, host)
+		}(id, email, name, profileId, iface, host)
+
 	}
-	wg.Wait()
+	c.wg.Wait()
 	camplog.Printf("Done campaign id %s.", c.id)
 }
 
 func (c campaign) resend() {
-	var r recipient
+	var id, email, name string
 
 	count := c.countSoftBounce()
 	if count == 0 {
@@ -76,21 +93,10 @@ func (c campaign) resend() {
 		defer query.Close()
 
 		for query.Next() {
-			err = query.Scan(&r.id, &r.to_email, &r.to_name)
+			err = query.Scan(&id, &email, &name)
 			checkErr(err)
-			if r.unsubscribe(c.id) == false || c.sendUnsubscribe {
-				_, err = models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-				checkErr(err)
-				p, i, h := models.ProfileNext(c.profileId)
-				rs := r.send(&c, i, h)
-				models.ProfileFree(p)
-				_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", rs, r.id)
-				checkErr(err)
-			} else {
-				_, err = models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-				checkErr(err)
-				camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.to_email)
-			}
+			profileId, iface, host := models.ProfileNext(c.profileId)
+			send(&c, id, email, name, profileId, iface, host)
 		}
 	}
 }
@@ -105,10 +111,13 @@ func (c *campaign) countSoftBounce() int {
 
 // Get all info for campaign
 func (c *campaign) get(id string) {
-	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.id,
-		&c.from_email,
-		&c.from_name,
+		&c.fromEmail,
+		&c.fromName,
+		&c.dkimSelector,
+		&c.dkimPrivateKey,
+		&c.dkimUse,
 		&c.subject,
 		&c.body,
 		&c.profileId,
@@ -118,16 +127,15 @@ func (c *campaign) get(id string) {
 	)
 	checkErr(err)
 
-	attachment, err := models.Db.Query("SELECT `path`, `file` FROM attachment WHERE campaign_id=?", c.id)
+	attachment, err := models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.id)
 	checkErr(err)
 	defer attachment.Close()
 
 	c.attachments = nil
 	var location string
-	var name string
 	for attachment.Next() {
-		err = attachment.Scan(&location, &name)
+		err = attachment.Scan(&location)
 		checkErr(err)
-		c.attachments = append(c.attachments, Attachment{Location: location, Name: name})
+		c.attachments = append(c.attachments, location)
 	}
 }

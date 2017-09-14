@@ -28,17 +28,17 @@ import (
 
 type (
 	Message struct {
-		RecipientId      string
+		RecipientId      string // ToDo int?
 		RecipientEmail   string
 		RecipientName    string
 		RecipientParam   map[string]string
-		CampaignId       string
+		CampaignId       string // ToDo int?
 		CampaignSubject  string
 		CampaignTemplate string
 	}
 
 	JsonData struct {
-		Id    string `json:"id"`
+		Id    string `json:"id"` // ToDo int?
 		Email string `json:"email"`
 		Data  string `json:"data"`
 	}
@@ -53,6 +53,7 @@ func (m *Message) New(recipientId string) error {
 	return nil
 }
 
+// Decode utm data string and return Message whis prefilled id and email
 func DecodeData(base64data string) (message Message, data string, err error) {
 	var param JsonData
 
@@ -60,7 +61,7 @@ func DecodeData(base64data string) (message Message, data string, err error) {
 	if err != nil {
 		return message, data, err
 	}
-	err = json.Unmarshal([]byte(decode), &param)
+	err = json.Unmarshal([]byte(decode), &param) // ToDo decode whisout reflect
 	if err != nil {
 		return message, data, err
 	}
@@ -75,6 +76,7 @@ func DecodeData(base64data string) (message Message, data string, err error) {
 	return message, data, nil
 }
 
+// Unsubscribe recipient from group
 func (m *Message) Unsubscribe(extra map[string]string) error {
 	r, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignId, m.CampaignId, m.RecipientEmail)
 	if err != nil {
@@ -122,30 +124,40 @@ func (m *Message) makeLink(cmd, data string) string {
 	return Config.Url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
+// Make unsubscribe utm link for web version
 func (m *Message) UnsubscribeWebLink() string {
 	return m.makeLink("unsubscribe", "web")
 }
 
+// Make unsubscribe utm link for mail version
 func (m *Message) UnsubscribeMailLink() string {
 	return m.makeLink("unsubscribe", "mail")
 }
 
+// Make utm link from real link
 func (m *Message) RedirectLink(url string) string {
 	return m.makeLink("redirect", url)
 }
 
+//// Make utm link to web version
 func (m *Message) WebLink() string {
 	return m.makeLink("web", "")
 }
 
+// Make utm link for check open mail
 func (m *Message) StatPngLink() string {
 	return m.makeLink("open", "")
 }
 
+// Regexp for replace all http and https in message to link on utm service
+var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+// Render message body
 func (m *Message) RenderMessage() (string, error) {
 
-	var err error
-	var web bool
+	var (
+		err error
+		web bool
+	)
 
 	if m.CampaignSubject == "" && m.CampaignTemplate == "" {
 		err := Db.QueryRow("SELECT `subject`,`body` FROM `campaign` WHERE `id`=?", m.CampaignId).Scan(&m.CampaignSubject, &m.CampaignTemplate)
@@ -203,8 +215,7 @@ func (m *Message) RenderMessage() (string, error) {
 	}
 
 	// Replace links for statistic
-	re := regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
-	m.CampaignTemplate = re.ReplaceAllStringFunc(m.CampaignTemplate, func(str string) string {
+	m.CampaignTemplate = reReplaceLink.ReplaceAllStringFunc(m.CampaignTemplate, func(str string) string {
 		// get only url
 		s := strings.Replace(str, `'`, "", -1)
 		s = strings.Replace(s, `"`, "", -1)

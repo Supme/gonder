@@ -73,6 +73,13 @@ type request struct {
 	Name string `json:"name,omitempty"`
 	Content Data `json:"content,omitempty"`
 	Select bool `json:"select,omitempty"`
+
+	Recipients Recipients `json:"recipients,omitempty"`
+
+	DkimSelector  string `json:"dkimSelector"`
+	DkimKey  string `json:"dkimKey"`
+	DkimUse  int8 `json:"dkimUse"`
+
 	Record struct{
 		// Save/Add user
 		Id int64 `json:"id,null"`

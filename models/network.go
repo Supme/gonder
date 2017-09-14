@@ -77,16 +77,16 @@ var (
 	profileMutex sync.Mutex
 )
 
+// Get free sending profile data and add connection count
 func ProfileNext(id int) (int, string, string) {
 	var res profileData
 
 	profileMutex.Lock()
 
 	// Если есть в массиве, недавно обновлялось
-
 	if _, ok := profileStor[id]; ok && time.Since(profileStor[id].lastUpdate) < 60*time.Second {
 
-		// Если это группа кампаний
+		// Если этот профиль группа
 		if strings.ToLower(strings.TrimSpace(profileStor[id].host)) == "group" {
 			if _, gok := profileGroup[id]; !gok {
 				profileGroup[id] = 0
@@ -116,7 +116,7 @@ func ProfileNext(id int) (int, string, string) {
 			// достигли максимума потоков, ждём освобождения
 			profileMutex.Unlock()
 			for !profileCheck(id) {
-				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
 			}
 			return ProfileNext(id)
 		}
@@ -140,6 +140,7 @@ func ProfileNext(id int) (int, string, string) {
 
 }
 
+// Check profile is busy (max coonnection)?
 func profileCheck(id int) bool {
 	var free bool
 	profileMutex.Lock()
@@ -148,6 +149,7 @@ func profileCheck(id int) bool {
 	return free
 }
 
+// Free one connection profile
 func ProfileFree(id int) {
 	var res profileData
 
@@ -156,5 +158,5 @@ func ProfileFree(id int) {
 	res.streamNow--
 	profileStor[id] = res
 	profileMutex.Unlock()
-	log.Println("profile id =", id, " connection count =", res.streamNow)
+	log.Println("profile id =", id, " connection count =", res.streamNow+1)
 }
