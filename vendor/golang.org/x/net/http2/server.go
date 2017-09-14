@@ -463,9 +463,10 @@ type stream struct {
 	numTrailerValues int64
 	weight           uint8
 	state            streamState
-	resetQueued      bool // RST_STREAM queued for write; set by sc.resetStream
-	gotTrailerHeader bool // HEADER frame for trailers was seen
-	wroteHeaders     bool // whether we wrote headers (not status 100)
+	resetQueued      bool   // RST_STREAM queued for write; set by sc.resetStream
+	gotTrailerHeader bool   // HEADER frame for trailers was seen
+	wroteHeaders     bool   // whether we wrote headers (not status 100)
+	reqBuf           []byte // if non-nil, body pipe buffer to return later at EOF
 
 	trailer    http.Header // accumulated trailers
 	reqTrailer http.Header // handler's Request.Trailer
@@ -709,7 +710,7 @@ func (sc *serverConn) serve() {
 		return
 	}
 	// Now that we've got the preface, get us out of the
-	// "StateNew" state. We can't go directly to idle, though.
+	// "StateNew" state.  We can't go directly to idle, though.
 	// Active means we read some data and anticipate a request. We'll
 	// do another Active when we get a HEADERS frame.
 	sc.setConnState(http.StateActive)
@@ -721,9 +722,13 @@ func (sc *serverConn) serve() {
 		sc.idleTimerCh = sc.idleTimer.C
 	}
 
-	var gracefulShutdownCh <-chan struct{}
+	var gracefulShutdownCh chan struct{}
 	if sc.hs != nil {
-		gracefulShutdownCh = h1ServerShutdownChan(sc.hs)
+		ch := h1ServerShutdownChan(sc.hs)
+		if ch != nil {
+			gracefulShutdownCh = make(chan struct{})
+			go sc.awaitGracefulShutdown(ch, gracefulShutdownCh)
+		}
 	}
 
 	go sc.readFrames() // closed by defer sc.conn.Close above
@@ -769,6 +774,14 @@ func (sc *serverConn) serve() {
 		if sc.inGoAway && sc.curOpenStreams() == 0 && !sc.needToSendGoAway && !sc.writingFrame {
 			return
 		}
+	}
+}
+
+func (sc *serverConn) awaitGracefulShutdown(sharedCh <-chan struct{}, privateCh chan struct{}) {
+	select {
+	case <-sc.doneServing:
+	case <-sharedCh:
+		close(privateCh)
 	}
 }
 
@@ -1784,13 +1797,15 @@ func (sc *serverConn) newWriterAndRequest(st *stream, f *MetaHeadersFrame) (*res
 		return nil, nil, err
 	}
 	if bodyOpen {
+		st.reqBuf = getRequestBodyBuf()
+		req.Body.(*requestBody).pipe = &pipe{
+			b: &fixedBuffer{buf: st.reqBuf},
+		}
+
 		if vv, ok := rp.header["Content-Length"]; ok {
 			req.ContentLength, _ = strconv.ParseInt(vv[0], 10, 64)
 		} else {
 			req.ContentLength = -1
-		}
-		req.Body.(*requestBody).pipe = &pipe{
-			b: &dataBuffer{expected: req.ContentLength},
 		}
 	}
 	return rw, req, nil
@@ -1885,6 +1900,24 @@ func (sc *serverConn) newWriterAndRequestNoBody(st *stream, rp requestParam) (*r
 
 	rw := &responseWriter{rws: rws}
 	return rw, req, nil
+}
+
+var reqBodyCache = make(chan []byte, 8)
+
+func getRequestBodyBuf() []byte {
+	select {
+	case b := <-reqBodyCache:
+		return b
+	default:
+		return make([]byte, initialWindowSize)
+	}
+}
+
+func putRequestBodyBuf(b []byte) {
+	select {
+	case reqBodyCache <- b:
+	default:
+	}
 }
 
 // Run on its own goroutine.
@@ -1982,6 +2015,12 @@ func (sc *serverConn) noteBodyReadFromHandler(st *stream, n int, err error) {
 		case <-sc.doneServing:
 		}
 	}
+	if err == io.EOF {
+		if buf := st.reqBuf; buf != nil {
+			st.reqBuf = nil // shouldn't matter; field unused by other
+			putRequestBodyBuf(buf)
+		}
+	}
 }
 
 func (sc *serverConn) noteBodyRead(st *stream, n int) {
@@ -2076,8 +2115,8 @@ func (b *requestBody) Read(p []byte) (n int, err error) {
 	return
 }
 
-// responseWriter is the http.ResponseWriter implementation. It's
-// intentionally small (1 pointer wide) to minimize garbage. The
+// responseWriter is the http.ResponseWriter implementation.  It's
+// intentionally small (1 pointer wide) to minimize garbage.  The
 // responseWriterState pointer inside is zeroed at the end of a
 // request (in handlerDone) and calls on the responseWriter thereafter
 // simply crash (caller's mistake), but the much larger responseWriterState
@@ -2251,7 +2290,7 @@ const TrailerPrefix = "Trailer:"
 // says you SHOULD (but not must) predeclare any trailers in the
 // header, the official ResponseWriter rules said trailers in Go must
 // be predeclared, and then we reuse the same ResponseWriter.Header()
-// map to mean both Headers and Trailers. When it's time to write the
+// map to mean both Headers and Trailers.  When it's time to write the
 // Trailers, we pick out the fields of Headers that were declared as
 // trailers. That worked for a while, until we found the first major
 // user of Trailers in the wild: gRPC (using them only over http2),

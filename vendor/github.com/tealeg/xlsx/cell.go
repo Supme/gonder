@@ -67,9 +67,15 @@ func (c *Cell) SetString(s string) {
 	c.cellType = CellTypeString
 }
 
-// String returns the value of a Cell as a string.
-func (c *Cell) String() (string, error) {
-	return c.FormattedValue()
+// String returns the value of a Cell as a string.  If you'd like to
+// see errors returned from formatting then please use
+// Cell.FormattedValue() instead.
+func (c *Cell) String() string {
+	// To preserve the String() interface we'll throw away errors.
+	// Not that using FormattedValue is therefore strongly
+	// preferred.
+	value, _ := c.FormattedValue()
+	return value
 }
 
 // SetFloat sets the value of a cell to a float.
@@ -122,13 +128,43 @@ func TimeToExcelTime(t time.Time) float64 {
 	return float64(t.UnixNano())/8.64e13 + 25569.0
 }
 
+// DateTimeOptions are additional options for exporting times
+type DateTimeOptions struct {
+	// Location allows calculating times in other timezones/locations
+	Location *time.Location
+	// ExcelTimeFormat is the string you want excel to use to format the datetime
+	ExcelTimeFormat string
+}
+
+var (
+	DefaultDateFormat     = builtInNumFmt[14]
+	DefaultDateTimeFormat = builtInNumFmt[22]
+
+	DefaultDateOptions = DateTimeOptions{
+		Location:        timeLocationUTC,
+		ExcelTimeFormat: DefaultDateFormat,
+	}
+
+	DefaultDateTimeOptions = DateTimeOptions{
+		Location:        timeLocationUTC,
+		ExcelTimeFormat: DefaultDateTimeFormat,
+	}
+)
+
 // SetDate sets the value of a cell to a float.
 func (c *Cell) SetDate(t time.Time) {
-	c.SetDateTimeWithFormat(float64(int64(TimeToExcelTime(TimeToUTCTime(t)))), builtInNumFmt[14])
+	c.SetDateWithOptions(t, DefaultDateOptions)
 }
 
 func (c *Cell) SetDateTime(t time.Time) {
-	c.SetDateTimeWithFormat(TimeToExcelTime(TimeToUTCTime(t)), builtInNumFmt[22])
+	c.SetDateWithOptions(t, DefaultDateTimeOptions)
+}
+
+// SetDateWithOptions allows for more granular control when exporting dates and times
+func (c *Cell) SetDateWithOptions(t time.Time, options DateTimeOptions) {
+	_, offset := t.In(options.Location).Zone()
+	t = time.Unix(t.Unix()+int64(offset), 0)
+	c.SetDateTimeWithFormat(TimeToExcelTime(t.In(timeLocationUTC)), options.ExcelTimeFormat)
 }
 
 func (c *Cell) SetDateTimeWithFormat(n float64, format string) {
@@ -361,8 +397,6 @@ func parseTime(c *Cell) (string, error) {
 		{"mmm", "Jan"},
 		{"mmss", "0405"},
 		{"ss", "05"},
-		{"hh", "15"},
-		{"h", "3"},
 		{"mm:", "04:"},
 		{":mm", ":04"},
 		{"mm", "01"},
@@ -371,6 +405,16 @@ func parseTime(c *Cell) (string, error) {
 		{"%%%%", "January"},
 		{"&&&&", "Monday"},
 	}
+	// It is the presence of the "am/pm" indicator that determins
+	// if this is a 12 hour or 24 hours time format, not the
+	// number of 'h' characters.
+	if is12HourTime(format) {
+		format = strings.Replace(format, "hh", "03", 1)
+		format = strings.Replace(format, "h", "3", 1)
+	} else {
+		format = strings.Replace(format, "hh", "15", 1)
+		format = strings.Replace(format, "h", "15", 1)
+	}
 	for _, repl := range replacements {
 		format = strings.Replace(format, repl.xltime, repl.gotime, 1)
 	}
@@ -378,6 +422,7 @@ func parseTime(c *Cell) (string, error) {
 	// possible dangling colon that would remain.
 	if val.Hour() < 1 {
 		format = strings.Replace(format, "]:", "]", 1)
+		format = strings.Replace(format, "[03]", "", 1)
 		format = strings.Replace(format, "[3]", "", 1)
 		format = strings.Replace(format, "[15]", "", 1)
 	} else {
@@ -391,7 +436,7 @@ func parseTime(c *Cell) (string, error) {
 // a time.Time.
 func isTimeFormat(format string) bool {
 	dateParts := []string{
-		"yy", "hh", "am", "pm", "ss", "mm", ":",
+		"yy", "hh", "h", "am/pm", "AM/PM", "A/P", "a/p", "ss", "mm", ":",
 	}
 	for _, part := range dateParts {
 		if strings.Contains(format, part) {
@@ -399,4 +444,10 @@ func isTimeFormat(format string) bool {
 		}
 	}
 	return false
+}
+
+// is12HourTime checks whether an Excel time format string is a 12
+// hours form.
+func is12HourTime(format string) bool {
+	return strings.Contains(format, "am/pm") || strings.Contains(format, "AM/PM") || strings.Contains(format, "a/p") || strings.Contains(format, "A/P")
 }
