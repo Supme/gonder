@@ -28,16 +28,24 @@ import (
 	"sync"
 )
 
-type Recipient struct {
+type RecipientTableLine struct {
 	Id     int64  `json:"recid"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Result string `json:"result"`
 }
 
-type Recipients struct {
-	Total   int         `json:"total"`
-	Records []Recipient `json:"records"`
+type RecipientsTable struct {
+	Total   int                  `json:"total"`
+	Records []RecipientTableLine `json:"records"`
+}
+
+type Recipients []Recipient
+
+type Recipient struct {
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Params []RecipientParam `json:"params"`
 }
 
 type RecipientParam struct {
@@ -45,7 +53,7 @@ type RecipientParam struct {
 	Value string `json:"value"`
 }
 
-type RecipientParams struct {
+type RecipientTableParams struct {
 	Total   int              `json:"total"`
 	Records []RecipientParam `json:"records"`
 }
@@ -71,6 +79,15 @@ func recipients(req request) (js []byte, err error) {
 				return js, err
 			} else {
 				return js, errors.New("Forbidden get recipients")
+			}
+		case "add":
+			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
+				err := addRecipients(req.Campaign, req.Recipients)
+				if err != nil {
+					return js, err
+				}
+			}  else {
+				return js, errors.New("Forbidden add recipients")
 			}
 
 		case "upload":
@@ -178,6 +195,45 @@ func recipients(req request) (js []byte, err error) {
 	return js, err
 }
 
+func addRecipients(campaignId int64, recipients Recipients) error {
+	tx, err := models.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stRecipient.Close()
+	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	defer stParameter.Close()
+
+	for r := range recipients {
+		res, err := stRecipient.Exec(campaignId, recipients[r].Email, recipients[r].Name)
+		if err != nil {
+			return err
+		}
+		id, err := res.LastInsertId()
+		if err != nil {
+			return err
+		}
+		for _, p := range recipients[r].Params {
+			_, err := stParameter.Exec(id, p.Key, p.Value)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = tx.Commit()
+	return err
+}
+
 func resendCampaign(campaignId int64) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignId)
 	c, _ := res.RowsAffected()
@@ -192,17 +248,17 @@ func getRecipientCampaign(recipientId int64) (int64, error) {
 }
 
 //ToDo check right errors
-func getRecipients(req request) (Recipients, error) {
+func getRecipients(req request) (RecipientsTable, error) {
 	var (
-		err error
-		rs Recipients
-		partWhere, where string
+		err                error
+		rs                 RecipientsTable
+		partWhere, where   string
 		partParams, params []interface{}
 	)
 
 	params = append(params, req.Campaign)
 
-	rs.Records = []Recipient{}
+	rs.Records = []RecipientTableLine{}
 	where = " WHERE `removed`!=1 AND `campaign_id`=?"
 	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
 		"recid":"id", "name":"name", "email":"email", "result":"status",
@@ -210,13 +266,14 @@ func getRecipients(req request) (Recipients, error) {
 	if err != nil {
 		return rs, err
 	}
+	// ToDo open status "IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) AS open"
 	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient`" + partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
 	defer query.Close()
 	for query.Next() {
-		r := Recipient{}
+		r := RecipientTableLine{}
 		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result)
 		rs.Records = append(rs.Records, r)
 	}
@@ -232,10 +289,10 @@ func getRecipients(req request) (Recipients, error) {
 }
 
 //ToDo check right errors
-func getRecipientParams(recipient int64) (RecipientParams, error) {
+func getRecipientParams(recipient int64) (RecipientTableParams, error) {
 	var err error
 	var p RecipientParam
-	var ps RecipientParams
+	var ps RecipientTableParams
 	ps.Records = []RecipientParam{}
 	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {

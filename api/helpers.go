@@ -74,6 +74,8 @@ type request struct {
 	Content Data `json:"content,omitempty"`
 	Select bool `json:"select,omitempty"`
 
+	Recipients Recipients `json:"recipients,omitempty"`
+
 	DkimSelector  string `json:"dkimSelector"`
 	DkimKey  string `json:"dkimKey"`
 	DkimUse  int8 `json:"dkimUse"`
