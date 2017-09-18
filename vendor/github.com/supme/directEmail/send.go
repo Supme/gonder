@@ -90,6 +90,8 @@ func (self *Email) SendThroughServer(host string, port uint16, username, passwor
 func (self *Email) Send() error {
 	var err error
 
+	self.cleanEmail()
+
 	server, err := self.domainFromEmail(self.ToEmail)
 	if err != nil {
 		return errors.New("550 Bad ToEmail")
@@ -109,14 +111,16 @@ func (self *Email) Send() error {
 	return self.send(nil, "", client)
 }
 
+func (self *Email) cleanEmail() {
+	self.ToEmail = strings.TrimSpace(self.ToEmail)
+	self.FromEmail = strings.TrimSpace(self.FromEmail)
+}
+
 var testHookStartTLS func(*tls.Config)
 
 // Send sending email message
 func (self *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
 	var	err error
-
-	self.ToEmail = strings.TrimSpace(self.ToEmail)
-	self.FromEmail = strings.TrimSpace(self.FromEmail)
 
 	if err := client.Hello(strings.TrimRight(self.Host, ".")); err != nil {
 		return err
