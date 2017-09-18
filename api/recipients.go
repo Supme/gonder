@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"errors"
 	"sync"
+	"strings"
 )
 
 type RecipientTableLine struct {
@@ -214,7 +215,7 @@ func addRecipients(campaignId int64, recipients Recipients) error {
 	defer stParameter.Close()
 
 	for r := range recipients {
-		res, err := stRecipient.Exec(campaignId, recipients[r].Email, recipients[r].Name)
+		res, err := stRecipient.Exec(campaignId, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
 		if err != nil {
 			return err
 		}
@@ -362,7 +363,7 @@ func recipientCsv(campaignId int64, file string) error {
 			data = map[string]string{}
 			for i, t := range v {
 				if i == 0 {
-					email = t
+					email = strings.TrimSpace(t)
 				} else if i == 1 {
 					name = t
 				} else {
@@ -441,7 +442,7 @@ func recipientXlsx(campaignId int64, file string) error {
 				for i, cell := range v.Cells {
 					t := cell.String()
 					if i == 0 {
-						email = t
+						email = strings.TrimSpace(t)
 					} else if i == 1 {
 						name = t
 					} else {
