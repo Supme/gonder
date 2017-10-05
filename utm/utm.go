@@ -215,24 +215,15 @@ func Run() {
 
 	utm.HandleFunc("/code/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("qr") != "" {
-			width, height := int(200), int(200)
-			if r.URL.Query().Get("w") != "" {
-				i, err := strconv.Atoi(r.FormValue("w"))
+			size := int(200)
+			if r.URL.Query().Get("s") != "" {
+				i, err := strconv.Atoi(r.FormValue("s"))
 				if err != nil{
 					utmlog.Print(err)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				width = i
-			}
-			if r.URL.Query().Get("h") != "" {
-				i, err := strconv.Atoi(r.FormValue("h"))
-				if err != nil{
-					utmlog.Print(err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				height = i
+				size = i
 			}
 			qrCode, err := qr.Encode(r.URL.Query().Get("qr"), qr.M, qr.Auto)
 			if err != nil{
@@ -240,7 +231,7 @@ func Run() {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			qrCode, err = barcode.Scale(qrCode, width, height)
+			qrCode, err = barcode.Scale(qrCode, size, size)
 			if err != nil{
 				utmlog.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
