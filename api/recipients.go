@@ -299,6 +299,7 @@ func getRecipientCampaign(recipientId int64) (int64, error) {
 }
 
 //ToDo check right errors
+//ToDo add unsubscribe column
 func getRecipients(req request) (RecipientsTable, error) {
 	var (
 		err                error

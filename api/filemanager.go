@@ -143,7 +143,7 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 }
 
 func filemanagerAction(mode string, path string, name string, oldName string, newName string) interface{} {
-	filemanagerRootPath = "."
+	filemanagerRootPath = "./files"
 	switch mode {
 	case "getinfo":
 		return filemanagerGetInfo(path)
@@ -161,7 +161,7 @@ func filemanagerAction(mode string, path string, name string, oldName string, ne
 }
 
 func filemanagerAdd(path string, name string, file multipart.File) info {
-	out, err := os.Create(models.FromRootDir(filemanagerRootPath + path + name))
+	out, err := os.Create(filepath.Join(filemanagerRealPath(path), filepath.Clean(name)))
 	if err != nil {
 		return info{Error: "Can not create file", Code: 1}
 	}
@@ -172,12 +172,12 @@ func filemanagerAdd(path string, name string, file multipart.File) info {
 		return info{Error: "Can not write file", Code: 1}
 	}
 
-	return info{Path: path, Name: name, Error: "No error", Code: 0}
+	return info{Error: "Ok", Code: 0}//filemanagerGetInfo(filepath.Join(path, name))//info{Path: path, Name: name, Error: "No error", Code: 0}
 }
 
 func filemanagerDownload(path string) (string, []byte) {
 	n := filepath.Base(path)
-	d, _ := ioutil.ReadFile(filemanagerRootPath + path)
+	d, _ := ioutil.ReadFile(filemanagerRealPath(path))
 	return n, d
 }
 
@@ -189,7 +189,7 @@ func filemanagerResize(path string, width string, height string) []byte {
 		w, _ := strconv.ParseInt(width, 10, 0)
 		h, _ := strconv.ParseInt(height, 10, 0)
 
-		f, err := os.Open(models.FromRootDir(filemanagerRootPath + path))
+		f, err := os.Open(filemanagerRealPath(path))
 		if err != nil {
 			apilog.Println(err)
 		}
@@ -220,7 +220,7 @@ func filemanagerResize(path string, width string, height string) []byte {
 
 func filemanagerGetInfo(path string) info {
 
-	f, err := os.Lstat(models.FromRootDir(filemanagerRootPath + path))
+	f, err := os.Lstat(filemanagerRealPath(path))
 	if err != nil {
 		return info{Error: "Error reading file", Code: 1}
 	}
@@ -236,24 +236,29 @@ func filemanagerGetInfo(path string) info {
 			Width:        "0",
 			Size:         strconv.FormatInt(f.Size(), 10),
 		},
-		Error: "",
+		Error: "Ok",
 		Code:  0,
 	}
 
-	ext := filepath.Ext(f.Name())
-	if ext != "" {
-		ext = ext[1:]
-		r.FileType = filepath.Ext(f.Name())[1:]
-		if ext == "jpg" || ext == "png" || ext == "gif" {
-			r.Preview = "../../filemanager?mode=download&path=" + path + "&width=150&height=0"
-		} else {
-			ico := "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
-			if _, err := os.Stat(ico); err != nil {
-				r.Preview = "images/fileicons/default.png"
+	if f.IsDir() {
+		r.FileType = "Dir"
+		r.Name = f.Name()
+	} else {
+		ext := filepath.Ext(f.Name())
+		if ext != "" {
+			ext = ext[1:]
+			r.FileType = filepath.Ext(f.Name())[1:]
+			if ext == "jpg" || ext == "png" || ext == "gif" {
+				r.Preview = "../../filemanager?mode=download&path=" + path + "&width=150&height=0"
 			} else {
-				r.Preview = ico
-			}
+				ico := "images/fileicons/" + filepath.Ext(f.Name())[1:] + ".png"
+				if _, err := os.Stat(ico); err != nil {
+					r.Preview = "images/fileicons/default.png"
+				} else {
+					r.Preview = ico
+				}
 
+			}
 		}
 	}
 
@@ -262,7 +267,7 @@ func filemanagerGetInfo(path string) info {
 
 func filemanagerGetFolder(path string) interface{} {
 	r := []info{}
-	files, err := ioutil.ReadDir(models.FromRootDir(filemanagerRootPath + path))
+	files, err := ioutil.ReadDir(filemanagerRealPath(path))
 	if err != nil {
 		return info{
 			Error: "Error reading directory",
@@ -271,6 +276,9 @@ func filemanagerGetFolder(path string) interface{} {
 	}
 
 	for _, f := range files {
+		if string(f.Name()[0]) == "." {
+			continue
+		}
 		t := info{}
 		t.Filename = f.Name()
 		if f.IsDir() {
@@ -304,23 +312,38 @@ func filemanagerGetFolder(path string) interface{} {
 }
 
 func filemanagerDelete(path string) info {
-
-	if err := os.RemoveAll(models.FromRootDir(filemanagerRootPath + path)); err != nil {
+	if path == "" || path == "/" {
+		return info{Error: "Wrong path", Code: 1}
+	}
+	if err := os.RemoveAll(filemanagerRealPath(path)); err != nil {
 		return info{Error: "Error delete", Code: 1}
 	}
 	return info{Error: "Ok", Code: 0}
 }
 
 func filemanagerMkDir(path, name string) info {
-	if err := os.MkdirAll(models.FromRootDir(filemanagerRootPath+path+name), 0755); err != nil {
+	if err := os.MkdirAll(filemanagerRealPath(filepath.Join(path,name)), 0755); err != nil {
 		return info{Error: "Error make directory", Code: 1}
+	}
+	return filemanagerGetInfo(filepath.Join(path, name))//info{Error: "Ok", Code: 0}
+}
+
+func filemanagerRename(oldPath, newPath string) info {
+	splt := filepath.SplitList(oldPath)
+	basePath := filepath.Join(splt[:len(splt)-1]...)
+	newFullPath := filepath.Join(basePath, filepath.Clean(newPath))
+
+	if err := os.Rename(filemanagerRealPath(oldPath), filemanagerRealPath(newFullPath)); err != nil {
+		return info{Error: "Error rename", Code: 1}
 	}
 	return info{Error: "Ok", Code: 0}
 }
 
-func filemanagerRename(old, new string) info {
-	if err := os.Rename(models.FromRootDir(filemanagerRootPath+old), models.FromRootDir(filemanagerRootPath+filepath.Dir(old)+"/"+new)); err != nil {
-		return info{Error: "Error rename", Code: 1}
+func filemanagerRealPath(path string) (realpath string) {
+	path = filepath.Clean(path)
+	if path == "" {
+		path = string(filepath.Separator)
 	}
-	return info{Error: "Ok", Code: 0}
+	realpath = models.FromRootDir(filepath.Join(filemanagerRootPath,path))
+	return
 }
