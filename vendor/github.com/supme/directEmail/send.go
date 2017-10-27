@@ -94,17 +94,17 @@ func (self *Email) Send() error {
 
 	server, err := self.domainFromEmail(self.ToEmail)
 	if err != nil {
-		return errors.New("550 Bad ToEmail")
+		return errors.New("553 Bad ToEmail")
 	}
 
 	dialFunc,err := self.dialFunction()
 	if err != nil {
-		return errors.New(fmt.Sprintf("550 %v", err))
+		return errors.New(fmt.Sprintf("421 %v", err))
 	}
 
 	client, err := self.newClient(server, dialFunc)
 	if err != nil {
-		return errors.New(fmt.Sprintf("550 %v", err))
+		return errors.New(fmt.Sprintf("421 %v", err))
 	}
 	defer client.Close()
 
