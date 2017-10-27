@@ -22,19 +22,6 @@ import (
 	"errors"
 )
 
-type Data struct {
-	Id              int64 `json:"recid"`
-	Name            string `json:"name"`
-	ProfileId       int    `json:"profileId"`
-	Subject         string `json:"subject"`
-	SenderId        int    `json:"senderId"`
-	StartDate       int64  `json:"startDate"`
-	EndDate         int64  `json:"endDate"`
-	SendUnsubscribe bool   `json:"sendUnsubscribe"`
-	Accepted        bool   `json:"accepted"`
-	Template        string `json:"template"`
-}
-
 func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
 	case "get":
