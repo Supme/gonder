@@ -1,8 +1,4 @@
 // --- Recipients table ---
-w2utils.formatters['myFormatter'] = function (val, params) {
-    return 'format: ' + val;
-};
-
 $('#campaignRecipient').w2grid({
     header: w2utils.lang("Recipients"),
     name: 'recipient',
@@ -16,7 +12,7 @@ $('#campaignRecipient').w2grid({
         { field: 'recid', caption: w2utils.lang('Id'), type: 'int' },
         { field: 'email', caption: w2utils.lang('Email'), type: 'text' },
         { field: 'name', caption: w2utils.lang('Name'), type: 'text' },
-        { field: 'result', caption: w2utils.lang('Result'), type: 'text' },
+        { field: 'result', caption: w2utils.lang('Result'), type: 'text' }
     ],
     columns: [
         { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '80px', resizable: false,
@@ -41,7 +37,7 @@ $('#campaignRecipient').w2grid({
         },
         { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '15%', resizable: true },
         { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '15%', resizable: true },
-        { field: 'open', caption: w2utils.lang('Opened'), sortable: false, size: '60px', resizable: false, attr: 'align=center', editable: { type: 'checkbox', style: 'text-align: center' } },
+        { field: 'open', caption: w2utils.lang('Opened'), sortable: false, size: '60px', resizable: false, style: 'text-align: center' },
         { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '60%', resizable: true }
     ],
     multiSelect: false,
