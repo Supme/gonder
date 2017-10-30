@@ -56,8 +56,8 @@ func mainLog(w http.ResponseWriter, r *http.Request) {
 }
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  32,
+	WriteBufferSize: 32,
 }
 
 func logHandler(w http.ResponseWriter, r *http.Request, file string) {

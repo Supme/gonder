@@ -45,6 +45,19 @@ func parseArrayForm(r url.Values) map[string]map[string]map[string][]string {
 	return dblarr
 }
 
+type CampaignData struct {
+	Id              int64 `json:"recid"`
+	Name            string `json:"name"`
+	ProfileId       int    `json:"profileId"`
+	Subject         string `json:"subject"`
+	SenderId        int    `json:"senderId"`
+	StartDate       int64  `json:"startDate"`
+	EndDate         int64  `json:"endDate"`
+	SendUnsubscribe bool   `json:"sendUnsubscribe"`
+	Accepted        bool   `json:"accepted"`
+	Template        string `json:"template"`
+}
+
 type request struct {
 	Cmd string `json:"cmd"`
 	Selected []interface{} `json:"selected,omitempty"`
@@ -63,16 +76,16 @@ type request struct {
 	SearchLogic string `json:"searchLogic,omitempty"`
 	Changes []map[string]interface{} `json:"changes,omitempty"`
 
-	Group int64 `json:"group,omitempty"`
-	Campaign int64 `json:"campaign,omitempty"`
-	Recipient int64 `json:"recipient,omitempty"`
-	FileName string `json:"fileName,omitempty"`
-	FileContent string `json:"fileContent,omitempty"`
-	Id int64 `json:"id,omitempty"`
-	Email string `json:"email,omitempty"`
-	Name string `json:"name,omitempty"`
-	Content Data `json:"content,omitempty"`
-	Select bool `json:"select,omitempty"`
+	Group       int64        `json:"group,omitempty"`
+	Campaign    int64        `json:"campaign,omitempty"`
+	Recipient   int64        `json:"recipient,omitempty"`
+	FileName    string       `json:"fileName,omitempty"`
+	FileContent string       `json:"fileContent,omitempty"`
+	Id          int64        `json:"id,omitempty"`
+	Email       string       `json:"email,omitempty"`
+	Name        string       `json:"name,omitempty"`
+	Content     CampaignData `json:"content,omitempty"`
+	Select      bool         `json:"select,omitempty"`
 
 	Recipients Recipients `json:"recipients,omitempty"`
 

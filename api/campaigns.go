@@ -17,6 +17,7 @@ import (
 	"github.com/supme/gonder/models"
 	"errors"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 )
 
 type Campaign struct {
@@ -80,11 +81,75 @@ func campaigns(req request) (js []byte, err error) {
 			return js, errors.New("Forbidden add campaigns")
 		}
 
+	case "clone":
+		if auth.Right("add-campaigns") {
+			campaign, err := cloneCampaign(req.Id)
+			if err != nil {
+				return js, err
+			}
+			js, err = json.Marshal(campaign)
+			if err != nil {
+				return js, err
+			}
+		} else {
+			return js, errors.New("Forbidden add campaigns")
+		}
+
 	default:
 		err = errors.New("Command not found")
 	}
 
 	return js, err
+}
+
+func cloneCampaign(campaignId int64) (Campaign, error) {
+	c := Campaign{}
+	cData := CampaignData{
+		Accepted: false,
+	}
+	var(
+		groupId int64
+		start, end mysql.NullTime
+	)
+	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignId)
+
+	err := query.Scan(
+		&groupId,
+		&cData.ProfileId,
+		&cData.SenderId,
+		&cData.Name,
+		&cData.Subject,
+		&cData.Template,
+		&start,
+		&end,
+		&cData.SendUnsubscribe)
+
+	if err != nil {
+		return c, err
+	}
+	cData.Name = "[Clone] " + cData.Name
+	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
+			groupId,
+			cData.ProfileId,
+			cData.SenderId,
+			cData.Name,
+			cData.Subject,
+			cData.Template,
+			start,
+			end,
+			cData.SendUnsubscribe,
+			cData.Accepted,
+			)
+	if err != nil {
+		return c, err
+	}
+	c.Id, err = row.LastInsertId()
+	if err != nil {
+		return c, err
+	}
+	c.Name = cData.Name
+
+	return c, err
 }
 
 func addCampaign(groupId int64) (Campaign, error) {

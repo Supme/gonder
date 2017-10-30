@@ -34,6 +34,7 @@ type RecipientTableLine struct {
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Result string `json:"result"`
+	Open   bool `json:"open"`
 }
 
 type RecipientsTable struct {
@@ -173,6 +174,16 @@ func recipients(req request) (js []byte, err error) {
 				return js, errors.New("Forbidden resend campaign")
 			}
 
+		case "deduplicate":
+			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
+				err = deduplicateRecipient(req.Campaign)
+				if err != nil {
+					return js, errors.New("Can't deduplicate recipients")
+				}
+			} else {
+				return js, errors.New("Forbidden delete recipients")
+			}
+
 		default:
 			err = errors.New("Command not found")
 		}
@@ -194,6 +205,45 @@ func recipients(req request) (js []byte, err error) {
 		}
 	}
 	return js, err
+}
+
+func deduplicateRecipient(campaignId int64) error {
+	q, err := models.Db.Query(`
+	SELECT r1.id FROM recipient as r1
+			JOIN (
+				SELECT MIN(id) AS id, email FROM recipient WHERE
+             	campaign_id=? AND removed=0
+             	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
+			)
+     	WHERE r1.campaign_id=? AND removed=0
+	`, campaignId, campaignId)
+	if err != nil {
+		return nil
+	}
+
+	tx, err := models.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
+	if err != nil {
+		return err
+	}
+	defer dupl.Close()
+
+	for q.Next() {
+		var id int64
+		q.Scan(&id)
+		_, err = dupl.Exec(id)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	return err
 }
 
 func addRecipients(campaignId int64, recipients Recipients) error {
@@ -249,6 +299,7 @@ func getRecipientCampaign(recipientId int64) (int64, error) {
 }
 
 //ToDo check right errors
+//ToDo add unsubscribe column
 func getRecipients(req request) (RecipientsTable, error) {
 	var (
 		err                error
@@ -260,26 +311,26 @@ func getRecipients(req request) (RecipientsTable, error) {
 	params = append(params, req.Campaign)
 
 	rs.Records = []RecipientTableLine{}
-	where = " WHERE `removed`!=1 AND `campaign_id`=?"
+	where = " WHERE `removed`=0 AND `campaign_id`=?"
 	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
-		"recid":"id", "name":"name", "email":"email", "result":"status",
+		"recid":"id", "name":"name", "email":"email", "result":"status","open":"open",
 	}, true)
 	if err != nil {
 		return rs, err
 	}
-	// ToDo open status "IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) AS open"
-	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status` FROM `recipient`" + partWhere, partParams...)
+
+	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`" + partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
 	defer query.Close()
 	for query.Next() {
 		r := RecipientTableLine{}
-		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result)
+		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result, &r.Open)
 		rs.Records = append(rs.Records, r)
 	}
 	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
-		"recid":"id", "name":"name", "email":"email", "result":"status",
+		"recid":"id", "name":"name", "email":"email", "result":"status","open":"open",
 	}, false)
 	if err != nil {
 		return rs, err
@@ -309,7 +360,7 @@ func getRecipientParams(recipient int64) (RecipientTableParams, error) {
 }
 
 func delRecipients(campaignId int64) error {
-	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=?", campaignId)
+	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", campaignId)
 	return err
 }
 

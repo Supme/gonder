@@ -121,6 +121,7 @@
         "Edit record": "Редактировать запись",
         "Sender list editor": "Редактор списка отправителей",
         "Resend by 4xx code": "Переслать по 4хx коду",
-        "You are sure send mail for unsubscribed?": "Вы уверены, что хотите слать отписавшимся?"
+        "Are you sure send mail for unsubscribed?": "Вы уверены, что хотите слать отписавшимся?",
+        "Deduplicate": "Дедупликация"
     }
 }

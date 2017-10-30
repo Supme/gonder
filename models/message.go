@@ -61,7 +61,7 @@ func DecodeData(base64data string) (message Message, data string, err error) {
 	if err != nil {
 		return message, data, err
 	}
-	err = json.Unmarshal([]byte(decode), &param) // ToDo decode whisout reflect
+	err = json.Unmarshal([]byte(decode), &param) // ToDo decode whithout reflect
 	if err != nil {
 		return message, data, err
 	}

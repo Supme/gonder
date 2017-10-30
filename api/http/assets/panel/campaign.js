@@ -20,6 +20,45 @@ $('#campaign').w2grid({
     sortData: [{ field: 'recid', direction: 'DESC' }],
     url: '/api/campaigns',
     method: 'GET',
+    toolbar: {
+        items: [
+            {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'}
+        ],
+        onClick: function (event) {
+            if (event.target == 'clone')
+            {
+                var campaignId = parseInt(w2ui['campaign'].getSelection()[0]);
+
+                if (isNaN(campaignId)) {
+                    console.log("Clone not selected campaign");
+                    w2alert(w2utils.lang('Select campaign for clone.'));
+                } else {
+                    w2confirm(w2utils.lang('Are you sure you want to clone a campaign?'), function (btn) {
+                        if (btn == 'Yes') {
+                            console.log("Clone campaignId="+campaignId);
+                            var id, name;
+                            $.ajax({
+                                type: "GET",
+                                //async: false,
+                                dataType: 'json',
+                                data: {"request": JSON.stringify({"cmd": "clone", "id": campaignId})},
+                                url: '/api/campaigns'
+                            }).done(function(data) {
+                                if (data['status'] == 'error') {
+                                    w2alert(w2utils.lang(data["message"]));
+                                } else {
+                                    id = data["recid"];
+                                    name = data["name"];
+                                    w2ui.campaign.add({recid: id, name: name}, true);
+                                    w2ui.campaign.editField(id, 1);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }
+    },
     onAdd: function (event) {
         var id, name;
         $.ajax({

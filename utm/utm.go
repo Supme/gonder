@@ -24,6 +24,10 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
+	"image/png"
+	"bytes"
 )
 
 var (
@@ -207,6 +211,46 @@ func Run() {
 		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		w.Write(gif)
+	})
+
+	utm.HandleFunc("/code/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("qr") != "" {
+			size := int(200)
+			if r.URL.Query().Get("s") != "" {
+				i, err := strconv.Atoi(r.FormValue("s"))
+				if err != nil{
+					utmlog.Print(err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				size = i
+			}
+			qrCode, err := qr.Encode(r.URL.Query().Get("qr"), qr.M, qr.Auto)
+			if err != nil{
+				utmlog.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			qrCode, err = barcode.Scale(qrCode, size, size)
+			if err != nil{
+				utmlog.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			buffer := new(bytes.Buffer)
+			if err := png.Encode(buffer, qrCode); err != nil {
+				utmlog.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+			if _, err := w.Write(buffer.Bytes()); err != nil {
+				utmlog.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 	})
 
 	utmlog.Println("UTM listening on port " + models.Config.StatPort + "...")

@@ -48,7 +48,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	if (r.Form["group"] != nil && auth.CampaignRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
+	if (r.Form["group"] != nil && auth.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
 		var (
 			id int64
 			queryString, param string
