@@ -78,7 +78,10 @@
         });
 
         var ws = null;
+        var refreshNum;
         function startStatusLog(file){
+            const logMaxRows = 200;
+            var statusData = [];
             var statusLog = $("#statusLog");
             var wsuri = window.location.protocol=="https:"?"wss://":"ws://";
             wsuri += window.location.hostname;
@@ -89,6 +92,7 @@
                 ws = new WebSocket(wsuri);
             } else {
                 ws.close();
+                clearInterval(refreshNum);
                 setTimeout(function(){}, 2000);
                 ws = new WebSocket(wsuri);
             }
@@ -103,15 +107,24 @@
                 console.log("connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
             };
 
+            refreshNum = setInterval(function () {
+                if (statusLog.is(':visible') && (statusLog.prop("scrollTop") == statusLog.prop("scrollHeight")-statusLog.prop("clientHeight"))) {
+                    statusLog.empty();
+                    statusData.forEach(function(entry) {
+                        statusLog.append(entry+"<br/>");
+                    });
+                    statusLog.scrollTop(statusLog.prop("scrollHeight"));
+
+                }
+            }, logMaxRows);
+
             ws.onmessage = function(e) {
-                statusLog.append(e.data + "<br/>");
-                statusLog.scrollTop(statusLog.prop("scrollHeight"));
+                statusData.push(e.data);
+                if (statusData.length > logMaxRows) {
+                    statusData = statusData.slice(statusData.length-logMaxRows, statusData.length);
+                }
             };
-            /*
-             setInterval(function() {
-             ws.send("ping");
-             }, 1000)
-             */
+
         }
     </script>
 
