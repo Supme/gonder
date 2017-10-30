@@ -100,11 +100,15 @@
             statusLog.empty();
 
             ws.onopen = function() {
-                console.log("connected to " + wsuri);
+                console.log("websocket connected to " + wsuri);
             };
 
             ws.onclose = function(e) {
-                console.log("connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
+                console.log("websocket connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
+            };
+
+            ws.onerror = function (e) {
+                console.log("websocket connection error " + e);
             };
 
             refreshNum = setInterval(function () {
@@ -117,7 +121,6 @@
 
                 }
             }, logMaxRows);
-
             ws.onmessage = function(e) {
                 statusData.push(e.data);
                 if (statusData.length > logMaxRows) {
