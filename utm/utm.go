@@ -201,7 +201,7 @@ func Run() {
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'web_version')", message.CampaignId, message.RecipientId)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, models.WebVersion)
 		if err != nil {
 			utmlog.Print(err)
 		}
@@ -225,7 +225,7 @@ func Run() {
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, 'open_trace')", message.CampaignId, message.RecipientId)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, models.OpenTrace)
 		if err != nil {
 			utmlog.Print(err)
 		}

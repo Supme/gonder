@@ -5,6 +5,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
 	"net/http"
+	"fmt"
 )
 
 func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +18,7 @@ func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
 		var url string
 		var count int
 		res := make(map[string]int)
-		query, err := models.Db.Query("SELECT `jumping`.`url` as link, ( SELECT COUNT(`jumping`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`url`=link AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 ) as cnt FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `url` NOT IN ('open_trace', 'web_version', 'unsubscribe') AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 GROUP BY `jumping`.`url`", r.Form["campaign"][0], r.Form["campaign"][0])
+		query, err := models.Db.Query(fmt.Sprintf("SELECT `jumping`.`url` as link, ( SELECT COUNT(`jumping`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`url`=link AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 ) as cnt FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 GROUP BY `jumping`.`url`", models.WebVersion, models.OpenTrace, models.Unsubscribe), r.Form["campaign"][0], r.Form["campaign"][0])
 		if err != nil {
 			apilog.Print(err)
 		}
@@ -211,7 +212,7 @@ func reportOpenMailCount(campaignId string) int {
 // Web version count
 func reportOpenWebVersionCount(campaignId string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='web_version' AND `recipient`.`removed`=0", campaignId).Scan(&count)
+	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='%s' AND `recipient`.`removed`=0", models.WebVersion), campaignId).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
@@ -220,7 +221,7 @@ func reportOpenWebVersionCount(campaignId string) int {
 
 func reportRecipientJumpCount(campaignId string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`removed`=0 AND `jumping`.`url` NOT IN ('open_trace', 'web_version', 'unsubscribe') AND `jumping`.`campaign_id`=?", campaignId).Scan(&count)
+	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`removed`=0 AND `jumping`.`url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=?", models.OpenTrace, models.WebVersion, models.Unsubscribe), campaignId).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
