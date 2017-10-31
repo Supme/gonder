@@ -212,11 +212,11 @@ func recipients(req request) (js []byte, err error) {
 func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	q, err := models.Db.Query(`
 	SELECT r1.id FROM recipient as r1
-			JOIN (
-				SELECT MIN(id) AS id, email FROM recipient WHERE
+		JOIN (
+			SELECT MIN(id) AS id, email FROM recipient WHERE
              	campaign_id=? AND removed=0 AND status IS NULL
              	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
-			)
+		)
 	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
 	`, campaignId, campaignId)
 	if err != nil {
