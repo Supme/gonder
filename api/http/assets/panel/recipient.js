@@ -209,9 +209,10 @@ $('#recipientDeduplicate').click(
                         dataType: "json"
                     }
                 }).done(function(data) {
-                    if (data['status'] == 'error') {
+                    if (data['status'] != 'success') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
+                    w2alert(data["message"] + w2utils.lang(" duplicates removed"));
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
                 })

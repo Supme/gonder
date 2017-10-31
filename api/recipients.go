@@ -176,10 +176,11 @@ func recipients(req request) (js []byte, err error) {
 
 		case "deduplicate":
 			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
-				err = deduplicateRecipient(req.Campaign)
+				cnt, err := deduplicateRecipient(req.Campaign)
 				if err != nil {
 					return js, errors.New("Can't deduplicate recipients")
 				}
+				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 			} else {
 				return js, errors.New("Forbidden delete recipients")
 			}
@@ -207,7 +208,7 @@ func recipients(req request) (js []byte, err error) {
 	return js, err
 }
 
-func deduplicateRecipient(campaignId int64) error {
+func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	q, err := models.Db.Query(`
 	SELECT r1.id FROM recipient as r1
 			JOIN (
@@ -218,32 +219,34 @@ func deduplicateRecipient(campaignId int64) error {
      	WHERE r1.campaign_id=? AND removed=0
 	`, campaignId, campaignId)
 	if err != nil {
-		return nil
+		return
 	}
 
 	tx, err := models.Db.Begin()
 	if err != nil {
-		return err
+		return
 	}
 	defer tx.Rollback()
 
 	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
 	if err != nil {
-		return err
+		return
 	}
 	defer dupl.Close()
 
+	cnt = 0
 	for q.Next() {
 		var id int64
 		q.Scan(&id)
 		_, err = dupl.Exec(id)
 		if err != nil {
-			return err
+			return
 		}
+		cnt = cnt + 1
 	}
 
 	err = tx.Commit()
-	return err
+	return
 }
 
 func addRecipients(campaignId int64, recipients Recipients) error {
