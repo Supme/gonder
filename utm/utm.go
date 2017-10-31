@@ -76,6 +76,10 @@ func Run() {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
+			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+			if err != nil {
+				utmlog.Print(err)
+			}
 			if data == "mail" {
 				if err := message.Unsubscribe(map[string]string{"Unsubscribed":"from header link"}); err != nil {
 					utmlog.Println(err)
@@ -88,8 +92,14 @@ func Run() {
 						return
 					} else {
 						t.Execute(w, map[string]string{
+							// ToDo remove
 							"campaignId":  message.CampaignId,
 							"recipientId": message.RecipientId,
+
+							"CampaignId":  message.CampaignId,
+							"RecipientId": message.RecipientId,
+							"RecipientEmail": message.RecipientEmail,
+							"RecipientName": message.RecipientName,
 						})
 					}
 				}
@@ -101,8 +111,14 @@ func Run() {
 					return
 				} else {
 					t.Execute(w, map[string]string{
+						// ToDo remove
 						"campaignId":  message.CampaignId,
 						"recipientId": message.RecipientId,
+
+						"CampaignId":  message.CampaignId,
+						"RecipientId": message.RecipientId,
+						"RecipientEmail": message.RecipientEmail,
+						"RecipientName": message.RecipientName,
 					})
 				}
 			}
@@ -118,6 +134,10 @@ func Run() {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
 				return
+			}
+			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+			if err != nil {
+				utmlog.Print(err)
 			}
 			if message.CampaignId != r.PostFormValue("campaignId") {
 				utmlog.Println(err)
@@ -141,8 +161,14 @@ func Run() {
 					return
 				}
 				t.Execute(w, map[string]string{
+					// ToDo remove
 					"campaignId":  message.CampaignId,
 					"recipientId": message.RecipientId,
+
+					"CampaignId":  message.CampaignId,
+					"RecipientId": message.RecipientId,
+					"RecipientEmail": message.RecipientEmail,
+					"RecipientName": message.RecipientName,
 				})
 			}
 		}
