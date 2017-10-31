@@ -178,6 +178,7 @@ func recipients(req request) (js []byte, err error) {
 			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
 				cnt, err := deduplicateRecipient(req.Campaign)
 				if err != nil {
+					apilog.Println(err)
 					return js, errors.New("Can't deduplicate recipients")
 				}
 				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
@@ -213,10 +214,10 @@ func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	SELECT r1.id FROM recipient as r1
 			JOIN (
 				SELECT MIN(id) AS id, email FROM recipient WHERE
-             	campaign_id=? AND removed=0
+             	campaign_id=? AND removed=0 AND status IS NULL
              	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
 			)
-     	WHERE r1.campaign_id=? AND removed=0
+	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
 	`, campaignId, campaignId)
 	if err != nil {
 		return

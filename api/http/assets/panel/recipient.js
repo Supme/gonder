@@ -211,8 +211,9 @@ $('#recipientDeduplicate').click(
                 }).done(function(data) {
                     if (data['status'] != 'success') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                    } else {
+                        w2alert(data["message"] + w2utils.lang(" duplicates removed"));
                     }
-                    w2alert(data["message"] + w2utils.lang(" duplicates removed"));
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
                 })
