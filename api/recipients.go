@@ -186,6 +186,18 @@ func recipients(req request) (js []byte, err error) {
 				return js, errors.New("Forbidden delete recipients")
 			}
 
+		case "unavaible":
+			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
+				cnt, err := markUnavaibleRecentTime(req.Campaign)
+				if err != nil {
+					apilog.Println(err)
+					return js, errors.New("Can't mark unavaible recipients")
+				}
+				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
+			} else {
+				return js, errors.New("Forbidden mark unavaible recipients")
+			}
+
 		default:
 			err = errors.New("Command not found")
 		}
@@ -207,6 +219,60 @@ func recipients(req request) (js []byte, err error) {
 		}
 	}
 	return js, err
+}
+
+// Remove later unavaible status like:
+//  invalid mailbox
+//  no such user
+//  does not exist
+//  unknown user
+//  user unknown
+//  user not found
+//  bad destination mailbox
+//  mailbox unavailable
+func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
+	p, err := models.Db.Prepare(`UPDATE recipient SET status="Unavaible recent time" WHERE id=?`)
+	if err != nil {
+		return
+	}
+
+	q, err := models.Db.Query(`
+SELECT id FROM recipient WHERE email IN
+ (SELECT rs.email FROM recipient as rs WHERE
+    date>(NOW() - INTERVAL 30 DAY)
+   AND
+   (rs.status LIKE "%invalid mailbox%" OR
+    rs.status LIKE "%no such user%" OR
+    rs.status LIKE "%does not exist%" OR
+    rs.status LIKE "%unknown user%" OR
+    rs.status LIKE "%user unknown%" OR
+    rs.status LIKE "%user not found%" OR
+    rs.status LIKE "%bad destination mailbox%" OR
+    rs.status LIKE "%mailbox unavailable%" OR
+    rs.status="Ok")
+  GROUP BY rs.email
+  HAVING SUM(rs.status!="Ok")>0 AND SUM(rs.status="Ok")=0)
+AND removed=0
+AND campaign_id=?`, campaignId)
+	if err != nil {
+		return
+	}
+
+	cnt = 0
+	for q.Next() {
+		var id string
+		err = q.Scan(&id)
+		if err != nil {
+			return
+		}
+		_, err = p.Exec(id)
+		if err != nil {
+			return
+		}
+		cnt++
+	}
+
+	return
 }
 
 func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
@@ -238,7 +304,10 @@ func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	cnt = 0
 	for q.Next() {
 		var id int64
-		q.Scan(&id)
+		err= q.Scan(&id)
+		if err != nil {
+			return
+		}
 		_, err = dupl.Exec(id)
 		if err != nil {
 			return
