@@ -230,6 +230,7 @@ func recipients(req request) (js []byte, err error) {
 //  user not found
 //  bad destination mailbox
 //  mailbox unavailable
+// ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
 func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
 	p, err := models.Db.Prepare(`UPDATE recipient SET status="Unavaible recent time" WHERE id=?`)
 	if err != nil {
@@ -253,6 +254,7 @@ SELECT id FROM recipient WHERE email IN
   GROUP BY rs.email
   HAVING SUM(rs.status!="Ok")>0 AND SUM(rs.status="Ok")=0)
 AND removed=0
+AND status IS NULL
 AND campaign_id=?`, campaignId)
 	if err != nil {
 		return
@@ -260,7 +262,7 @@ AND campaign_id=?`, campaignId)
 
 	cnt = 0
 	for q.Next() {
-		var id string
+		var id int64
 		err = q.Scan(&id)
 		if err != nil {
 			return
