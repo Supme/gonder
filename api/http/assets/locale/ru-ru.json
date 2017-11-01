@@ -122,6 +122,12 @@
         "Sender list editor": "Редактор списка отправителей",
         "Resend by 4xx code": "Переслать по 4хx коду",
         "Are you sure send mail for unsubscribed?": "Вы уверены, что хотите слать отписавшимся?",
-        "Deduplicate": "Дедупликация"
+        "Deduplicate": "Дедуплицировать",
+        "Deduplicating...": "Дедупликация...",
+        "duplicates removed": "дублей удалено",
+        "Mark unavaible": "Пометить несуществующие",
+        "Marking unavaible...": "Пометка несуществующих",
+        "Mark unavaible recent time recipients": "Пометить несуществующих, последнее время, получателей ",
+        "marked as unavaible": "помечено несуществующими"
     }
 }
