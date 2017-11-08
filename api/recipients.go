@@ -231,11 +231,13 @@ func recipients(req request) (js []byte, err error) {
 //  bad destination mailbox
 //  mailbox unavailable
 // ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
+// ToDo optimize this
 func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
 	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.UnavaibleRecentTime))
 	if err != nil {
 		return
 	}
+	defer p.Close()
 
 	q, err := models.Db.Query(`
 SELECT id FROM recipient WHERE email IN
@@ -259,6 +261,7 @@ AND campaign_id=?`, campaignId)
 	if err != nil {
 		return
 	}
+	defer q.Close()
 
 	cnt = 0
 	for q.Next() {
