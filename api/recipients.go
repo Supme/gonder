@@ -232,7 +232,7 @@ func recipients(req request) (js []byte, err error) {
 //  mailbox unavailable
 // ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
 func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
-	p, err := models.Db.Prepare(`UPDATE recipient SET status="Unavaible recent time" WHERE id=?`)
+	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.UnavaibleRecentTime))
 	if err != nil {
 		return
 	}
@@ -267,6 +267,7 @@ AND campaign_id=?`, campaignId)
 		if err != nil {
 			return
 		}
+		// ToDo check q.NextResultSet() and batch update
 		_, err = p.Exec(id)
 		if err != nil {
 			return
