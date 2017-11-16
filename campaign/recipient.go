@@ -1,11 +1,11 @@
 package campaign
 
 import (
+	"github.com/supme/directEmail"
 	"github.com/supme/gonder/models"
 	"math/rand"
 	"strconv"
 	"time"
-	"github.com/supme/directEmail"
 )
 
 type recipient struct {
@@ -54,11 +54,10 @@ func (r *recipient) send(c *campaign, iface, host *string) (res string) {
 	email.Subject = message.CampaignSubject
 	email.TextHtml(m)
 	email.Header(
-		"List-Unsubscribe: " + message.UnsubscribeMailLink() + "\nPrecedence: bulk",
-		"Message-ID: <" + strconv.FormatInt(time.Now().Unix(), 10) + c.id + "." + r.id + "@" + *host + ">",
-		"X-Postmaster-Msgtype: campaign" + c.id,
+		"List-Unsubscribe: "+message.UnsubscribeMailLink()+"\nPrecedence: bulk",
+		"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.id+"."+r.id+"@"+*host+">",
+		"X-Postmaster-Msgtype: campaign"+c.id,
 	)
-
 
 	var dkimSelector string
 	if c.dkimUse {

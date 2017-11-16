@@ -14,8 +14,8 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"errors"
+	"github.com/supme/gonder/models"
 )
 
 type ProfileList struct {

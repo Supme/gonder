@@ -13,9 +13,13 @@
 package utm
 
 import (
+	"bytes"
 	"encoding/base64"
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
 	"github.com/supme/gonder/models"
 	"html/template"
+	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -24,10 +28,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"github.com/boombuler/barcode"
-	"github.com/boombuler/barcode/qr"
-	"image/png"
-	"bytes"
 )
 
 var (
@@ -81,7 +81,7 @@ func Run() {
 				utmlog.Print(err)
 			}
 			if data == "mail" {
-				if err := message.Unsubscribe(map[string]string{"Unsubscribed":"from header link"}); err != nil {
+				if err := message.Unsubscribe(map[string]string{"Unsubscribed": "from header link"}); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -96,10 +96,10 @@ func Run() {
 							"campaignId":  message.CampaignId,
 							"recipientId": message.RecipientId,
 
-							"CampaignId":  message.CampaignId,
-							"RecipientId": message.RecipientId,
+							"CampaignId":     message.CampaignId,
+							"RecipientId":    message.RecipientId,
 							"RecipientEmail": message.RecipientEmail,
-							"RecipientName": message.RecipientName,
+							"RecipientName":  message.RecipientName,
 						})
 					}
 				}
@@ -115,10 +115,10 @@ func Run() {
 						"campaignId":  message.CampaignId,
 						"recipientId": message.RecipientId,
 
-						"CampaignId":  message.CampaignId,
-						"RecipientId": message.RecipientId,
+						"CampaignId":     message.CampaignId,
+						"RecipientId":    message.RecipientId,
 						"RecipientEmail": message.RecipientEmail,
-						"RecipientName": message.RecipientName,
+						"RecipientName":  message.RecipientName,
 					})
 				}
 			}
@@ -165,10 +165,10 @@ func Run() {
 					"campaignId":  message.CampaignId,
 					"recipientId": message.RecipientId,
 
-					"CampaignId":  message.CampaignId,
-					"RecipientId": message.RecipientId,
+					"CampaignId":     message.CampaignId,
+					"RecipientId":    message.RecipientId,
 					"RecipientEmail": message.RecipientEmail,
-					"RecipientName": message.RecipientName,
+					"RecipientName":  message.RecipientName,
 				})
 			}
 		}
@@ -244,7 +244,7 @@ func Run() {
 			size := int(200)
 			if r.URL.Query().Get("s") != "" {
 				i, err := strconv.Atoi(r.FormValue("s"))
-				if err != nil{
+				if err != nil {
 					utmlog.Print(err)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -252,13 +252,13 @@ func Run() {
 				size = i
 			}
 			qrCode, err := qr.Encode(r.URL.Query().Get("qr"), qr.M, qr.Auto)
-			if err != nil{
+			if err != nil {
 				utmlog.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			qrCode, err = barcode.Scale(qrCode, size, size)
-			if err != nil{
+			if err != nil {
 				utmlog.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

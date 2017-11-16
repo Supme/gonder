@@ -8,9 +8,9 @@ import (
 
 type campaign struct {
 	id, fromEmail, fromName, subject, body string
-	dkimSelector	string
-	dkimPrivateKey  []byte
-	dkimUse			bool
+	dkimSelector                           string
+	dkimPrivateKey                         []byte
+	dkimUse                                bool
 	sendUnsubscribe                        bool
 	profileId, resendDelay, resendCount    int
 	attachments                            []string

@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/supme/gonder/models"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/supme/gonder/models"
 	"strings"
 )
 
@@ -13,8 +13,8 @@ func units(req request) (js []byte, err error) {
 		Id   int64  `json:"recid"`
 		Name string `json:"name"`
 	}
-	type Units struct{
-		Total int64 `json:"total"`
+	type Units struct {
+		Total   int64      `json:"total"`
 		Records []UnitList `json:"records"`
 	}
 	type UnitRight map[string]bool
@@ -24,15 +24,15 @@ func units(req request) (js []byte, err error) {
 
 		case "get":
 			var (
-				sl = Units{}
-				id int64
-				name string
-				partWhere, where string
+				sl                 = Units{}
+				id                 int64
+				name               string
+				partWhere, where   string
 				partParams, params []interface{}
 			)
 			sl.Records = []UnitList{}
 			where = " WHERE 1=1 "
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, true)
+			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 			if err != nil {
 				return nil, err
 			}
@@ -49,11 +49,11 @@ func units(req request) (js []byte, err error) {
 					Name: name,
 				})
 			}
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, false)
+			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 			if err != nil {
 				apilog.Print(err)
 			}
-			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_unit` " + partWhere, partParams...).Scan(&sl.Total)
+			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_unit` "+partWhere, partParams...).Scan(&sl.Total)
 			if err != nil {
 				return nil, err
 			}
@@ -61,7 +61,6 @@ func units(req request) (js []byte, err error) {
 			if err != nil {
 				return js, err
 			}
-
 
 		case "add":
 			res, err := models.Db.Exec("INSERT INTO `auth_unit`(`name`) VALUES (?)", req.Record.Name)
@@ -89,7 +88,7 @@ func units(req request) (js []byte, err error) {
 
 		case "rights":
 			var (
-				name string
+				name  string
 				right bool
 			)
 			sl := UnitRight{}
@@ -112,7 +111,7 @@ func units(req request) (js []byte, err error) {
 			err = errors.New("Command not found")
 		}
 
-	}  else {
+	} else {
 		return nil, errors.New("Access denied")
 	}
 
@@ -126,7 +125,7 @@ func updateUnitRights(req request) error {
 	}
 
 	var (
-		id int64
+		id   int64
 		name string
 	)
 	rights := map[string]int64{}
@@ -141,27 +140,69 @@ func updateUnitRights(req request) error {
 	}
 
 	queryData := []string{}
-	if req.Record.GetGroups == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-groups"])) }
-	if req.Record.SaveGroups == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-groups"])) }
-	if req.Record.AddGroups == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-groups"])) }
-	if req.Record.GetCampaigns == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-campaigns"])) }
-	if req.Record.SaveCampaigns == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-campaigns"])) }
-	if req.Record.AddCampaigns == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-campaigns"])) }
-	if req.Record.GetCampaign == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-campaign"])) }
-	if req.Record.SaveCampaign == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-campaign"])) }
-	if req.Record.GetRecipients == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-recipients"])) }
-	if req.Record.GetRecipientParameters == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-recipient-parameters"])) }
-	if req.Record.UploadRecipients == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["upload-recipients"])) }
-	if req.Record.DeleteRecipients == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["delete-recipients"])) }
-	if req.Record.GetProfiles == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-profiles"])) }
-	if req.Record.AddProfiles == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-profiles"])) }
-	if req.Record.DeleteProfiles == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["delete-profiles"])) }
-	if req.Record.SaveProfiles == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-profiles"])) }
-	if req.Record.AcceptCampaign == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["accept-campaign"])) }
-	if req.Record.GetLogMain == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-main"])) }
-	if req.Record.GetLogApi == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-api"])) }
-	if req.Record.GetLogCampaign == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-campaign"])) }
-	if req.Record.GetLogUtm == 1 { queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-utm"])) }
+	if req.Record.GetGroups == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-groups"]))
+	}
+	if req.Record.SaveGroups == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-groups"]))
+	}
+	if req.Record.AddGroups == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-groups"]))
+	}
+	if req.Record.GetCampaigns == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-campaigns"]))
+	}
+	if req.Record.SaveCampaigns == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-campaigns"]))
+	}
+	if req.Record.AddCampaigns == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-campaigns"]))
+	}
+	if req.Record.GetCampaign == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-campaign"]))
+	}
+	if req.Record.SaveCampaign == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-campaign"]))
+	}
+	if req.Record.GetRecipients == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-recipients"]))
+	}
+	if req.Record.GetRecipientParameters == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-recipient-parameters"]))
+	}
+	if req.Record.UploadRecipients == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["upload-recipients"]))
+	}
+	if req.Record.DeleteRecipients == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["delete-recipients"]))
+	}
+	if req.Record.GetProfiles == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-profiles"]))
+	}
+	if req.Record.AddProfiles == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["add-profiles"]))
+	}
+	if req.Record.DeleteProfiles == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["delete-profiles"]))
+	}
+	if req.Record.SaveProfiles == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["save-profiles"]))
+	}
+	if req.Record.AcceptCampaign == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["accept-campaign"]))
+	}
+	if req.Record.GetLogMain == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-main"]))
+	}
+	if req.Record.GetLogApi == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-api"]))
+	}
+	if req.Record.GetLogCampaign == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-campaign"]))
+	}
+	if req.Record.GetLogUtm == 1 {
+		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.Id, rights["get-log-utm"]))
+	}
 	data := strings.Join(queryData, ", ")
 	fmt.Println(data)
 

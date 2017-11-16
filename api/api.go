@@ -14,6 +14,8 @@ package api
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"github.com/supme/gonder/models"
 	"io"
 	"io/ioutil"
@@ -22,8 +24,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"fmt"
-	"errors"
 )
 
 var (
@@ -44,14 +44,11 @@ func Run() {
 
 	api := http.NewServeMux()
 
-
 	api.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
 		runtime.ReadMemStats(mem)
 		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
-
-
 
 	// API
 	api.HandleFunc("/api/", auth.Check(apiRequest))
@@ -69,13 +66,13 @@ func Run() {
 	// Static dirs
 	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
 	/*
-	m := minify.New()
-	m.AddFunc("text/css", css.Minify)
-	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("application/javascript", js.Minify)
-	api.Handle("/assets/",m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"), r.URL.Path))
-	})))
+		m := minify.New()
+		m.AddFunc("text/css", css.Minify)
+		m.AddFunc("text/html", html.Minify)
+		m.AddFunc("application/javascript", js.Minify)
+		api.Handle("/assets/",m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"), r.URL.Path))
+		})))
 	*/
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
