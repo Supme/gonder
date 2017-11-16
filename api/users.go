@@ -1,47 +1,47 @@
 package api
 
 import (
-	"github.com/supme/gonder/models"
-	"encoding/json"
-	"fmt"
 	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/supme/gonder/models"
 )
 
 func users(req request) (js []byte, err error) {
 	type UserList struct {
-		Id   int64  `json:"recid"`
-		UnitId int64 `json:"unitid"`
+		Id       int64   `json:"recid"`
+		UnitId   int64   `json:"unitid"`
 		GroupsId []int64 `json:"groupsid"`
-		Name string `json:"name"`
-		Password string `json:"password"`
+		Name     string  `json:"name"`
+		Password string  `json:"password"`
 	}
 
-	type Users struct{
-		Total int64 `json:"total"`
+	type Users struct {
+		Total   int64      `json:"total"`
 		Records []UserList `json:"records"`
 	}
 
 	if auth.IsAdmin() {
-	switch req.Cmd {
+		switch req.Cmd {
 		case "get":
 			var (
-				sl = Users{}
-				id, unitid, grpid int64
-				name string
-				partWhere, where string
+				sl                 = Users{}
+				id, unitid, grpid  int64
+				name               string
+				partWhere, where   string
 				partParams, params []interface{}
 			)
 			sl.Records = []UserList{}
 
 			where = " WHERE 1=1 "
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, true)
+			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 			if err != nil {
 				return nil, err
 			}
-			query, err := models.Db.Query("SELECT `id`, `auth_unit_id`, `name` FROM `auth_user`" + partWhere, partParams...)
+			query, err := models.Db.Query("SELECT `id`, `auth_unit_id`, `name` FROM `auth_user`"+partWhere, partParams...)
 			if err != nil {
 				return nil, err
 			}
@@ -59,18 +59,18 @@ func users(req request) (js []byte, err error) {
 					groupsid = append(groupsid, grpid)
 				}
 				sl.Records = append(sl.Records, UserList{
-					Id:   id,
-					UnitId: unitid,
+					Id:       id,
+					UnitId:   unitid,
 					GroupsId: groupsid,
-					Name: name,
+					Name:     name,
 				})
 			}
 
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, false)
+			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 			if err != nil {
 				apilog.Print(err)
 			}
-			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user` " + partWhere, partParams...).Scan(&sl.Total)
+			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user` "+partWhere, partParams...).Scan(&sl.Total)
 			if err != nil {
 				return nil, err
 			}

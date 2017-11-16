@@ -172,7 +172,7 @@ func filemanagerAdd(path string, name string, file multipart.File) info {
 		return info{Error: "Can not write file", Code: 1}
 	}
 
-	return info{Error: "Ok", Code: 0}//filemanagerGetInfo(filepath.Join(path, name))//info{Path: path, Name: name, Error: "No error", Code: 0}
+	return info{Error: "Ok", Code: 0} //filemanagerGetInfo(filepath.Join(path, name))//info{Path: path, Name: name, Error: "No error", Code: 0}
 }
 
 func filemanagerDownload(path string) (string, []byte) {
@@ -322,10 +322,10 @@ func filemanagerDelete(path string) info {
 }
 
 func filemanagerMkDir(path, name string) info {
-	if err := os.MkdirAll(filemanagerRealPath(filepath.Join(path,name)), 0755); err != nil {
+	if err := os.MkdirAll(filemanagerRealPath(filepath.Join(path, name)), 0755); err != nil {
 		return info{Error: "Error make directory", Code: 1}
 	}
-	return filemanagerGetInfo(filepath.Join(path, name))//info{Error: "Ok", Code: 0}
+	return filemanagerGetInfo(filepath.Join(path, name)) //info{Error: "Ok", Code: 0}
 }
 
 func filemanagerRename(oldPath, newPath string) info {
@@ -344,6 +344,6 @@ func filemanagerRealPath(path string) (realpath string) {
 	if path == "" {
 		path = string(filepath.Separator)
 	}
-	realpath = models.FromRootDir(filepath.Join(filemanagerRootPath,path))
+	realpath = models.FromRootDir(filepath.Join(filemanagerRootPath, path))
 	return
 }

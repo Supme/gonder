@@ -14,10 +14,10 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"github.com/supme/gonder/models"
 )
 
 type Campaign struct {
@@ -107,8 +107,8 @@ func cloneCampaign(campaignId int64) (Campaign, error) {
 	cData := CampaignData{
 		Accepted: false,
 	}
-	var(
-		groupId int64
+	var (
+		groupId    int64
 		start, end mysql.NullTime
 	)
 	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignId)
@@ -129,17 +129,17 @@ func cloneCampaign(campaignId int64) (Campaign, error) {
 	}
 	cData.Name = "[Clone] " + cData.Name
 	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
-			groupId,
-			cData.ProfileId,
-			cData.SenderId,
-			cData.Name,
-			cData.Subject,
-			cData.Template,
-			start,
-			end,
-			cData.SendUnsubscribe,
-			cData.Accepted,
-			)
+		groupId,
+		cData.ProfileId,
+		cData.SenderId,
+		cData.Name,
+		cData.Subject,
+		cData.Template,
+		start,
+		end,
+		cData.SendUnsubscribe,
+		cData.Accepted,
+	)
 	if err != nil {
 		return c, err
 	}
@@ -189,11 +189,11 @@ func saveCampaigns(changes []map[string]interface{}) (err error) {
 
 func getCampaigns(req request) (Campaigns, error) {
 	var (
-		c Campaign
-		cs Campaigns
-		partWhere, where string
+		c                  Campaign
+		cs                 Campaigns
+		partWhere, where   string
 		partParams, params []interface{}
-		err error
+		err                error
 	)
 	cs.Records = []Campaign{}
 	params = append(params, req.Id)
@@ -203,11 +203,11 @@ func getCampaigns(req request) (Campaigns, error) {
 		where = "`group_id`=? AND `group_id` IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 		params = append(params, auth.userId)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, true)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {
 		fmt.Println("Create SQL Part error:", err)
 	}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE " + partWhere, partParams...)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE "+partWhere, partParams...)
 	if err != nil {
 		return cs, err
 	}
@@ -216,10 +216,10 @@ func getCampaigns(req request) (Campaigns, error) {
 		err = query.Scan(&c.Id, &c.Name)
 		cs.Records = append(cs.Records, c)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, false)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 	if err != nil {
 		apilog.Print(err)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE " + partWhere, partParams...).Scan(&cs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE "+partWhere, partParams...).Scan(&cs.Total)
 	return cs, err
 }

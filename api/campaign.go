@@ -14,12 +14,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
 	"regexp"
 	"strings"
 	"time"
-	"errors"
 )
 
 func campaign(req request) (js []byte, err error) {

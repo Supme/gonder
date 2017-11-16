@@ -16,17 +16,17 @@ import (
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/supme/gonder/models"
 	"github.com/tealeg/xlsx"
 	"io/ioutil"
 	"os"
 	"path"
-	"time"
-	"fmt"
 	"strconv"
-	"errors"
-	"sync"
 	"strings"
+	"sync"
+	"time"
 )
 
 type RecipientTableLine struct {
@@ -34,7 +34,7 @@ type RecipientTableLine struct {
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Result string `json:"result"`
-	Open   bool `json:"open"`
+	Open   bool   `json:"open"`
 }
 
 type RecipientsTable struct {
@@ -45,8 +45,8 @@ type RecipientsTable struct {
 type Recipients []Recipient
 
 type Recipient struct {
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	Name   string           `json:"name"`
+	Email  string           `json:"email"`
 	Params []RecipientParam `json:"params"`
 }
 
@@ -88,7 +88,7 @@ func recipients(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
-			}  else {
+			} else {
 				return js, errors.New("Forbidden add recipients")
 			}
 
@@ -104,7 +104,7 @@ func recipients(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
-				apilog.Print(auth.Name," upload file ", req.FileName)
+				apilog.Print(auth.Name, " upload file ", req.FileName)
 
 				if path.Ext(req.FileName) == ".csv" {
 					go func() {
@@ -310,7 +310,7 @@ func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	cnt = 0
 	for q.Next() {
 		var id int64
-		err= q.Scan(&id)
+		err = q.Scan(&id)
 		if err != nil {
 			return
 		}
@@ -392,13 +392,13 @@ func getRecipients(req request) (RecipientsTable, error) {
 	rs.Records = []RecipientTableLine{}
 	where = " WHERE `removed`=0 AND `campaign_id`=?"
 	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
-		"recid":"id", "name":"name", "email":"email", "result":"status","open":"open",
+		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, true)
 	if err != nil {
 		return rs, err
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`" + partWhere, partParams...)
+	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`"+partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
@@ -409,12 +409,12 @@ func getRecipients(req request) (RecipientsTable, error) {
 		rs.Records = append(rs.Records, r)
 	}
 	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
-		"recid":"id", "name":"name", "email":"email", "result":"status","open":"open",
+		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, false)
 	if err != nil {
 		return rs, err
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`" + partWhere, partParams...).Scan(&rs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`"+partWhere, partParams...).Scan(&rs.Total)
 	return rs, nil
 
 }

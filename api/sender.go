@@ -14,18 +14,18 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/supme/gonder/models"
 	"strconv"
-	"errors"
 )
 
 type Sender struct {
-	Id    int64  `json:"recid"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	DkimSelector  string `json:"dkimSelector"`
-	DkimKey  string `json:"dkimKey"`
-	DkimUse  bool `json:"dkimUse"`
+	Id           int64  `json:"recid"`
+	Email        string `json:"email"`
+	Name         string `json:"name"`
+	DkimSelector string `json:"dkimSelector"`
+	DkimKey      string `json:"dkimKey"`
+	DkimUse      bool   `json:"dkimUse"`
 }
 type Senders struct {
 	Total   int64    `json:"total"`
@@ -48,7 +48,7 @@ func sender(req request) (js []byte, err error) {
 			defer query.Close()
 
 			for query.Next() {
-				err = query.Scan(&f.Id, &f.Email, &f.Name,&f.DkimSelector, &f.DkimKey, &f.DkimUse)
+				err = query.Scan(&f.Id, &f.Email, &f.Name, &f.DkimSelector, &f.DkimKey, &f.DkimUse)
 				fs.Records = append(fs.Records, f)
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", req.Group).Scan(&fs.Total)
@@ -59,7 +59,7 @@ func sender(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if auth.Right("save-groups") && auth.GroupRight(req.Id)  {
+		if auth.Right("save-groups") && auth.GroupRight(req.Id) {
 			var group int64
 			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.Id).Scan(&group)
 			if err != nil {

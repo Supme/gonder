@@ -27,7 +27,7 @@ import (
 
 type config struct {
 	dbType, dbString string
-	dbConnections 	 int
+	dbConnections    int
 	RootPath         string
 	Version          string
 	Url              string
@@ -36,9 +36,9 @@ type config struct {
 	MaxCampaingns    int
 	RealSend         bool
 	DnsCache         bool
-	DefaultProfile	 int
-	AdminMail	 string
-	GonderMail	 string
+	DefaultProfile   int
+	AdminMail        string
+	GonderMail       string
 }
 
 var (
@@ -104,7 +104,6 @@ func (c *config) Update() {
 	}
 	c.AdminMail = mainConfig.ValueOf("adminMail")
 	c.GonderMail = mainConfig.ValueOf("gonderMail")
-
 
 	dbConfig, err := config.Section("Database")
 	checkErr(err)

@@ -14,8 +14,8 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"errors"
+	"github.com/supme/gonder/models"
 )
 
 type SenderList struct {
@@ -44,5 +44,5 @@ func senderList(req request) (js []byte, err error) {
 		js, err = json.Marshal(fs)
 		return js, err
 	}
-		return js, errors.New("Forbidden get from this group")
+	return js, errors.New("Forbidden get from this group")
 }

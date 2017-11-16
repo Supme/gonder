@@ -14,8 +14,8 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"errors"
+	"github.com/supme/gonder/models"
 )
 
 type Group struct {
@@ -119,11 +119,11 @@ func saveGroups(changes []map[string]interface{}) (err error) {
 
 func getGroups(req request) (Groups, error) {
 	var (
-		g Group
-		gs Groups
-		partWhere, where string
+		g                  Group
+		gs                 Groups
+		partWhere, where   string
 		partParams, params []interface{}
-		err error
+		err                error
 	)
 	gs.Records = []Group{}
 	if !auth.IsAdmin() {
@@ -132,11 +132,11 @@ func getGroups(req request) (Groups, error) {
 	} else {
 		where = "WHERE 1=1"
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, true)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {
 		apilog.Print(err)
 	}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` " + partWhere , partParams...)
+	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` "+partWhere, partParams...)
 	if err != nil {
 		return gs, err
 	}
@@ -145,10 +145,10 @@ func getGroups(req request) (Groups, error) {
 		err = query.Scan(&g.Id, &g.Name)
 		gs.Records = append(gs.Records, g)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid":"id", "name":"name"}, false)
+	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 	if err != nil {
 		apilog.Print(err)
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `group` " + partWhere, partParams...).Scan(&gs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `group` "+partWhere, partParams...).Scan(&gs.Total)
 	return gs, err
 }

@@ -15,11 +15,11 @@ package api
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/supme/directEmail"
 	"github.com/supme/gonder/models"
+	"log"
 	"net/http"
 	"net/url"
-	"log"
-	"github.com/supme/directEmail"
 )
 
 type Auth struct {
@@ -36,11 +36,11 @@ func (a *Auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 		if !authorize {
 			if user != "" {
 				ip := models.GetIP(r)
-				apilog.Printf("%s bad auth login '%s'", ip , user)
+				apilog.Printf("%s bad auth login '%s'", ip, user)
 				if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
 					go func() {
 						email := directEmail.New()
-						email.FromEmail =  models.Config.GonderMail
+						email.FromEmail = models.Config.GonderMail
 						email.ToName = models.Config.AdminMail
 						email.Subject = "Bad login to Gonder"
 						email.TextPlain(ip + " bad auth login '" + user + "'")

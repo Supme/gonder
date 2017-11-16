@@ -19,11 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
 	"text/template"
-	"log"
 )
 
 type (
@@ -82,7 +82,7 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 	if err != nil {
 		log.Print(err)
 	}
-	id, e := r.LastInsertId();
+	id, e := r.LastInsertId()
 	if e != nil {
 		log.Print(e)
 	}
@@ -151,6 +151,7 @@ func (m *Message) StatPngLink() string {
 
 // Regexp for replace all http and https in message to link on utm service
 var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+
 // Render message body
 func (m *Message) RenderMessage() (string, error) {
 

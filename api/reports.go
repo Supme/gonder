@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
 	"net/http"
-	"fmt"
 )
 
 func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
@@ -51,13 +51,13 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 
 	if (r.Form["group"] != nil && auth.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
 		var (
-			id int64
+			id                 int64
 			queryString, param string
-			timestamp mysql.NullTime
+			timestamp          mysql.NullTime
 		)
 		type U struct {
-			Email string `json:"email"`
-			Date  int64  `json:"date"`
+			Email string              `json:"email"`
+			Date  int64               `json:"date"`
 			Extra []map[string]string `json:"extra,omitempty"`
 		}
 		res := []U{}
@@ -87,7 +87,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 			// extra data
 			extra := map[string]string{}
 			var (
-				name string
+				name  string
 				value string
 			)
 			q, err := models.Db.Query("SELECT `name`, `value` FROM `unsubscribe_extra` WHERE `unsubscribe_id`=?", id)
@@ -103,7 +103,6 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 				rs.Extra = append(rs.Extra, extra)
 			}
 			q.Close()
-
 
 			res = append(res, rs)
 		}
@@ -228,7 +227,6 @@ func reportRecipientJumpCount(campaignId string) int {
 	return count
 }
 
-
 /* ToDo add statistic
 
 SELECT DISTINCT
@@ -260,4 +258,4 @@ WHERE `recipient`.`date` >= DATE_SUB(NOW(), INTERVAL 1 DAY)
 	AND LOWER(`recipient`.`status`) REGEXP '^(5[0-9]{2}).+'
     AND	`recipient`.`removed`=0
 
- */
+*/
