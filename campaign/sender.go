@@ -36,7 +36,7 @@ func send(camp *campaign, id, email, name string, profileId int, iface, host str
 		checkErr(err)
 
 		result := r.send(camp, &iface, &host)
-		models.ProfileFree(profileId)
+		ProfileFree(profileId)
 
 		_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, r.id)
 		checkErr(err)
@@ -58,7 +58,7 @@ func (c campaign) send() {
 		err = query.Scan(&id, &email, &name)
 		checkErr(err)
 
-		profileId, iface, host := models.ProfileNext(c.profileId)
+		profileId, iface, host := ProfileNext(c.profileId)
 		go func(id, email, name string, profileId int, iface, host string) {
 			c.wg.Add(1)
 			defer c.wg.Done()
@@ -95,7 +95,7 @@ func (c campaign) resend() {
 		for query.Next() {
 			err = query.Scan(&id, &email, &name)
 			checkErr(err)
-			profileId, iface, host := models.ProfileNext(c.profileId)
+			profileId, iface, host := ProfileNext(c.profileId)
 			send(&c, id, email, name, profileId, iface, host)
 		}
 	}

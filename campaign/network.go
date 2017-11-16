@@ -10,7 +10,7 @@
 //
 // Please see the License.txt file for more information.
 //
-package models
+package campaign
 
 import (
 	"log"
@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 	"math/rand"
+	"github.com/supme/gonder/models"
 )
 
 type mxStor struct {
@@ -40,7 +41,7 @@ func DomainGetMX(domain string) ([]*net.MX, error) {
 		err    error
 	)
 
-	if Config.DnsCache {
+	if models.Config.DnsCache {
 		mx.Lock()
 		defer mx.Unlock()
 		if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15*time.Minute {
@@ -123,7 +124,7 @@ func ProfileNext(id int) (int, string, string) {
 	}
 
 	// В остальных случаях обновляем данные
-	err := Db.QueryRow("SELECT `iface`,`host`,`stream` FROM `profile` WHERE `id`=?", id).Scan(&res.iface, &res.host, &res.streamMax)
+	err := models.Db.QueryRow("SELECT `iface`,`host`,`stream` FROM `profile` WHERE `id`=?", id).Scan(&res.iface, &res.host, &res.streamMax)
 	if err != nil {
 		log.Print(err)
 	}

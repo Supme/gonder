@@ -176,12 +176,26 @@ func recipients(req request) (js []byte, err error) {
 
 		case "deduplicate":
 			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
-				err = deduplicateRecipient(req.Campaign)
+				cnt, err := deduplicateRecipient(req.Campaign)
 				if err != nil {
+					apilog.Println(err)
 					return js, errors.New("Can't deduplicate recipients")
 				}
+				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 			} else {
 				return js, errors.New("Forbidden delete recipients")
+			}
+
+		case "unavaible":
+			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
+				cnt, err := markUnavaibleRecentTime(req.Campaign)
+				if err != nil {
+					apilog.Println(err)
+					return js, errors.New("Can't mark unavaible recipients")
+				}
+				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
+			} else {
+				return js, errors.New("Forbidden mark unavaible recipients")
 			}
 
 		default:
@@ -207,43 +221,108 @@ func recipients(req request) (js []byte, err error) {
 	return js, err
 }
 
-func deduplicateRecipient(campaignId int64) error {
+// Remove later unavaible status like:
+//  invalid mailbox
+//  no such user
+//  does not exist
+//  unknown user
+//  user unknown
+//  user not found
+//  bad destination mailbox
+//  mailbox unavailable
+// ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
+// ToDo optimize this
+func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
+	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.UnavaibleRecentTime))
+	if err != nil {
+		return
+	}
+	defer p.Close()
+
+	q, err := models.Db.Query(`
+SELECT id FROM recipient WHERE email IN
+ (SELECT rs.email FROM recipient as rs WHERE
+    date>(NOW() - INTERVAL 30 DAY)
+   AND
+   (rs.status LIKE "%invalid mailbox%" OR
+    rs.status LIKE "%no such user%" OR
+    rs.status LIKE "%does not exist%" OR
+    rs.status LIKE "%unknown user%" OR
+    rs.status LIKE "%user unknown%" OR
+    rs.status LIKE "%user not found%" OR
+    rs.status LIKE "%bad destination mailbox%" OR
+    rs.status LIKE "%mailbox unavailable%" OR
+    rs.status="Ok")
+  GROUP BY rs.email
+  HAVING SUM(rs.status!="Ok")>0 AND SUM(rs.status="Ok")=0)
+AND removed=0
+AND status IS NULL
+AND campaign_id=?`, campaignId)
+	if err != nil {
+		return
+	}
+	defer q.Close()
+
+	cnt = 0
+	for q.Next() {
+		var id int64
+		err = q.Scan(&id)
+		if err != nil {
+			return
+		}
+		// ToDo check q.NextResultSet() and batch update
+		_, err = p.Exec(id)
+		if err != nil {
+			return
+		}
+		cnt++
+	}
+
+	return
+}
+
+func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	q, err := models.Db.Query(`
 	SELECT r1.id FROM recipient as r1
-			JOIN (
-				SELECT MIN(id) AS id, email FROM recipient WHERE
-             	campaign_id=? AND removed=0
+		JOIN (
+			SELECT MIN(id) AS id, email FROM recipient WHERE
+             	campaign_id=? AND removed=0 AND status IS NULL
              	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
-			)
-     	WHERE r1.campaign_id=? AND removed=0
+		)
+	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
 	`, campaignId, campaignId)
 	if err != nil {
-		return nil
+		return
 	}
 
 	tx, err := models.Db.Begin()
 	if err != nil {
-		return err
+		return
 	}
 	defer tx.Rollback()
 
 	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
 	if err != nil {
-		return err
+		return
 	}
 	defer dupl.Close()
 
+	cnt = 0
 	for q.Next() {
 		var id int64
-		q.Scan(&id)
+		err= q.Scan(&id)
+		if err != nil {
+			return
+		}
 		_, err = dupl.Exec(id)
 		if err != nil {
-			return err
+			return
 		}
+		cnt = cnt + 1
 	}
 
 	err = tx.Commit()
-	return err
+	return
 }
 
 func addRecipients(campaignId int64, recipients Recipients) error {
