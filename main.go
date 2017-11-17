@@ -216,6 +216,7 @@ func main() {
 				api.Run()
 
 				for {
+					runtime.Gosched()
 				}
 			}
 
@@ -225,6 +226,7 @@ func main() {
 				campaign.Run()
 
 				for {
+					runtime.Gosched()
 				}
 			}
 
@@ -234,6 +236,7 @@ func main() {
 				utm.Run()
 
 				for {
+					runtime.Gosched()
 				}
 			}
 
@@ -262,14 +265,13 @@ func startProcess(name string) error {
 	err := checkPid(name)
 	if err == nil {
 		return errors.New("Process " + name + " already running")
-	} else {
-		p := exec.Command(os.Args[0], "daemonize", name)
-		p.Start()
-		fmt.Println("Started "+name+" pid", p.Process.Pid)
-		err := setPid(name, p.Process.Pid)
-		if err != nil {
-			return errors.New(name + " set PID error: " + err.Error())
-		}
+	}
+	p := exec.Command(os.Args[0], "daemonize", name)
+	p.Start()
+	fmt.Println("Started "+name+" pid", p.Process.Pid)
+	err = setPid(name, p.Process.Pid)
+	if err != nil {
+		return errors.New(name + " set PID error: " + err.Error())
 	}
 
 	return nil
@@ -280,24 +282,24 @@ func stopProcess(name string) error {
 	if err != nil {
 		fmt.Println("Process " + name + " not found:")
 		return err
-	} else {
-		file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
-		if err != nil {
-			return err
-		}
-		reader := bufio.NewReader(file)
-		pid, _, err := reader.ReadLine()
-		if err != nil {
-			return err
-		}
-		p, _ := strconv.Atoi(string(pid))
-		process, _ := os.FindProcess(p)
-		err = process.Kill()
-		if err != nil {
-			return err
-		}
-		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
 	}
+	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
+	if err != nil {
+		return err
+	}
+	reader := bufio.NewReader(file)
+	pid, _, err := reader.ReadLine()
+	if err != nil {
+		return err
+	}
+	p, _ := strconv.Atoi(string(pid))
+	process, _ := os.FindProcess(p)
+	err = process.Kill()
+	if err != nil {
+		return err
+	}
+	os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+
 	fmt.Println("Process " + name + " stoped")
 	return nil
 }
@@ -332,19 +334,19 @@ func checkPid(name string) error {
 	if err != nil {
 		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
 		return errors.New("Failed to find process")
-	} else {
-		err := process.Signal(syscall.Signal(0))
-		if err != nil {
-			os.Remove(models.FromRootDir("pid/" + name + ".pid"))
-			return errors.New("Process not response to signal.")
-		}
+	}
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+		return errors.New("Process not response to signal.")
 	}
 
 	return nil
 }
 
-func checkErr(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
+//
+//func checkErr(err error) {
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//}

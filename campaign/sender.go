@@ -12,19 +12,18 @@ type campaign struct {
 	dkimPrivateKey                         []byte
 	dkimUse                                bool
 	sendUnsubscribe                        bool
-	profileId, resendDelay, resendCount    int
+	profileID, resendDelay, resendCount    int
 	attachments                            []string
-	wg                                     sync.WaitGroup
 }
 
-func (c campaign) run(id string) {
-	c.get(id)
-	c.send()
-	c.resend()
+func run(camp campaign) {
+	camp.get()
+	camp.send()
+	camp.resend()
 }
 
 // Send for recipient from campaign
-func send(camp *campaign, id, email, name string, profileId int, iface, host string) {
+func send(camp *campaign, id, email, name string, profileID int, iface, host string) {
 	r := recipient{
 		id:      id,
 		toEmail: email,
@@ -36,7 +35,7 @@ func send(camp *campaign, id, email, name string, profileId int, iface, host str
 		checkErr(err)
 
 		result := r.send(camp, &iface, &host)
-		ProfileFree(profileId)
+		ProfileFree(profileID)
 
 		_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, r.id)
 		checkErr(err)
@@ -53,20 +52,21 @@ func (c campaign) send() {
 	checkErr(err)
 	defer query.Close()
 
+	var wg sync.WaitGroup
 	for query.Next() {
 		var id, email, name string
 		err = query.Scan(&id, &email, &name)
 		checkErr(err)
 
-		profileId, iface, host := ProfileNext(c.profileId)
+		profileID, iface, host := ProfileNext(c.profileID)
 		go func(id, email, name string, profileId int, iface, host string) {
-			c.wg.Add(1)
-			defer c.wg.Done()
+			wg.Add(1)
+			defer wg.Done()
 			send(&c, id, email, name, profileId, iface, host)
-		}(id, email, name, profileId, iface, host)
+		}(id, email, name, profileID, iface, host)
 
 	}
-	c.wg.Wait()
+	wg.Wait()
 	camplog.Printf("Done campaign id %s.", c.id)
 }
 
@@ -95,8 +95,8 @@ func (c campaign) resend() {
 		for query.Next() {
 			err = query.Scan(&id, &email, &name)
 			checkErr(err)
-			profileId, iface, host := ProfileNext(c.profileId)
-			send(&c, id, email, name, profileId, iface, host)
+			profileID, iface, host := ProfileNext(c.profileID)
+			send(&c, id, email, name, profileID, iface, host)
 		}
 	}
 }
@@ -110,9 +110,8 @@ func (c *campaign) countSoftBounce() int {
 }
 
 // Get all info for campaign
-func (c *campaign) get(id string) {
-	err := models.Db.QueryRow("SELECT t1.`id`,t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
-		&c.id,
+func (c *campaign) get() {
+	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", c.id).Scan(
 		&c.fromEmail,
 		&c.fromName,
 		&c.dkimSelector,
@@ -120,7 +119,7 @@ func (c *campaign) get(id string) {
 		&c.dkimUse,
 		&c.subject,
 		&c.body,
-		&c.profileId,
+		&c.profileID,
 		&c.sendUnsubscribe,
 		&c.resendDelay,
 		&c.resendCount,

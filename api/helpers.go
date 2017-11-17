@@ -1,56 +1,18 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log"
-	"net/url"
 	"reflect"
-	"regexp"
 	"strings"
 )
 
-func parseArrayForm(r url.Values) map[string]map[string]map[string][]string {
-	dblarr := make(map[string]map[string]map[string][]string)
-	for key, val := range r {
-		res, err := regexp.MatchString(`([\w\d])+(\[([\w\d])+\])(\[([\w\d])+\])`, key)
-		if err != nil {
-			log.Println(err)
-		}
-		if res {
-			r := regexp.MustCompile(`([\w\d])+`)
-			a := r.FindAllString(key, 3)
-			if dblarr[a[0]] == nil {
-				dblarr[a[0]] = make(map[string]map[string][]string)
-			}
-			if dblarr[a[0]][a[1]] == nil {
-				dblarr[a[0]][a[1]] = make(map[string][]string)
-			}
-			dblarr[a[0]][a[1]][a[2]] = val
-		}
-	}
-	return dblarr
-}
-
-type CampaignData struct {
-	Id              int64  `json:"recid"`
+type campaignData struct {
+	ID              int64  `json:"recid"`
 	Name            string `json:"name"`
-	ProfileId       int    `json:"profileId"`
+	ProfileID       int    `json:"profileId"`
 	Subject         string `json:"subject"`
-	SenderId        int    `json:"senderId"`
+	SenderID        int    `json:"senderId"`
 	StartDate       int64  `json:"startDate"`
 	EndDate         int64  `json:"endDate"`
 	SendUnsubscribe bool   `json:"sendUnsubscribe"`
@@ -81,13 +43,13 @@ type request struct {
 	Recipient   int64        `json:"recipient,omitempty"`
 	FileName    string       `json:"fileName,omitempty"`
 	FileContent string       `json:"fileContent,omitempty"`
-	Id          int64        `json:"id,omitempty"`
+	ID          int64        `json:"id,omitempty"`
 	Email       string       `json:"email,omitempty"`
 	Name        string       `json:"name,omitempty"`
-	Content     CampaignData `json:"content,omitempty"`
+	Content     campaignData `json:"content,omitempty"`
 	Select      bool         `json:"select,omitempty"`
 
-	Recipients Recipients `json:"recipients,omitempty"`
+	Recipients recips `json:"recipients,omitempty"`
 
 	DkimSelector string `json:"dkimSelector"`
 	DkimKey      string `json:"dkimKey"`
@@ -95,14 +57,14 @@ type request struct {
 
 	Record struct {
 		// Save/Add user
-		Id       int64  `json:"id,null"`
+		ID       int64  `json:"id,null"`
 		Name     string `json:"name,omitempty"`
 		Password string `json:"password,omitempty"`
 		Unit     struct {
-			Id int64 `json:"id"`
+			ID int64 `json:"id"`
 		} `json:"unit,omitempty"`
 		Group []struct {
-			Id int64 `json:"id"`
+			ID int64 `json:"id"`
 		} `json:"group,omitempty"`
 		// Unit rights
 		GetGroups              int8 `json:"get-groups,omitempty"`
@@ -123,7 +85,7 @@ type request struct {
 		SaveProfiles           int8 `json:"save-profiles,omitempty"`
 		AcceptCampaign         int8 `json:"accept-campaign,omitempty"`
 		GetLogMain             int8 `json:"get-log-main,omitempty"`
-		GetLogApi              int8 `json:"get-log-api,omitempty"`
+		GetLogAPI              int8 `json:"get-log-api,omitempty"`
 		GetLogCampaign         int8 `json:"get-log-campaign,omitempty"`
 		GetLogUtm              int8 `json:"get-log-utm,omitempty"`
 	} `json:"record,omitempty"`
@@ -135,7 +97,7 @@ func parseRequest(js string) (request, error) {
 	return req, err
 }
 
-func createSqlPart(req request, queryStr string, whereParams []interface{}, mapping map[string]string, withSortLimit bool) (query string, params []interface{}, err error) {
+func createSQLPart(req request, queryStr string, whereParams []interface{}, mapping map[string]string, withSortLimit bool) (query string, params []interface{}, err error) {
 	var (
 		direction, searchLogic string
 		result, srhStr, srtStr []string
@@ -189,7 +151,7 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 					srhStr = append(srhStr, qs)
 				}
 			} else {
-				return "", params, errors.New(fmt.Sprintf("field '%s' not in mapping", s.Field))
+				return "", params, fmt.Errorf("field '%s' not in mapping", s.Field)
 			}
 		}
 		if len(srhStr) != 0 {
@@ -209,7 +171,7 @@ func createSqlPart(req request, queryStr string, whereParams []interface{}, mapp
 				if filed, ok := mapping[s.Field]; ok {
 					srtStr = append(srtStr, "`"+filed+"` "+direction)
 				} else {
-					return "", params, errors.New(fmt.Sprintf("field '%s' not in mapping", s.Field))
+					return "", params, fmt.Errorf("field '%s' not in mapping", s.Field)
 				}
 			}
 			result = append(result, "ORDER BY "+strings.Join(srtStr, ", "))

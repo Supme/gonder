@@ -1,15 +1,3 @@
-// Project gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package campaign
 
 import (
@@ -35,13 +23,14 @@ var mx = struct {
 	stor: make(map[string]mxStor),
 }
 
+// DomainGetMX resolv domain MX records
 func DomainGetMX(domain string) ([]*net.MX, error) {
 	var (
 		record []*net.MX
 		err    error
 	)
 
-	if models.Config.DnsCache {
+	if models.Config.DNScache {
 		mx.Lock()
 		defer mx.Unlock()
 		if _, ok := mx.stor[domain]; !ok || time.Since(mx.stor[domain].update) > 15*time.Minute {
@@ -78,13 +67,13 @@ var (
 	profileMutex sync.Mutex
 )
 
-// Get free sending profile data and add connection count
+// ProfileNext get next free sending profile data and add connection count
 func ProfileNext(id int) (int, string, string) {
 	var res profileData
 
 	profileMutex.Lock()
 
-	// Если есть в массиве, недавно обновлялось
+	// Если есть в массиве и недавно обновлялось
 	if _, ok := profileStor[id]; ok && time.Since(profileStor[id].lastUpdate) < 60*time.Second {
 
 		// Если этот профиль группа
@@ -113,14 +102,14 @@ func ProfileNext(id int) (int, string, string) {
 			profileStor[id] = res
 			profileMutex.Unlock()
 			return id, res.iface, res.host
-		} else {
-			// достигли максимума потоков, ждём освобождения
-			profileMutex.Unlock()
-			for !profileCheck(id) {
-				time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
-			}
-			return ProfileNext(id)
 		}
+		// достигли максимума потоков, ждём освобождения
+		profileMutex.Unlock()
+		for !profileCheck(id) {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
+		}
+		return ProfileNext(id)
+
 	}
 
 	// В остальных случаях обновляем данные
@@ -141,7 +130,7 @@ func ProfileNext(id int) (int, string, string) {
 
 }
 
-// Check profile is busy (max coonnection)?
+// profileCheck check profile is busy (max coonnection)?
 func profileCheck(id int) bool {
 	var free bool
 	profileMutex.Lock()
@@ -150,7 +139,7 @@ func profileCheck(id int) bool {
 	return free
 }
 
-// Free one connection profile
+// ProfileFree free one connection profile
 func ProfileFree(id int) {
 	var res profileData
 

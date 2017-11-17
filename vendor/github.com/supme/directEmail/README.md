@@ -1,3 +1,4 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/Supme/directEmail)](https://goreportcard.com/report/github.com/Supme/directEmail)
 # directEmail
 
 Example

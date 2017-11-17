@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -25,14 +13,14 @@ import (
 func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
 	case "get":
-		if auth.Right("get-campaign") && auth.CampaignRight(req.Id) {
+		if user.Right("get-campaign") && user.CampaignRight(req.ID) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.Id).Scan(
-				&req.Content.Id,
+			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.ID).Scan(
+				&req.Content.ID,
 				&req.Content.Name,
-				&req.Content.ProfileId,
+				&req.Content.ProfileID,
 				&req.Content.Subject,
-				&req.Content.SenderId,
+				&req.Content.SenderID,
 				&start,
 				&end,
 				&req.Content.SendUnsubscribe,
@@ -54,7 +42,7 @@ func campaign(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if auth.Right("save-campaign") && auth.CampaignRight(req.Id) {
+		if user.Right("save-campaign") && user.CampaignRight(req.ID) {
 			start := time.Unix(req.Content.StartDate, 0).Format(time.RFC3339)
 			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)
 
@@ -66,14 +54,14 @@ func campaign(req request) (js []byte, err error) {
 
 			_, err := models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				req.Content.Name,
-				req.Content.ProfileId,
+				req.Content.ProfileID,
 				req.Content.Subject,
-				req.Content.SenderId,
+				req.Content.SenderID,
 				start,
 				end,
 				req.Content.SendUnsubscribe,
 				req.Content.Template,
-				req.Id,
+				req.ID,
 			)
 
 			if err != nil {
@@ -86,7 +74,7 @@ func campaign(req request) (js []byte, err error) {
 		}
 
 	case "accept":
-		if auth.Right("accept-campaign") && auth.CampaignRight(req.Id) {
+		if user.Right("accept-campaign") && user.CampaignRight(req.ID) {
 			var accepted int
 			if req.Select {
 				accepted = 1
@@ -94,7 +82,7 @@ func campaign(req request) (js []byte, err error) {
 				accepted = 0
 			}
 
-			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.Id)
+			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.ID)
 			if err != nil {
 				return js, err
 			}

@@ -1,3 +1,4 @@
+// Package api contains api service and web panel
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
@@ -9,7 +10,6 @@
 //  PURPOSE.
 //
 // Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -27,10 +27,11 @@ import (
 )
 
 var (
-	auth   Auth
+	user   auth
 	apilog *log.Logger
 )
 
+// Run start api server
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -51,17 +52,17 @@ func Run() {
 	})
 
 	// API
-	api.HandleFunc("/api/", auth.Check(apiRequest))
+	api.HandleFunc("/api/", user.Check(apiRequest))
 
 	// Reports
-	api.HandleFunc("/report", auth.Check(report))
-	api.HandleFunc("/report/jump", auth.Check(reportJumpDetailedCount))
-	api.HandleFunc("/report/unsubscribed", auth.Check(reportUnsubscribed))
+	api.HandleFunc("/report", user.Check(report))
+	api.HandleFunc("/report/jump", user.Check(reportJumpDetailedCount))
+	api.HandleFunc("/report/unsubscribed", user.Check(reportUnsubscribed))
 
-	api.HandleFunc("/preview", auth.Check(getMailPreview))
-	api.HandleFunc("/unsubscribe", auth.Check(getUnsubscribePreview))
+	api.HandleFunc("/preview", user.Check(getMailPreview))
+	api.HandleFunc("/unsubscribe", user.Check(getUnsubscribePreview))
 
-	api.HandleFunc("/filemanager", auth.Check(filemanager))
+	api.HandleFunc("/filemanager", user.Check(filemanager))
 
 	// Static dirs
 	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
@@ -88,7 +89,7 @@ func Run() {
 		w.Write(blank)
 	})
 
-	api.HandleFunc("/panel", auth.Check(func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/panel", user.Check(func(w http.ResponseWriter, r *http.Request) {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
@@ -123,15 +124,15 @@ func Run() {
 		}
 	}))
 
-	api.HandleFunc("/logout", auth.Logout)
+	api.HandleFunc("/logout", user.Logout)
 
-	api.HandleFunc("/status/ws/campaign.log", auth.Check(campaignLog))
-	api.HandleFunc("/status/ws/api.log", auth.Check(apiLog))
-	api.HandleFunc("/status/ws/utm.log", auth.Check(utmLog))
-	api.HandleFunc("/status/ws/main.log", auth.Check(mainLog))
+	api.HandleFunc("/status/ws/campaign.log", user.Check(campaignLog))
+	api.HandleFunc("/status/ws/api.log", user.Check(apiLog))
+	api.HandleFunc("/status/ws/utm.log", user.Check(utmLog))
+	api.HandleFunc("/status/ws/main.log", user.Check(mainLog))
 
-	apilog.Println("API listening on port " + models.Config.ApiPort + "...")
-	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.ApiPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
+	apilog.Println("API listening on port " + models.Config.APIPort + "...")
+	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {

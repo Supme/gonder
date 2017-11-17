@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -22,16 +10,16 @@ import (
 )
 
 func getMailPreview(w http.ResponseWriter, r *http.Request) {
-	if auth.Right("get-recipients") {
+	if user.Right("get-recipients") {
 		id64, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
-		cId, err := getRecipientCampaign(id64)
+		cID, err := getRecipientCampaign(id64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
-		if auth.CampaignRight(cId) {
+		if user.CampaignRight(cID) {
 			w.Header().Set("Content-Type", "text/html")
 			var paramKey, paramValue string
 			params := make(map[string]string)
@@ -55,17 +43,17 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 			}
 			params["RecipientEmail"] = email
 			params["RecipientName"] = name
-			params["CampaignId"] = strconv.FormatInt(cId, 10)
+			params["CampaignId"] = strconv.FormatInt(cID, 10)
 
 			if r.FormValue("type") != "web" {
 				params["WebUrl"] = "/preview?id=" + r.FormValue("id") + "&type=web"
 			}
-			params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + strconv.FormatInt(cId, 10)
+			params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + strconv.FormatInt(cID, 10)
 			//data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC
 			params["StatPng"] = `<img src="" border="0px" width="10px" height="10px"/>`
 
 			tmpl := ""
-			err = models.Db.QueryRow("SELECT `body` FROM campaign WHERE id=?", cId).Scan(&tmpl)
+			err = models.Db.QueryRow("SELECT `body` FROM campaign WHERE id=?", cID).Scan(&tmpl)
 			t := template.New("preview")
 			t, err = t.Parse(tmpl)
 			if err != nil {
@@ -84,7 +72,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
-	if auth.Right("get-recipients") && auth.CampaignRight(r.FormValue("campaignId")) {
+	if user.Right("get-recipients") && user.CampaignRight(r.FormValue("campaignId")) {
 
 		var tmpl string
 		var content []byte
