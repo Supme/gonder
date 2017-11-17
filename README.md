@@ -1,6 +1,6 @@
 Gonder
 ======
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/Supme/gonder?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Supme/gonder)](https://goreportcard.com/report/github.com/Supme/gonder)
 
 Mass sender
 
