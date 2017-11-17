@@ -73,7 +73,7 @@ func (slf *Email) SendThroughServer(host string, port uint16, username, password
 	defer conn.Close()
 	debug("Connected\n")
 
-	err = conn.SetDeadline(time.Now().Add(connTimeout + time.Millisecond*10))
+	err = conn.SetDeadline(time.Now().Add(connTimeout))
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (slf *Email) sendWithTimeout(auth smtp.Auth, host string, client *smtp.Clie
 	select {
 	case res = <-err:
 
-	case <-time.After(connTimeout):
+	case <-time.After(connTimeout + time.Millisecond * 500):
 		res = fmt.Errorf("421 send timeout after %s", connTimeout.String())
 	}
 
@@ -278,7 +278,7 @@ func (slf *Email) newClient(server string, dialFunc conn) (client *smtp.Client, 
 		return
 	}
 
-	err = conn.SetDeadline(time.Now().Add(connTimeout + time.Millisecond*10))
+	err = conn.SetDeadline(time.Now().Add(connTimeout))
 	if err != nil {
 		return
 	}
