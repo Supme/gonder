@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
@@ -15,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"database/sql"
 )
 
 type recipTable struct {
