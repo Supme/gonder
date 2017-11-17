@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"database/sql"
 )
 
 type recipTable struct {
@@ -191,7 +192,8 @@ func recipients(req request) (js []byte, err error) {
 
 	} else {
 		if req.Cmd == "get" {
-			rID, err := getRecipientCampaign(req.Recipient)
+			var rID int64
+			rID, err = getRecipientCampaign(req.Recipient)
 			if err != nil {
 				return js, err
 			}
@@ -389,7 +391,8 @@ func getRecipients(req request) (recipsTable, error) {
 		return rs, err
 	}
 
-	query, err := models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`"+partWhere, partParams...)
+	var query *sql.Rows
+	query, err = models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`"+partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
@@ -406,13 +409,12 @@ func getRecipients(req request) (recipsTable, error) {
 		return rs, err
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`"+partWhere, partParams...).Scan(&rs.Total)
-	return rs, nil
+	return rs, err
 
 }
 
 //ToDo check right errors
 func getRecipientParams(recipient int64) (recipParams, error) {
-	var err error
 	var p recipParam
 	var ps recipParams
 	ps.Records = []recipParam{}
@@ -435,7 +437,6 @@ func delRecipients(campaignID int64) error {
 }
 
 func recipientCsv(campaignID int64, file string) error {
-
 	title := make(map[int]string)
 	data := make(map[string]string)
 	var email, name string
@@ -512,9 +513,7 @@ func recipientCsv(campaignID int64, file string) error {
 		progress.Unlock()
 	}
 
-	err = tx.Commit()
-
-	return err
+	return tx.Commit()
 }
 
 func recipientXlsx(campaignID int64, file string) error {
@@ -531,19 +530,22 @@ func recipientXlsx(campaignID int64, file string) error {
 	defer os.Remove(f)
 
 	if xlFile.Sheets[0] != nil {
-
-		tx, err := models.Db.Begin()
+		var tx *sql.Tx
+		tx, err = models.Db.Begin()
 		if err != nil {
 			return err
 		}
 		defer tx.Rollback()
 
-		stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+		var stRecipient *sql.Stmt
+		stRecipient, err = tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 		if err != nil {
 			return err
 		}
 		defer stRecipient.Close()
-		stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+
+		var stParameter *sql.Stmt
+		stParameter, err = tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 		if err != nil {
 			return err
 		}
@@ -571,16 +573,19 @@ func recipientXlsx(campaignID int64, file string) error {
 					}
 				}
 
-				res, err := stRecipient.Exec(campaignID, email, name)
+				var res sql.Result
+				res, err = stRecipient.Exec(campaignID, email, name)
 				if err != nil {
 					return err
 				}
-				id, err := res.LastInsertId()
+
+				var id int64
+				id, err = res.LastInsertId()
 				if err != nil {
 					return err
 				}
 				for i, t := range data {
-					_, err := stParameter.Exec(id, i, t)
+					_, err = stParameter.Exec(id, i, t)
 					if err != nil {
 						return err
 					}
@@ -592,7 +597,10 @@ func recipientXlsx(campaignID int64, file string) error {
 			progress.Unlock()
 		}
 		err = tx.Commit()
+		if err != nil {
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
