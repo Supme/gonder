@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package models
 
 import (
@@ -30,12 +18,12 @@ type config struct {
 	dbConnections    int
 	RootPath         string
 	Version          string
-	Url              string
-	ApiPort          string
+	URL              string
+	APIPort          string
 	StatPort         string
 	MaxCampaingns    int
 	RealSend         bool
-	DnsCache         bool
+	DNScache         bool
 	DefaultProfile   int
 	AdminMail        string
 	GonderMail       string
@@ -122,9 +110,9 @@ func (c *config) Update() {
 		c.RealSend = false
 	}
 	if mailerConfig.ValueOf("dnscache") == "yes" {
-		c.DnsCache = true
+		c.DNScache = true
 	} else {
-		c.DnsCache = false
+		c.DNScache = false
 	}
 	c.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
 	if err != nil {
@@ -135,9 +123,9 @@ func (c *config) Update() {
 	checkErr(err)
 	apiConfig, err := config.Section("API")
 	checkErr(err)
-	c.Url = "http://" + mainConfig.ValueOf("host")
+	c.URL = "http://" + mainConfig.ValueOf("host")
 	c.StatPort = statisticConfig.ValueOf("port")
-	c.ApiPort = apiConfig.ValueOf("port")
+	c.APIPort = apiConfig.ValueOf("port")
 
 	c.Version = "0.9"
 }

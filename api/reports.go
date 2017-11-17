@@ -14,7 +14,7 @@ func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	if r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0]) {
+	if r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0]) {
 		var url string
 		var count int
 		res := make(map[string]int)
@@ -49,7 +49,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	if (r.Form["group"] != nil && auth.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && auth.CampaignRight(r.Form["campaign"][0])) {
+	if (r.Form["group"] != nil && user.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0])) {
 		var (
 			id                 int64
 			queryString, param string
@@ -125,7 +125,7 @@ func report(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	campaign := r.Form["campaign"][0]
-	if auth.CampaignRight(campaign) {
+	if user.CampaignRight(campaign) {
 		reports := make(map[string]interface{})
 		reports["Campaign"], err = reportCampaignInfo(campaign)
 		if err != nil {
@@ -154,24 +154,24 @@ func report(w http.ResponseWriter, r *http.Request) {
 }
 
 // Campaign info
-func reportCampaignInfo(campaignId string) (map[string]interface{}, error) {
+func reportCampaignInfo(campaignID string) (map[string]interface{}, error) {
 	var name string
 	var timestamp mysql.NullTime
 	res := make(map[string]interface{})
-	err := models.Db.QueryRow("SELECT `name`, `start_time` FROM `campaign` WHERE `id`=?", campaignId).Scan(&name, &timestamp)
+	err := models.Db.QueryRow("SELECT `name`, `start_time` FROM `campaign` WHERE `id`=?", campaignID).Scan(&name, &timestamp)
 	if err != nil {
 		apilog.Print(err)
 		return res, err
 	}
-	res["Name"] = name
+	res["name"] = name
 	res["Start"] = timestamp.Time.Unix()
 	return res, nil
 }
 
 // Send
-func reportSendCount(campaignId string) int {
+func reportSendCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status` IS NOT NULL AND `removed`=0", campaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status` IS NOT NULL AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
@@ -179,9 +179,9 @@ func reportSendCount(campaignId string) int {
 }
 
 // Success send
-func reportSuccessSendCount(campaignId string) int {
+func reportSuccessSendCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status`='Ok' AND `removed`=0", campaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status`='Ok' AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
@@ -189,9 +189,9 @@ func reportSuccessSendCount(campaignId string) int {
 }
 
 // Unsubscribe count
-func reportUnsubscribeCount(campaignId string) int {
+func reportUnsubscribeCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(DISTINCT `email`) FROM `unsubscribe` WHERE `campaign_id`=?", campaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(DISTINCT `email`) FROM `unsubscribe` WHERE `campaign_id`=?", campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
@@ -199,9 +199,9 @@ func reportUnsubscribeCount(campaignId string) int {
 }
 
 // Open mail count
-func reportOpenMailCount(campaignId string) int {
+func reportOpenMailCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND (`client_agent` IS NOT NULL OR `web_agent` IS NOT NULL) AND `removed`=0", campaignId).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND (`client_agent` IS NOT NULL OR `web_agent` IS NOT NULL) AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
@@ -209,18 +209,18 @@ func reportOpenMailCount(campaignId string) int {
 }
 
 // Web version count
-func reportOpenWebVersionCount(campaignId string) int {
+func reportOpenWebVersionCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='%s' AND `recipient`.`removed`=0", models.WebVersion), campaignId).Scan(&count)
+	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='%s' AND `recipient`.`removed`=0", models.WebVersion), campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}
 	return count
 }
 
-func reportRecipientJumpCount(campaignId string) int {
+func reportRecipientJumpCount(campaignID string) int {
 	var count int
-	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`removed`=0 AND `jumping`.`url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=?", models.OpenTrace, models.WebVersion, models.Unsubscribe), campaignId).Scan(&count)
+	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`removed`=0 AND `jumping`.`url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=?", models.OpenTrace, models.WebVersion, models.Unsubscribe), campaignID).Scan(&count)
 	if err != nil {
 		apilog.Print(err)
 	}

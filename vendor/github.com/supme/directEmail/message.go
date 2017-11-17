@@ -13,38 +13,38 @@ import (
 )
 
 // SetRawMessageBytes
-func (self *Email) SetRawMessageBytes(data []byte) error {
-	self.raw.Reset()
-	_, err := self.raw.Write(data)
+func (slf *Email) SetRawMessageBytes(data []byte) error {
+	slf.raw.Reset()
+	_, err := slf.raw.Write(data)
 	return err
 }
 
 // SetRawMessageString
-func (self *Email) SetRawMessageString(data string) error {
-	self.raw.Reset()
-	_, err := self.raw.WriteString(data)
+func (slf *Email) SetRawMessageString(data string) error {
+	slf.raw.Reset()
+	_, err := slf.raw.WriteString(data)
 	return err
 }
 
 // GetRawMessageBytes
-func (self *Email) GetRawMessageBytes() []byte {
-	return self.raw.Bytes()
+func (slf *Email) GetRawMessageBytes() []byte {
+	return slf.raw.Bytes()
 }
 
 // GetRawMessageString
-func (self *Email) GetRawMessageString() string {
-	return self.raw.String()
+func (slf *Email) GetRawMessageString() string {
+	return slf.raw.String()
 }
 
 // Header add extra headers to email
-func (self *Email) Header(headers ...string) {
+func (slf *Email) Header(headers ...string) {
 	for i := range headers {
-		self.headers = append(self.headers, headers[i])
+		slf.headers = append(slf.headers, headers[i])
 	}
 }
 
 // TextPlain add text/plain content to email
-func (self *Email) TextPlain(content string) (err error) {
+func (slf *Email) TextPlain(content string) (err error) {
 	var part bytes.Buffer
 	defer part.Reset()
 	_, err = part.WriteString("Content-Type: text/plain;\r\n\t charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n")
@@ -54,23 +54,23 @@ func (self *Email) TextPlain(content string) (err error) {
 	w := quotedprintable.NewWriter(&part)
 	w.Write([]byte(strings.TrimLeft(content, "\r\n")))
 	w.Close()
-	self.textPlain = part.Bytes()
+	slf.textPlain = part.Bytes()
 	return nil
 }
 
 // TextHtml add text/html content to email
-func (self *Email) TextHtml(content string) (err error) {
+func (slf *Email) TextHtml(content string) (err error) {
 	var part bytes.Buffer
 	defer part.Reset()
 	_, err = part.WriteString("Content-Type: text/html;\r\n\t charset=\"utf-8\"\r\nContent-Transfer-Encoding: base64\r\n\r\n")
 	if err != nil {
 		return err
 	}
-	err = self.line76(&part, base64.StdEncoding.EncodeToString([]byte(content)))
+	err = slf.line76(&part, base64.StdEncoding.EncodeToString([]byte(content)))
 	if err != nil {
 		return err
 	}
-	self.textHtml = part.Bytes()
+	slf.textHTML = part.Bytes()
 	return nil
 }
 
@@ -81,14 +81,14 @@ func (self *Email) TextHtml(content string) (err error) {
 //  	`... <img src="cid:myImage.jpg" width="500px" height="250px" border="1px" alt="My image"/> ...`,
 //  	"/path/to/attach/myImage.jpg",
 //  )
-func (self *Email) TextHtmlWithRelated(content string, files ...string) (err error) {
+func (slf *Email) TextHtmlWithRelated(content string, files ...string) (err error) {
 	var (
 		part bytes.Buffer
 		data []byte
 	)
 	defer part.Reset()
 
-	marker := self.makeMarker()
+	marker := slf.makeMarker()
 	_, err = part.WriteString("Content-Type: multipart/related;\r\n\tboundary=\"" + marker + "\"\r\n")
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (self *Email) TextHtmlWithRelated(content string, files ...string) (err err
 	if err != nil {
 		return err
 	}
-	err = self.line76(&part, base64.StdEncoding.EncodeToString([]byte(content)))
+	err = slf.line76(&part, base64.StdEncoding.EncodeToString([]byte(content)))
 	if err != nil {
 		return err
 	}
@@ -120,19 +120,19 @@ func (self *Email) TextHtmlWithRelated(content string, files ...string) (err err
 		if err != nil {
 			return err
 		}
-		err = self.line76(&part, base64.StdEncoding.EncodeToString(data))
+		err = slf.line76(&part, base64.StdEncoding.EncodeToString(data))
 		if err != nil {
 			return err
 		}
 	}
 	_, err = part.WriteString("\r\n--" + marker + "--\r\n")
 
-	self.textHtml = part.Bytes()
+	slf.textHTML = part.Bytes()
 	return nil
 }
 
 // Attachment attach files to email message
-func (self *Email) Attachment(files ...string) (err error) {
+func (slf *Email) Attachment(files ...string) (err error) {
 	var (
 		part bytes.Buffer
 		data []byte
@@ -147,11 +147,11 @@ func (self *Email) Attachment(files ...string) (err error) {
 		if err != nil {
 			return err
 		}
-		err = self.line76(&part, base64.StdEncoding.EncodeToString(data))
+		err = slf.line76(&part, base64.StdEncoding.EncodeToString(data))
 		if err != nil {
 			return err
 		}
-		self.attachments = append(self.attachments, part.Bytes())
+		slf.attachments = append(slf.attachments, part.Bytes())
 		part.Reset()
 	}
 
@@ -159,8 +159,8 @@ func (self *Email) Attachment(files ...string) (err error) {
 }
 
 // Render added text/html, text/plain, attachments part to raw view
-func (self *Email) Render() (err error) {
-	return self.RenderWithDkim("", []byte{})
+func (slf *Email) Render() (err error) {
+	return slf.RenderWithDkim("", []byte{})
 }
 
 // Render added text/html, text/plain, attachments part to raw view
@@ -171,97 +171,97 @@ func (self *Email) Render() (err error) {
 //  openssl rsa -in /path/to/key/example.com.key -pubout
 // Add public key to DNS myselector._domainkey.example.com TXT record
 //  k=rsa; p=MIGfMA0GC...
-func (self *Email) RenderWithDkim(dkimSelector string, dkimPrivateKey []byte) (err error) {
+func (slf *Email) RenderWithDkim(dkimSelector string, dkimPrivateKey []byte) (err error) {
 	var (
 		marker string
 	)
 
 	// -------------- head ----------------------------------------------------------
-	_, err = self.raw.WriteString("Return-path: <" + self.FromEmail + ">\r\n")
+	_, err = slf.raw.WriteString("Return-path: <" + slf.FromEmail + ">\r\n")
 	if err != nil {
 		return err
 	}
 
-	_, err = self.raw.WriteString("From: ")
+	_, err = slf.raw.WriteString("From: ")
 	if err != nil {
 		return err
 	}
-	if self.FromName != "" {
-		_, err = self.raw.WriteString(self.encodeRFC2045(self.FromName) + " ")
+	if slf.FromName != "" {
+		_, err = slf.raw.WriteString(slf.encodeRFC2045(slf.FromName) + " ")
 		if err != nil {
 			return err
 		}
 	}
-	_, err = self.raw.WriteString("<" + self.FromEmail + ">\r\n")
+	_, err = slf.raw.WriteString("<" + slf.FromEmail + ">\r\n")
 	if err != nil {
 		return err
 	}
-	_, err = self.raw.WriteString("To: ")
+	_, err = slf.raw.WriteString("To: ")
 	if err != nil {
 		return err
 	}
-	if self.ToName != "" {
-		_, err = self.raw.WriteString(self.encodeRFC2045(self.ToName) + " ")
+	if slf.ToName != "" {
+		_, err = slf.raw.WriteString(slf.encodeRFC2045(slf.ToName) + " ")
 		if err != nil {
 			return err
 		}
 	}
-	_, err = self.raw.WriteString("<" + self.ToEmail + ">\r\n")
+	_, err = slf.raw.WriteString("<" + slf.ToEmail + ">\r\n")
 	if err != nil {
 		return err
 	}
 
-	_, err = self.raw.WriteString("Subject: " + self.encodeRFC2045(self.Subject) + "\r\n")
+	_, err = slf.raw.WriteString("Subject: " + slf.encodeRFC2045(slf.Subject) + "\r\n")
 	if err != nil {
 		return err
 	}
-	_, err = self.raw.WriteString("MIME-Version: 1.0\r\n")
+	_, err = slf.raw.WriteString("MIME-Version: 1.0\r\n")
 	if err != nil {
 		return err
 	}
-	_, err = self.raw.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
+	_, err = slf.raw.WriteString("Date: " + time.Now().Format(time.RFC1123Z) + "\r\n")
 	if err != nil {
 		return err
 	}
 
 	// Email has attachment?
-	if len(self.attachments) > 0 {
-		marker = self.makeMarker()
-		_, err = self.raw.WriteString("Content-Type: multipart/mixed;\r\n\tboundary=\"" + marker + "\"\r\n")
+	if len(slf.attachments) > 0 {
+		marker = slf.makeMarker()
+		_, err = slf.raw.WriteString("Content-Type: multipart/mixed;\r\n\tboundary=\"" + marker + "\"\r\n")
 		if err != nil {
 			return err
 		}
 	}
 
 	// add extra headers
-	_, err = self.raw.WriteString(strings.Join(self.headers, "\r\n"))
+	_, err = slf.raw.WriteString(strings.Join(slf.headers, "\r\n"))
 	if err != nil {
 		return err
 	}
-	if len(self.headers) > 0 {
-		_, err = self.raw.WriteString("\r\n")
+	if len(slf.headers) > 0 {
+		_, err = slf.raw.WriteString("\r\n")
 	}
 
-	startBody := self.raw.Len()
+	startBody := slf.raw.Len()
 	// ------------- /head ---------------------------------------------------------
 
-	if len(self.textPlain) > 0 || len(self.textHtml) > 0 {
+	if len(slf.textPlain) > 0 || len(slf.textHTML) > 0 {
 		if marker != "" {
-			_, err = self.raw.WriteString("\r\n--" + marker + "\r\n")
+			_, err = slf.raw.WriteString("\r\n--" + marker + "\r\n")
 		}
-		err = self.renderText()
+		err = slf.renderText()
 		if err != nil {
 			return err
 		}
 	}
 
 	// ------------- attachments ----------------------------------------------------------
-	for i := range self.attachments {
-		_, err = self.raw.WriteString("\r\n--" + marker + "\r\n")
+	for i := range slf.attachments {
+		_, err = slf.raw.WriteString("\r\n--" + marker + "\r\n")
 		if err != nil {
 			return err
 		}
-		_, err = self.raw.Write(self.attachments[i])
+		_, err = slf.raw.Write(slf.attachments[i])
 		if err != nil {
 			return err
 		}
@@ -272,15 +272,15 @@ func (self *Email) RenderWithDkim(dkimSelector string, dkimPrivateKey []byte) (e
 	// ------------- /attachments ----------------------------------------------------------
 
 	if marker != "" {
-		_, err = self.raw.WriteString("\r\n--" + marker + "--\r\n")
+		_, err = slf.raw.WriteString("\r\n--" + marker + "--\r\n")
 		if err != nil {
 			return err
 		}
 	}
 
 	// ------------ blank email ------------------------------------------------------------
-	if len(self.textPlain) == 0 && len(self.textHtml) == 0 && len(self.attachments) == 0 {
-		_, err = self.raw.WriteString("Content-Type: text/plain;\r\n\t charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nBlank email")
+	if len(slf.textPlain) == 0 && len(slf.textHTML) == 0 && len(slf.attachments) == 0 {
+		_, err = slf.raw.WriteString("Content-Type: text/plain;\r\n\t charset=\"utf-8\"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nBlank email")
 		if err != nil {
 			return err
 		}
@@ -288,10 +288,10 @@ func (self *Email) RenderWithDkim(dkimSelector string, dkimPrivateKey []byte) (e
 	// ------------ /blank email -----------------------------------------------------------
 
 	// ------------ DKIM -------------------------------------------------------------------
-	self.bodyLenght = self.raw.Len() - startBody
+	slf.bodyLenght = slf.raw.Len() - startBody
 
 	if dkimSelector != "" {
-		err = self.dkimSign(dkimSelector, dkimPrivateKey)
+		err = slf.dkimSign(dkimSelector, dkimPrivateKey)
 		if err != nil {
 			return err
 		}
@@ -301,44 +301,44 @@ func (self *Email) RenderWithDkim(dkimSelector string, dkimPrivateKey []byte) (e
 	return nil
 }
 
-func (self *Email) renderText() error {
+func (slf *Email) renderText() error {
 	var (
 		marker string
 		err    error
 	)
-	if len(self.textPlain) > 0 && len(self.textHtml) > 0 {
-		marker = self.makeMarker()
-		_, err = self.raw.WriteString("Content-Type: multipart/alternative;\r\n\tboundary=\"" + marker + "\"\r\n")
+	if len(slf.textPlain) > 0 && len(slf.textHTML) > 0 {
+		marker = slf.makeMarker()
+		_, err = slf.raw.WriteString("Content-Type: multipart/alternative;\r\n\tboundary=\"" + marker + "\"\r\n")
 		if err != nil {
 			return err
 		}
 	}
 
 	if marker != "" {
-		_, err = self.raw.WriteString("\r\n--" + marker + "\r\n")
+		_, err = slf.raw.WriteString("\r\n--" + marker + "\r\n")
 	}
 
-	if len(self.textPlain) > 0 {
-		_, err = self.raw.Write(self.textPlain)
+	if len(slf.textPlain) > 0 {
+		_, err = slf.raw.Write(slf.textPlain)
 		if err != nil {
 			return err
 		}
 	}
 
 	if marker != "" {
-		_, err = self.raw.WriteString("\r\n--" + marker + "\r\n")
+		_, err = slf.raw.WriteString("\r\n--" + marker + "\r\n")
 	}
 
-	if len(self.textHtml) > 0 {
-		_, err = self.raw.Write(self.textHtml)
+	if len(slf.textHTML) > 0 {
+		_, err = slf.raw.Write(slf.textHTML)
 		if err != nil {
 			return err
 		}
 	}
 
 	if marker != "" {
-		_, err = self.raw.WriteString("\r\n--" + marker + "--\r\n")
+		_, err = slf.raw.WriteString("\r\n--" + marker + "--\r\n")
 	}
 
-	return nil
+	return err
 }

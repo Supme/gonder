@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -18,13 +6,13 @@ import (
 	"github.com/supme/gonder/models"
 )
 
-type ProfileList struct {
-	Id   int    `json:"id"`
+type pList struct {
+	ID   int    `json:"id"`
 	Name string `json:"text"`
 }
 
 func profilesList(req request) (js []byte, err error) {
-	if auth.Right("get-campaign") {
+	if user.Right("get-campaign") {
 		psl, err := getProfilesList()
 		if err != nil {
 			return js, err
@@ -36,17 +24,17 @@ func profilesList(req request) (js []byte, err error) {
 
 }
 
-func getProfilesList() ([]ProfileList, error) {
-	var p ProfileList
-	var ps []ProfileList
-	ps = []ProfileList{}
+func getProfilesList() ([]pList, error) {
+	var p pList
+	var ps []pList
+	ps = []pList{}
 	query, err := models.Db.Query("SELECT `id`, `name` FROM `profile`")
 	if err != nil {
 		return ps, err
 	}
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&p.Id, &p.Name)
+		err = query.Scan(&p.ID, &p.Name)
 		ps = append(ps, p)
 	}
 	return ps, nil

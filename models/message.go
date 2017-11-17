@@ -1,22 +1,8 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package models
 
 import (
 	"bytes"
 	"database/sql"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -26,59 +12,28 @@ import (
 	"text/template"
 )
 
-type (
-	Message struct {
-		RecipientId      string // ToDo int?
-		RecipientEmail   string
-		RecipientName    string
-		RecipientParam   map[string]string
-		CampaignId       string // ToDo int?
-		CampaignSubject  string
-		CampaignTemplate string
-	}
+type Message struct {
+	RecipientID      string // ToDo int?
+	RecipientEmail   string
+	RecipientName    string
+	RecipientParam   map[string]string
+	CampaignID       string // ToDo int?
+	CampaignSubject  string
+	CampaignTemplate string
+}
 
-	JsonData struct {
-		Id    string `json:"id"` // ToDo int?
-		Email string `json:"email"`
-		Data  string `json:"data"`
-	}
-)
-
-func (m *Message) New(recipientId string) error {
-	m.RecipientId = recipientId
-	err := Db.QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", m.RecipientId).Scan(&m.CampaignId, &m.RecipientEmail, &m.RecipientName)
+func (m *Message) New(recipientID string) error {
+	m.RecipientID = recipientID
+	err := Db.QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", m.RecipientID).Scan(&m.CampaignID, &m.RecipientEmail, &m.RecipientName)
 	if err == sql.ErrNoRows {
 		return errors.New("The recipient does not exist")
 	}
 	return nil
 }
 
-// Decode utm data string and return Message whis prefilled id and email
-func DecodeData(base64data string) (message Message, data string, err error) {
-	var param JsonData
-
-	decode, err := base64.URLEncoding.DecodeString(base64data)
-	if err != nil {
-		return message, data, err
-	}
-	err = json.Unmarshal([]byte(decode), &param) // ToDo decode whithout reflect
-	if err != nil {
-		return message, data, err
-	}
-	data = param.Data
-	err = message.New(param.Id)
-	if err != nil {
-		return message, data, err
-	}
-	if param.Email != message.RecipientEmail {
-		return message, data, errors.New("Not valid recipient")
-	}
-	return message, data, nil
-}
-
 // Unsubscribe recipient from group
 func (m *Message) Unsubscribe(extra map[string]string) error {
-	r, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignId, m.CampaignId, m.RecipientEmail)
+	r, err := Db.Exec("INSERT INTO unsubscribe (`group_id`, `campaign_id`, `email`) VALUE ((SELECT group_id FROM campaign WHERE id=?), ?, ?)", m.CampaignID, m.CampaignID, m.RecipientEmail)
 	if err != nil {
 		log.Print(err)
 	}
@@ -96,7 +51,7 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 }
 
 func (m *Message) UnsubscribeTemplateDir() (name string) {
-	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignId).Scan(&name)
+	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
 	if err != nil {
 		log.Print(err)
 	}
@@ -115,13 +70,7 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 }
 
 func (m *Message) makeLink(cmd, data string) string {
-	j, _ := json.Marshal(
-		JsonData{
-			Id:    m.RecipientId,
-			Email: m.RecipientEmail,
-			Data:  data,
-		})
-	return Config.Url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
+	return Config.URL + "/" + cmd + "/" + encodeUTM(m, data)
 }
 
 // Make unsubscribe utm link for web version
@@ -161,7 +110,7 @@ func (m *Message) RenderMessage() (string, error) {
 	)
 
 	if m.CampaignSubject == "" && m.CampaignTemplate == "" {
-		err := Db.QueryRow("SELECT `subject`,`body` FROM `campaign` WHERE `id`=?", m.CampaignId).Scan(&m.CampaignSubject, &m.CampaignTemplate)
+		err := Db.QueryRow("SELECT `subject`,`body` FROM `campaign` WHERE `id`=?", m.CampaignID).Scan(&m.CampaignSubject, &m.CampaignTemplate)
 		if err == sql.ErrNoRows {
 			return "", err
 		}
@@ -172,7 +121,7 @@ func (m *Message) RenderMessage() (string, error) {
 
 	m.RecipientParam = map[string]string{}
 	var paramKey, paramValue string
-	q, err := Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", m.RecipientId)
+	q, err := Db.Query("SELECT `key`, `value` FROM parameter WHERE recipient_id=?", m.RecipientID)
 	if err != nil {
 		return "", err
 	}
@@ -189,10 +138,10 @@ func (m *Message) RenderMessage() (string, error) {
 	m.RecipientParam["StatPng"] = m.StatPngLink()
 	m.RecipientParam["RecipientEmail"] = m.RecipientEmail
 	m.RecipientParam["RecipientName"] = m.RecipientName
-	m.RecipientParam["CampaignId"] = m.CampaignId
+	m.RecipientParam["CampaignId"] = m.CampaignID
 
 	// render subject
-	subj := template.New("subject" + m.RecipientId)
+	subj := template.New("subject" + m.RecipientID)
 	subj, err = subj.Parse(m.CampaignSubject)
 	if err != nil {
 		e := fmt.Sprintf("Error parse subject: %v", err)
@@ -229,7 +178,7 @@ func (m *Message) RenderMessage() (string, error) {
 			return `href="` + m.RecipientParam["UnsubscribeUrl"] + `"`
 		default:
 			// template parameter in url
-			urlt := template.New("url" + m.RecipientId)
+			urlt := template.New("url" + m.RecipientID)
 			urlt, err = urlt.Parse(s)
 			if err != nil {
 				s = fmt.Sprintf("Error parse url params: %v", err)
@@ -243,11 +192,11 @@ func (m *Message) RenderMessage() (string, error) {
 	})
 
 	//replace static url to absolute
-	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "\"/files/", "\""+Config.Url+"/files/", -1)
-	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "'/files/", "'"+Config.Url+"'/files/", -1)
+	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "\"/files/", "\""+Config.URL+"/files/", -1)
+	m.CampaignTemplate = strings.Replace(m.CampaignTemplate, "'/files/", "'"+Config.URL+"'/files/", -1)
 
 	// render template
-	tmpl := template.New("mail" + m.RecipientId)
+	tmpl := template.New("mail" + m.RecipientID)
 	tmpl, err = tmpl.Parse(m.CampaignTemplate)
 	if err != nil {
 		e := fmt.Sprintf("Error parse template: %v", err)

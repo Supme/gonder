@@ -1,14 +1,6 @@
 {
-    "memo": "11092916a5d9d115e4a5fae03528b80cac4603d3ab7e7e4ad870241989171e0a",
+    "memo": "10c304d2753219818436f2bd3cf28130e51257c227c6acd5a348d034957904d1",
     "projects": [
-        {
-            "name": "cloud.google.com/go",
-            "version": "v0.13.0",
-            "revision": "5a9e19d4e1e41a734154e44a2132b358afb49a03",
-            "packages": [
-                "compute/metadata"
-            ]
-        },
         {
             "name": "github.com/alyu/configparser",
             "branch": "master",
@@ -18,71 +10,26 @@
             ]
         },
         {
-            "name": "github.com/davecgh/go-spew",
-            "version": "v1.1.0",
-            "revision": "a7a0063072ed89d04285d3d3362aa590ed9f7878",
-            "packages": [
-                "spew"
-            ]
-        },
-        {
-            "name": "github.com/disintegration/gift",
+            "name": "github.com/boombuler/barcode",
             "branch": "master",
-            "revision": "d3ddfc5a842d1ea44cd90bf4e62fb8f16bb168d6",
+            "revision": "3cfea5ab600ae37946be2b763b8ec2c1cf2d272d",
             "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/fsnotify/fsnotify",
-            "version": "v1.4.2",
-            "revision": "629574ca2a5df945712d3079857300b5e4da0236",
-            "packages": [
-                "."
+                ".",
+                "qr"
             ]
         },
         {
             "name": "github.com/go-sql-driver/mysql",
             "branch": "master",
-            "revision": "14f4292c08c0daf077adddd5824cffc82a797ff4",
+            "revision": "370fec2ee5c33c6e2bc3b63da3ef17f6a66d2229",
             "packages": [
                 "."
-            ]
-        },
-        {
-            "name": "github.com/golang/protobuf",
-            "branch": "master",
-            "revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
-            "packages": [
-                "descriptor",
-                "jsonpb/jsonpb_test_proto",
-                "proto",
-                "proto/proto3_proto",
-                "proto/testdata",
-                "protoc-gen-go/descriptor",
-                "protoc-gen-go/generator",
-                "protoc-gen-go/grpc",
-                "protoc-gen-go/plugin",
-                "ptypes",
-                "ptypes/any",
-                "ptypes/duration",
-                "ptypes/struct",
-                "ptypes/timestamp",
-                "ptypes/wrappers"
             ]
         },
         {
             "name": "github.com/gorilla/websocket",
             "branch": "master",
-            "revision": "6f34763140ed8887aed6a044912009832b4733d7",
-            "packages": [
-                "."
-            ]
-        },
-        {
-            "name": "github.com/howeyc/gopass",
-            "branch": "master",
-            "revision": "bf9dde6d0d2c004a008c27aaee91170c786f6db8",
+            "revision": "7ca4275b84a9d500f68971c8c4a97f0ec18eb889",
             "packages": [
                 "."
             ]
@@ -92,11 +39,7 @@
             "branch": "master",
             "revision": "37f4271387456dd1bf82ab1ad9229f060cc45386",
             "packages": [
-                ".",
-                "ratelimiter",
-                "util",
-                "watch",
-                "winfile"
+                "."
             ]
         },
         {
@@ -116,25 +59,9 @@
             ]
         },
         {
-            "name": "github.com/pmezard/go-difflib",
-            "version": "v1.0.0",
-            "revision": "792786c7400a136282c1664665ae0a8db921c6c2",
-            "packages": [
-                "difflib"
-            ]
-        },
-        {
-            "name": "github.com/stretchr/testify",
-            "version": "v1.1.4",
-            "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
-            "packages": [
-                "assert"
-            ]
-        },
-        {
             "name": "github.com/supme/directEmail",
             "branch": "master",
-            "revision": "227ccba8aaa4a48692c6a477fc9e677d4d3ab24c",
+            "revision": "ffb9a8de9358445579bd1509bdc2c59218dff544",
             "packages": [
                 "."
             ]
@@ -142,7 +69,7 @@
         {
             "name": "github.com/tealeg/xlsx",
             "branch": "master",
-            "revision": "a06c872a6c402f194e9c817cf30f3840a75f8ffe",
+            "revision": "2ee7bde0c2f1ddf862bd3ac7f3ac95df15ca7aa7",
             "packages": [
                 "."
             ]
@@ -150,180 +77,41 @@
         {
             "name": "github.com/toorop/go-dkim",
             "branch": "master",
-            "revision": "43c1bb05e85404d07a5020ad38c6b67b3a039b86",
+            "revision": "2c853a63fe4c076c35ca2ad49ad725a7f8d3ad86",
             "packages": [
                 "."
             ]
         },
         {
-            "name": "go4.org",
-            "branch": "master",
-            "revision": "034d17a462f7b2dcd1a4a73553ec5357ff6e6c6e",
-            "packages": [
-                "syncutil/singleflight"
-            ]
-        },
-        {
-            "name": "golang.org/x/crypto",
-            "branch": "master",
-            "revision": "847319b7fc94cab682988f93da778204da164588",
-            "packages": [
-                "acme",
-                "acme/autocert",
-                "blowfish",
-                "cast5",
-                "chacha20poly1305/internal/chacha20",
-                "cryptobyte",
-                "cryptobyte/asn1",
-                "curve25519",
-                "ed25519",
-                "ed25519/internal/edwards25519",
-                "hkdf",
-                "md4",
-                "nacl/auth",
-                "nacl/box",
-                "nacl/secretbox",
-                "openpgp",
-                "openpgp/armor",
-                "openpgp/elgamal",
-                "openpgp/errors",
-                "openpgp/packet",
-                "openpgp/s2k",
-                "pbkdf2",
-                "pkcs12/internal/rc2",
-                "poly1305",
-                "ripemd160",
-                "salsa20/salsa",
-                "ssh",
-                "ssh/agent",
-                "ssh/terminal",
-                "ssh/testdata"
-            ]
-        },
-        {
             "name": "golang.org/x/net",
-            "branch": "release-branch.go1.8",
-            "revision": "186fd3fc8194a5e9980a82230d69c1ff7134229f",
+            "branch": "master",
+            "revision": "9dfe39835686865bff950a07b394c12a98ddc811",
             "packages": [
-                "bpf",
-                "context",
-                "context/ctxhttp",
-                "html",
-                "html/atom",
-                "http2",
-                "http2/hpack",
-                "icmp",
                 "idna",
-                "internal/iana",
-                "internal/netreflect",
-                "internal/nettest",
-                "internal/timeseries",
-                "ipv4",
-                "ipv6",
-                "lex/httplex",
-                "proxy",
-                "webdav",
-                "webdav/internal/xml",
-                "websocket"
-            ]
-        },
-        {
-            "name": "golang.org/x/oauth2",
-            "branch": "master",
-            "revision": "13449ad91cb26cb47661c1b080790392170385fd",
-            "packages": [
-                ".",
-                "google"
-            ]
-        },
-        {
-            "name": "golang.org/x/sync",
-            "branch": "master",
-            "revision": "8e0aa688b654ef28caa72506fa5ec8dba9fc7690",
-            "packages": [
-                "errgroup"
+                "proxy"
             ]
         },
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "314a259e304ff91bd6985da2a7149bbf91237993",
+            "revision": "0dd5e194bbf5eb84a39666eb4c98a4d007e4203a",
             "packages": [
-                "plan9",
-                "unix",
-                "windows",
-                "windows/registry",
-                "windows/svc",
-                "windows/svc/debug",
-                "windows/svc/eventlog",
-                "windows/svc/mgr"
+                "unix"
             ]
         },
         {
             "name": "golang.org/x/text",
             "branch": "master",
-            "revision": "1cbadb444a806fd9430d14ad08967ed91da4fa0a",
+            "revision": "88f656faf3f37f690df1a32515b479415e1a6769",
             "packages": [
-                "encoding",
-                "encoding/charmap",
-                "encoding/htmlindex",
-                "transform"
-            ]
-        },
-        {
-            "name": "google.golang.org/api",
-            "branch": "master",
-            "revision": "16ab375f94503bfa0d19db78e96bffbe1a34354f",
-            "packages": [
-                "compute/v1"
-            ]
-        },
-        {
-            "name": "google.golang.org/appengine",
-            "branch": "master",
-            "revision": "56d253d1dd14aa01937e12c73a0971bcfd797ff2",
-            "packages": [
-                ".",
-                "datastore",
-                "internal",
-                "internal/aetesting",
-                "internal/app_identity",
-                "internal/base",
-                "internal/blobstore",
-                "internal/capability",
-                "internal/channel",
-                "internal/datastore",
-                "internal/image",
-                "internal/log",
-                "internal/mail",
-                "internal/memcache",
-                "internal/modules",
-                "internal/remote_api",
-                "internal/search",
-                "internal/socket",
-                "internal/system",
-                "internal/taskqueue",
-                "internal/urlfetch",
-                "internal/user",
-                "internal/xmpp",
-                "log",
-                "memcache",
-                "taskqueue",
-                "urlfetch",
-                "user"
-            ]
-        },
-        {
-            "name": "gopkg.in/check.v1",
-            "branch": "v1",
-            "revision": "20d25e2804050c1cd24a7eea1e7a6447dd0e74ec",
-            "packages": [
-                "."
+                "secure/bidirule",
+                "unicode/bidi",
+                "unicode/norm"
             ]
         },
         {
             "name": "gopkg.in/fsnotify.v1",
-            "branch": "master",
+            "version": "v1.4.2",
             "revision": "629574ca2a5df945712d3079857300b5e4da0236",
             "packages": [
                 "."

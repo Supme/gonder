@@ -13,9 +13,9 @@ type recipient struct {
 }
 
 // Check recipient for unsubscribe
-func (r *recipient) checkUnsubscribe(campaignId string) bool {
+func (r *recipient) checkUnsubscribe(campaignID string) bool {
 	var unsubscribeCount int
-	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignId, r.toEmail).Scan(&unsubscribeCount)
+	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignID, r.toEmail).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
 		return false
 	}
@@ -39,8 +39,8 @@ func (r *recipient) send(c *campaign, iface, host *string) (res string) {
 	email.ToName = r.toName
 
 	message := new(models.Message)
-	message.CampaignId = c.id
-	message.RecipientId = r.id
+	message.CampaignID = c.id
+	message.RecipientID = r.id
 	message.CampaignSubject = c.subject
 	message.CampaignTemplate = c.body
 	message.RecipientEmail = r.toEmail
@@ -76,17 +76,14 @@ func (r *recipient) send(c *campaign, iface, host *string) (res string) {
 			res = err.Error()
 			logResult(c.id, r.id, r.toEmail, res, time.Since(start))
 			return
-		} else {
-			res = "Ok"
-			logResult(c.id, r.id, r.toEmail, res, time.Since(start))
-			return
 		}
+		res = "Ok"
+		logResult(c.id, r.id, r.toEmail, res, time.Since(start))
 	} else {
 		wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
 		time.Sleep(wait)
 		res = "Test send"
 		logResult(c.id, r.id, r.toEmail, res, time.Since(start))
-		return
 	}
 
 	return

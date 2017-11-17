@@ -16,13 +16,13 @@ func BenchmarkRender(b *testing.B) {
 		email.ToEmail = "user@example.com"
 		email.ToName = "Reciver name"
 
-		email.Subject = "Тест send email"// отправки email"
+		email.Subject = "Тест send email" // отправки email"
 
 		err := email.TextPlain(`Hello!
 		My email
 		Текст моего TEXT сообщения
 		`)
-		if err !=nil {
+		if err != nil {
 			b.Fatal(err)
 		}
 
@@ -30,7 +30,7 @@ func BenchmarkRender(b *testing.B) {
 		<h2>My email</h2>
 		<p>Текст моего HTML</p>
 		`)
-		if err !=nil {
+		if err != nil {
 			b.Fatal(err)
 		}
 
@@ -46,7 +46,7 @@ func BenchmarkRender(b *testing.B) {
 		//}
 
 		err = email.Render()
-		if err !=nil {
+		if err != nil {
 			b.Fatal(err)
 		}
 	}

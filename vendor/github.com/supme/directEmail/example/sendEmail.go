@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/supme/directEmail"
 	"time"
-	"fmt"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 	email.Ip = "192.168.0.10"
 
 	// if use NAT
-	email.MapIp = map[string]string {
+	email.MapIp = map[string]string{
 		"192.168.0.10": "31.33.34.35",
 	}
 

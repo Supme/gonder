@@ -1,3 +1,4 @@
+// Package campaign send email from campaigns
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
@@ -9,7 +10,7 @@
 //  PURPOSE.
 //
 // Please see the License.txt file for more information.
-
+//
 package campaign
 
 import (
@@ -32,7 +33,7 @@ var (
 	camplog *log.Logger
 )
 
-// Start look database for ready campaign for send
+// Run start look database for ready campaign for send
 func Run() {
 	l, err := os.OpenFile("log/campaign.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -58,10 +59,11 @@ func Run() {
 		startedCampaign.Lock()
 		if id, err := checkNextCampaign(); err == nil {
 			startedCampaign.campaigns = append(startedCampaign.campaigns, id)
-			c := campaign{}
+			capm := campaign{}
 			go func() {
 				camplog.Printf("Start campaign id %s.", id)
-				c.run(id)
+				capm.id = id
+				run(capm)
 				removeStartedCampaign(id)
 				camplog.Printf("Finish campaign id %s", id)
 			}()

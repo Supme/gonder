@@ -24,23 +24,22 @@ HNzVKGgQBjjkYXU65FPXQT7Ot34uUusjyZYDFX5KeXKK
 
 func emailMessage() (email Email, err error) {
 	email = Email{
-		Host : "resolv.name.myhost.com",
+		Host: "resolv.name.myhost.com",
 
-		FromEmail : "sender@example.com",
-		FromName : "Sender name",
+		FromEmail: "sender@example.com",
+		FromName:  "Sender name",
 
-		ToEmail : "user@example.com",
-		ToName : "Reciver name",
+		ToEmail: "user@example.com",
+		ToName:  "Reciver name",
 
-		Subject : "Тест send email",
-
+		Subject: "Тест send email",
 	}
 
 	err = email.TextPlain(`Hello!
 		My email
 		Текст моего TEXT сообщения
 		`)
-	if err !=nil {
+	if err != nil {
 		return
 	}
 
@@ -48,7 +47,7 @@ func emailMessage() (email Email, err error) {
 		<h2>My email</h2>
 		<p>Текст моего HTML</p>
 		`)
-	if err !=nil {
+	if err != nil {
 		return
 	}
 
@@ -64,7 +63,7 @@ func emailMessage() (email Email, err error) {
 	//}
 
 	err = email.Render()
-	if err !=nil {
+	if err != nil {
 		return
 	}
 
@@ -74,12 +73,12 @@ func emailMessage() (email Email, err error) {
 func BenchmarkDkim(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		email, err := emailMessage()
-		if err !=nil {
+		if err != nil {
 			b.Fatal(err)
 		}
 
-		err = email.DkimSign("test", []byte(privateKey))
-		if err !=nil {
+		err = email.dkimSign("test", []byte(privateKey))
+		if err != nil {
 			b.Fatal(err)
 		}
 	}

@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -29,35 +17,35 @@ import (
 	"time"
 )
 
-type RecipientTableLine struct {
-	Id     int64  `json:"recid"`
+type recipTable struct {
+	ID     int64  `json:"recid"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Result string `json:"result"`
 	Open   bool   `json:"open"`
 }
 
-type RecipientsTable struct {
-	Total   int                  `json:"total"`
-	Records []RecipientTableLine `json:"records"`
+type recipsTable struct {
+	Total   int          `json:"total"`
+	Records []recipTable `json:"records"`
 }
 
-type Recipients []Recipient
+type recips []recip
 
-type Recipient struct {
-	Name   string           `json:"name"`
-	Email  string           `json:"email"`
-	Params []RecipientParam `json:"params"`
+type recip struct {
+	Name   string       `json:"name"`
+	Email  string       `json:"email"`
+	Params []recipParam `json:"params"`
 }
 
-type RecipientParam struct {
+type recipParam struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-type RecipientTableParams struct {
-	Total   int              `json:"total"`
-	Records []RecipientParam `json:"records"`
+type recipParams struct {
+	Total   int          `json:"total"`
+	Records []recipParam `json:"records"`
 }
 
 type safeProgress struct {
@@ -72,29 +60,29 @@ func recipients(req request) (js []byte, err error) {
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
-			if auth.Right("get-recipients") && auth.CampaignRight(req.Campaign) {
-				rs, err := getRecipients(req)
-				if err != nil {
-					return js, err
-				}
-				js, err = json.Marshal(rs)
-				return js, err
-			} else {
+			if !user.Right("get-recipients") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden get recipients")
 			}
+			var rs recipsTable
+			rs, err = getRecipients(req)
+			if err != nil {
+				return js, err
+			}
+			js, err = json.Marshal(rs)
+
 		case "add":
-			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
-				err := addRecipients(req.Campaign, req.Recipients)
-				if err != nil {
-					return js, err
-				}
-			} else {
+			if !user.Right("upload-recipients") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden add recipients")
+			}
+			err = addRecipients(req.Campaign, req.Recipients)
+			if err != nil {
+				return js, err
 			}
 
 		case "upload":
-			if auth.Right("upload-recipients") && auth.CampaignRight(req.Campaign) {
-				content, err := base64.StdEncoding.DecodeString(req.FileContent)
+			if user.Right("upload-recipients") || user.CampaignRight(req.Campaign) {
+				var content []byte
+				content, err = base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
 					return js, err
 				}
@@ -104,7 +92,7 @@ func recipients(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
-				apilog.Print(auth.Name, " upload file ", req.FileName)
+				apilog.Print(user.name, " upload file ", req.FileName)
 
 				if path.Ext(req.FileName) == ".csv" {
 					go func() {
@@ -140,11 +128,12 @@ func recipients(req request) (js []byte, err error) {
 					return js, errors.New("This not csv or xlsx file")
 				}
 			} else {
-				return js, errors.New("Forbidden upload recipients")
+				err = errors.New("Forbidden upload recipients")
 			}
+			return js, err
 
 		case "progress":
-			if auth.Right("upload-recipients") {
+			if user.Right("upload-recipients") {
 				progress.RLock()
 				if val, ok := progress.cnt[req.Name]; ok {
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
@@ -155,67 +144,69 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "clear":
-			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
-				err = delRecipients(req.Campaign)
-				if err != nil {
-					return js, errors.New("Can't delete all recipients")
-				}
-			} else {
+			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
+			}
+			err = delRecipients(req.Campaign)
+			if err != nil {
+				return js, errors.New("Can't delete all recipients")
 			}
 
 		case "resend4xx":
-			if auth.Right("accept-campaign") && auth.CampaignRight(req.Campaign) {
-				err = resendCampaign(req.Campaign)
-				if err != nil {
-					return js, errors.New("Can't resend")
-				}
-			} else {
+			if !user.Right("accept-campaign") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden resend campaign")
+			}
+			err = resendCampaign(req.Campaign)
+			if err != nil {
+				return js, errors.New("Can't resend")
 			}
 
 		case "deduplicate":
-			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
-				cnt, err := deduplicateRecipient(req.Campaign)
-				if err != nil {
-					apilog.Println(err)
-					return js, errors.New("Can't deduplicate recipients")
-				}
-				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
-			} else {
+			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
 			}
+			var cnt int64
+			cnt, err = deduplicateRecipient(req.Campaign)
+			if err != nil {
+				apilog.Println(err)
+				return js, errors.New("Can't deduplicate recipients")
+			}
+			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
 		case "unavaible":
-			if auth.Right("delete-recipients") && auth.CampaignRight(req.Campaign) {
-				cnt, err := markUnavaibleRecentTime(req.Campaign)
-				if err != nil {
-					apilog.Println(err)
-					return js, errors.New("Can't mark unavaible recipients")
-				}
-				js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
-			} else {
+			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden mark unavaible recipients")
 			}
+			var cnt int64
+			cnt, err = markUnavaibleRecentTime(req.Campaign)
+			if err != nil {
+				apilog.Println(err)
+				return js, errors.New("Can't mark unavaible recipients")
+			}
+			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
 		default:
 			err = errors.New("Command not found")
 		}
+
 	} else {
 		if req.Cmd == "get" {
-			rId, err := getRecipientCampaign(req.Recipient)
+			rID, err := getRecipientCampaign(req.Recipient)
 			if err != nil {
 				return js, err
 			}
-			if auth.Right("get-recipient-parameters") && auth.CampaignRight(rId) {
-				ps, err := getRecipientParams(req.Recipient)
-				js, err = json.Marshal(ps)
-				if err != nil {
-					return js, err
-				}
-			} else {
+			if !user.Right("get-recipient-parameters") || !user.CampaignRight(rID) {
 				return js, errors.New("Forbidden get recipient parameters")
 			}
+			var ps recipParams
+			ps, err = getRecipientParams(req.Recipient)
+			if err != nil {
+				return js, err
+			}
+			js, err = json.Marshal(ps)
+
+		} else {
+			err = errors.New("Command not found")
 		}
 	}
 	return js, err
@@ -232,7 +223,7 @@ func recipients(req request) (js []byte, err error) {
 //  mailbox unavailable
 // ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
 // ToDo optimize this
-func markUnavaibleRecentTime(campaignId int64) (cnt int64, err error) {
+func markUnavaibleRecentTime(campaignID int64) (cnt int64, err error) {
 	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.UnavaibleRecentTime))
 	if err != nil {
 		return
@@ -257,7 +248,7 @@ SELECT id FROM recipient WHERE email IN
   HAVING SUM(rs.status!="Ok")>0 AND SUM(rs.status="Ok")=0)
 AND removed=0
 AND status IS NULL
-AND campaign_id=?`, campaignId)
+AND campaign_id=?`, campaignID)
 	if err != nil {
 		return
 	}
@@ -281,7 +272,7 @@ AND campaign_id=?`, campaignId)
 	return
 }
 
-func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
+func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 	q, err := models.Db.Query(`
 	SELECT r1.id FROM recipient as r1
 		JOIN (
@@ -290,7 +281,7 @@ func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
              	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
 		)
 	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
-	`, campaignId, campaignId)
+	`, campaignID, campaignID)
 	if err != nil {
 		return
 	}
@@ -325,7 +316,7 @@ func deduplicateRecipient(campaignId int64) (cnt int64, err error) {
 	return
 }
 
-func addRecipients(campaignId int64, recipients Recipients) error {
+func addRecipients(campaignID int64, recipients recips) error {
 	tx, err := models.Db.Begin()
 	if err != nil {
 		return err
@@ -344,7 +335,7 @@ func addRecipients(campaignId int64, recipients Recipients) error {
 	defer stParameter.Close()
 
 	for r := range recipients {
-		res, err := stRecipient.Exec(campaignId, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
+		res, err := stRecipient.Exec(campaignID, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
 		if err != nil {
 			return err
 		}
@@ -364,34 +355,34 @@ func addRecipients(campaignId int64, recipients Recipients) error {
 	return err
 }
 
-func resendCampaign(campaignId int64) error {
-	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignId)
+func resendCampaign(campaignID int64) error {
+	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
 	c, _ := res.RowsAffected()
-	apilog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", auth.Name, campaignId, c)
+	apilog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", user.name, campaignID, c)
 	return err
 }
 
-func getRecipientCampaign(recipientId int64) (int64, error) {
+func getRecipientCampaign(recipientID int64) (int64, error) {
 	var id int64
-	err := models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", recipientId).Scan(&id)
+	err := models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", recipientID).Scan(&id)
 	return id, err
 }
 
 //ToDo check right errors
 //ToDo add unsubscribe column
-func getRecipients(req request) (RecipientsTable, error) {
+func getRecipients(req request) (recipsTable, error) {
 	var (
 		err                error
-		rs                 RecipientsTable
+		rs                 recipsTable
 		partWhere, where   string
 		partParams, params []interface{}
 	)
 
 	params = append(params, req.Campaign)
 
-	rs.Records = []RecipientTableLine{}
+	rs.Records = []recipTable{}
 	where = " WHERE `removed`=0 AND `campaign_id`=?"
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
+	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{
 		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, true)
 	if err != nil {
@@ -404,11 +395,11 @@ func getRecipients(req request) (RecipientsTable, error) {
 	}
 	defer query.Close()
 	for query.Next() {
-		r := RecipientTableLine{}
-		err = query.Scan(&r.Id, &r.Name, &r.Email, &r.Result, &r.Open)
+		r := recipTable{}
+		err = query.Scan(&r.ID, &r.Name, &r.Email, &r.Result, &r.Open)
 		rs.Records = append(rs.Records, r)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{
+	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{
 		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, false)
 	if err != nil {
@@ -420,11 +411,11 @@ func getRecipients(req request) (RecipientsTable, error) {
 }
 
 //ToDo check right errors
-func getRecipientParams(recipient int64) (RecipientTableParams, error) {
+func getRecipientParams(recipient int64) (recipParams, error) {
 	var err error
-	var p RecipientParam
-	var ps RecipientTableParams
-	ps.Records = []RecipientParam{}
+	var p recipParam
+	var ps recipParams
+	ps.Records = []recipParam{}
 	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {
 		return ps, err
@@ -438,12 +429,12 @@ func getRecipientParams(recipient int64) (RecipientTableParams, error) {
 	return ps, err
 }
 
-func delRecipients(campaignId int64) error {
-	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", campaignId)
+func delRecipients(campaignID int64) error {
+	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", campaignID)
 	return err
 }
 
-func recipientCsv(campaignId int64, file string) error {
+func recipientCsv(campaignID int64, file string) error {
 
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -501,7 +492,7 @@ func recipientCsv(campaignId int64, file string) error {
 				}
 			}
 
-			res, err := stRecipient.Exec(campaignId, email, name)
+			res, err := stRecipient.Exec(campaignID, email, name)
 			if err != nil {
 				return err
 			}
@@ -526,7 +517,7 @@ func recipientCsv(campaignId int64, file string) error {
 	return err
 }
 
-func recipientXlsx(campaignId int64, file string) error {
+func recipientXlsx(campaignID int64, file string) error {
 
 	title := make(map[int]string)
 	data := make(map[string]string)
@@ -580,7 +571,7 @@ func recipientXlsx(campaignId int64, file string) error {
 					}
 				}
 
-				res, err := stRecipient.Exec(campaignId, email, name)
+				res, err := stRecipient.Exec(campaignID, email, name)
 				if err != nil {
 					return err
 				}

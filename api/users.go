@@ -11,33 +11,33 @@ import (
 )
 
 func users(req request) (js []byte, err error) {
-	type UserList struct {
-		Id       int64   `json:"recid"`
-		UnitId   int64   `json:"unitid"`
-		GroupsId []int64 `json:"groupsid"`
+	type userList struct {
+		ID       int64   `json:"recid"`
+		UnitID   int64   `json:"unitid"`
+		GroupsID []int64 `json:"groupsid"`
 		Name     string  `json:"name"`
 		Password string  `json:"password"`
 	}
 
-	type Users struct {
+	type users struct {
 		Total   int64      `json:"total"`
-		Records []UserList `json:"records"`
+		Records []userList `json:"records"`
 	}
 
-	if auth.IsAdmin() {
+	if user.IsAdmin() {
 		switch req.Cmd {
 		case "get":
 			var (
-				sl                 = Users{}
+				sl                 = users{}
 				id, unitid, grpid  int64
 				name               string
 				partWhere, where   string
 				partParams, params []interface{}
 			)
-			sl.Records = []UserList{}
+			sl.Records = []userList{}
 
 			where = " WHERE 1=1 "
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
+			partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 			if err != nil {
 				return nil, err
 			}
@@ -58,15 +58,15 @@ func users(req request) (js []byte, err error) {
 					groupq.Scan(&grpid)
 					groupsid = append(groupsid, grpid)
 				}
-				sl.Records = append(sl.Records, UserList{
-					Id:       id,
-					UnitId:   unitid,
-					GroupsId: groupsid,
+				sl.Records = append(sl.Records, userList{
+					ID:       id,
+					UnitID:   unitid,
+					GroupsID: groupsid,
 					Name:     name,
 				})
 			}
 
-			partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
+			partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 			if err != nil {
 				apilog.Print(err)
 			}
@@ -84,22 +84,22 @@ func users(req request) (js []byte, err error) {
 				hash.Write([]byte(fmt.Sprint(req.Record.Password)))
 				md := hash.Sum(nil)
 				shaPassword := hex.EncodeToString(md)
-				_, err = models.Db.Exec("UPDATE `auth_user` SET `password`=?, auth_unit_id=? WHERE `id`=?", shaPassword, req.Record.Unit.Id, req.Record.Id)
+				_, err = models.Db.Exec("UPDATE `auth_user` SET `password`=?, auth_unit_id=? WHERE `id`=?", shaPassword, req.Record.Unit.ID, req.Record.ID)
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				_, err = models.Db.Exec("UPDATE `auth_user` SET auth_unit_id=? WHERE `id`=?", req.Record.Unit.Id, req.Record.Id)
+				_, err = models.Db.Exec("UPDATE `auth_user` SET auth_unit_id=? WHERE `id`=?", req.Record.Unit.ID, req.Record.ID)
 				if err != nil {
 					return nil, err
 				}
 			}
-			_, err = models.Db.Exec("DELETE FROM `auth_user_group` WHERE `auth_user_id`=?", req.Record.Id)
+			_, err = models.Db.Exec("DELETE FROM `auth_user_group` WHERE `auth_user_id`=?", req.Record.ID)
 			if err != nil {
 				return nil, err
 			}
 			for _, g := range req.Record.Group {
-				_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.Id, g.Id)
+				_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.ID, g.ID)
 				if err != nil {
 					return nil, err
 				}
@@ -114,22 +114,22 @@ func users(req request) (js []byte, err error) {
 					return nil, errors.New("Password can not be empty")
 				}
 				if req.Record.Name == "" {
-					return nil, errors.New("Name can not be empty")
+					return nil, errors.New("name can not be empty")
 				}
 				hash := sha256.New()
 				hash.Write([]byte(fmt.Sprint(req.Record.Password)))
 				md := hash.Sum(nil)
 				shaPassword := hex.EncodeToString(md)
-				s, err := models.Db.Exec("INSERT INTO `auth_user`(`auth_unit_id`, `name`, `password`) VALUES (?, ?, ?)", req.Record.Unit.Id, req.Record.Name, shaPassword)
+				s, err := models.Db.Exec("INSERT INTO `auth_user`(`auth_unit_id`, `name`, `password`) VALUES (?, ?, ?)", req.Record.Unit.ID, req.Record.Name, shaPassword)
 				if err != nil {
 					return nil, err
 				}
-				req.Record.Id, err = s.LastInsertId()
+				req.Record.ID, err = s.LastInsertId()
 				if err != nil {
 					return nil, err
 				}
 				for _, g := range req.Record.Group {
-					_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.Id, g.Id)
+					_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.ID, g.ID)
 					if err != nil {
 						return nil, err
 					}

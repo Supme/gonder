@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -35,7 +23,7 @@ var filemanagerRootPath string
 
 type info struct {
 	Path       string     `json:"Path"`
-	Name       string     `json:"Name"`
+	Name       string     `json:"name"`
 	Filename   string     `json:"Filename"`
 	FileType   string     `json:"File Type"`
 	Preview    string     `json:"Preview"`
@@ -44,9 +32,9 @@ type info struct {
 	Error      string     `json:"Error"`
 	Code       int        `json:"Code"`
 	OldPath    string     `json:"Old Path"`
-	OldName    string     `json:"Old Name"`
+	OldName    string     `json:"Old name"`
 	NewPath    string     `json:"New Path"`
-	NewName    string     `json:"New Name"`
+	NewName    string     `json:"New name"`
 }
 
 type properties struct {
@@ -62,7 +50,7 @@ func filemanager(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 
-	if auth.Right("filemanager") {
+	if user.Right("filemanager") {
 		var mode, path, name, oldName, newName, height, width string
 		if r.Method == "GET" {
 			if err = r.ParseForm(); err != nil {
@@ -172,7 +160,7 @@ func filemanagerAdd(path string, name string, file multipart.File) info {
 		return info{Error: "Can not write file", Code: 1}
 	}
 
-	return info{Error: "Ok", Code: 0} //filemanagerGetInfo(filepath.Join(path, name))//info{Path: path, Name: name, Error: "No error", Code: 0}
+	return info{Error: "Ok", Code: 0} //filemanagerGetInfo(filepath.Join(path, name))//info{Path: path, name: name, Error: "No error", Code: 0}
 }
 
 func filemanagerDownload(path string) (string, []byte) {

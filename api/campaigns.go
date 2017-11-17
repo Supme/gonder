@@ -1,15 +1,3 @@
-// Project Gonder.
-// Author Supme
-// Copyright Supme 2016
-// License http://opensource.org/licenses/MIT MIT License
-//
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
-//
-// Please see the License.txt file for more information.
-//
 package api
 
 import (
@@ -20,28 +8,28 @@ import (
 	"github.com/supme/gonder/models"
 )
 
-type Campaign struct {
-	Id   int64  `json:"recid"`
+type camp struct {
+	ID   int64  `json:"recid"`
 	Name string `json:"name"`
 }
-type Campaigns struct {
-	Total   int64      `json:"total"`
-	Records []Campaign `json:"records"`
+type camps struct {
+	Total   int64  `json:"total"`
+	Records []camp `json:"records"`
 }
 
 func campaigns(req request) (js []byte, err error) {
 
-	var campaigns Campaigns
+	var cs camps
 
 	switch req.Cmd {
 
 	case "get":
-		if auth.Right("get-campaigns") {
-			campaigns, err = getCampaigns(req)
+		if user.Right("get-campaigns") {
+			cs, err = getCampaigns(req)
 			if err != nil {
 				return js, err
 			}
-			js, err = json.Marshal(campaigns)
+			js, err = json.Marshal(cs)
 			if err != nil {
 				return js, err
 			}
@@ -50,16 +38,16 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if auth.Right("save-campaigns") {
-			err := saveCampaigns(req.Changes)
+		if user.Right("save-campaigns") {
+			err = saveCampaigns(req.Changes)
 			if err != nil {
 				return js, err
 			}
-			campaigns, err = getCampaigns(req)
+			cs, err = getCampaigns(req)
 			if err != nil {
 				return js, err
 			}
-			js, err = json.Marshal(campaigns)
+			js, err = json.Marshal(cs)
 			if err != nil {
 				return js, err
 			}
@@ -68,12 +56,13 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "add":
-		if auth.Right("add-campaigns") {
-			campaign, err := addCampaign(req.Id)
+		if user.Right("add-campaigns") {
+			var c camp
+			c, err = addCampaign(req.ID)
 			if err != nil {
 				return js, err
 			}
-			js, err = json.Marshal(campaign)
+			js, err = json.Marshal(c)
 			if err != nil {
 				return js, err
 			}
@@ -82,12 +71,13 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "clone":
-		if auth.Right("add-campaigns") {
-			campaign, err := cloneCampaign(req.Id)
+		if user.Right("add-campaigns") {
+			var c camp
+			c, err := cloneCampaign(req.ID)
 			if err != nil {
 				return js, err
 			}
-			js, err = json.Marshal(campaign)
+			js, err = json.Marshal(c)
 			if err != nil {
 				return js, err
 			}
@@ -102,21 +92,21 @@ func campaigns(req request) (js []byte, err error) {
 	return js, err
 }
 
-func cloneCampaign(campaignId int64) (Campaign, error) {
-	c := Campaign{}
-	cData := CampaignData{
+func cloneCampaign(campaignID int64) (camp, error) {
+	c := camp{}
+	cData := campaignData{
 		Accepted: false,
 	}
 	var (
-		groupId    int64
+		groupID    int64
 		start, end mysql.NullTime
 	)
-	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignId)
+	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
 
 	err := query.Scan(
-		&groupId,
-		&cData.ProfileId,
-		&cData.SenderId,
+		&groupID,
+		&cData.ProfileID,
+		&cData.SenderID,
 		&cData.Name,
 		&cData.Subject,
 		&cData.Template,
@@ -129,9 +119,9 @@ func cloneCampaign(campaignId int64) (Campaign, error) {
 	}
 	cData.Name = "[Clone] " + cData.Name
 	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
-		groupId,
-		cData.ProfileId,
-		cData.SenderId,
+		groupID,
+		cData.ProfileID,
+		cData.SenderID,
 		cData.Name,
 		cData.Subject,
 		cData.Template,
@@ -143,7 +133,7 @@ func cloneCampaign(campaignId int64) (Campaign, error) {
 	if err != nil {
 		return c, err
 	}
-	c.Id, err = row.LastInsertId()
+	c.ID, err = row.LastInsertId()
 	if err != nil {
 		return c, err
 	}
@@ -152,14 +142,14 @@ func cloneCampaign(campaignId int64) (Campaign, error) {
 	return c, err
 }
 
-func addCampaign(groupId int64) (Campaign, error) {
-	c := Campaign{}
+func addCampaign(groupID int64) (camp, error) {
+	c := camp{}
 	c.Name = "New campaign"
-	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupId, c.Name)
+	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupID, c.Name)
 	if err != nil {
 		return c, err
 	}
-	c.Id, err = row.LastInsertId()
+	c.ID, err = row.LastInsertId()
 	if err != nil {
 		return c, err
 	}
@@ -172,14 +162,14 @@ func saveCampaigns(changes []map[string]interface{}) (err error) {
 	err = nil
 	var where string
 
-	if auth.IsAdmin() {
+	if user.IsAdmin() {
 		where = "?"
 	} else {
 		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], auth.userId)
+		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
 		if e != nil {
 			err = e
 		}
@@ -187,23 +177,23 @@ func saveCampaigns(changes []map[string]interface{}) (err error) {
 	return
 }
 
-func getCampaigns(req request) (Campaigns, error) {
+func getCampaigns(req request) (camps, error) {
 	var (
-		c                  Campaign
-		cs                 Campaigns
+		c                  camp
+		cs                 camps
 		partWhere, where   string
 		partParams, params []interface{}
 		err                error
 	)
-	cs.Records = []Campaign{}
-	params = append(params, req.Id)
-	if auth.IsAdmin() {
+	cs.Records = []camp{}
+	params = append(params, req.ID)
+	if user.IsAdmin() {
 		where = "`group_id`=?"
 	} else {
 		where = "`group_id`=? AND `group_id` IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
-		params = append(params, auth.userId)
+		params = append(params, user.userID)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
+	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {
 		fmt.Println("Create SQL Part error:", err)
 	}
@@ -213,10 +203,10 @@ func getCampaigns(req request) (Campaigns, error) {
 	}
 	defer query.Close()
 	for query.Next() {
-		err = query.Scan(&c.Id, &c.Name)
+		err = query.Scan(&c.ID, &c.Name)
 		cs.Records = append(cs.Records, c)
 	}
-	partWhere, partParams, err = createSqlPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
+	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 	if err != nil {
 		apilog.Print(err)
 	}

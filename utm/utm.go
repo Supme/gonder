@@ -1,3 +1,4 @@
+// Package utm get status sended email
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
@@ -34,6 +35,7 @@ var (
 	utmlog *log.Logger
 )
 
+// Run start utm server
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -70,13 +72,13 @@ func Run() {
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			message, data, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
+			message, data, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 			if err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
-			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 			if err != nil {
 				utmlog.Print(err)
 			}
@@ -84,20 +86,18 @@ func Run() {
 				if err := message.Unsubscribe(map[string]string{"Unsubscribed": "from header link"}); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
-					return
 				} else {
 					if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
 						utmlog.Println(err)
 						http.Error(w, "", http.StatusInternalServerError)
-						return
 					} else {
 						t.Execute(w, map[string]string{
 							// ToDo remove
-							"campaignId":  message.CampaignId,
-							"recipientId": message.RecipientId,
+							"campaignId":  message.CampaignID,
+							"recipientId": message.RecipientID,
 
-							"CampaignId":     message.CampaignId,
-							"RecipientId":    message.RecipientId,
+							"CampaignId":     message.CampaignID,
+							"RecipientId":    message.RecipientID,
 							"RecipientEmail": message.RecipientEmail,
 							"RecipientName":  message.RecipientName,
 						})
@@ -108,15 +108,14 @@ func Run() {
 				if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/accept.html"); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
-					return
 				} else {
 					t.Execute(w, map[string]string{
 						// ToDo remove
-						"campaignId":  message.CampaignId,
-						"recipientId": message.RecipientId,
+						"campaignId":  message.CampaignID,
+						"recipientId": message.RecipientID,
 
-						"CampaignId":     message.CampaignId,
-						"RecipientId":    message.RecipientId,
+						"CampaignId":     message.CampaignID,
+						"RecipientId":    message.RecipientID,
 						"RecipientEmail": message.RecipientEmail,
 						"RecipientName":  message.RecipientName,
 					})
@@ -135,11 +134,11 @@ func Run() {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
-			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+			_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 			if err != nil {
 				utmlog.Print(err)
 			}
-			if message.CampaignId != r.PostFormValue("campaignId") {
+			if message.CampaignID != r.PostFormValue("campaignId") {
 				utmlog.Println(err)
 				http.Error(w, "Not valid request", http.StatusInternalServerError)
 				return
@@ -147,7 +146,6 @@ func Run() {
 			if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
-				return
 			} else {
 				var extra = map[string]string{}
 				for name, value := range r.PostForm {
@@ -162,11 +160,11 @@ func Run() {
 				}
 				t.Execute(w, map[string]string{
 					// ToDo remove
-					"campaignId":  message.CampaignId,
-					"recipientId": message.RecipientId,
+					"campaignId":  message.CampaignID,
+					"recipientId": message.RecipientID,
 
-					"CampaignId":     message.CampaignId,
-					"RecipientId":    message.RecipientId,
+					"CampaignId":     message.CampaignID,
+					"RecipientId":    message.RecipientID,
 					"RecipientEmail": message.RecipientEmail,
 					"RecipientName":  message.RecipientName,
 				})
@@ -175,17 +173,17 @@ func Run() {
 	})
 
 	utm.HandleFunc("/redirect/", func(w http.ResponseWriter, r *http.Request) {
-		message, data, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
+		message, data, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Print(err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, data)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, data)
 		if err != nil {
 			utmlog.Print(err)
 		}
-		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 		if err != nil {
 			utmlog.Print(err)
 		}
@@ -195,17 +193,17 @@ func Run() {
 
 	utm.HandleFunc("/web/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		message, _, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
+		message, _, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, models.WebVersion)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.WebVersion)
 		if err != nil {
 			utmlog.Print(err)
 		}
-		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		_, err = models.Db.Exec("UPDATE `recipient` SET `web_agent`= ? WHERE `id`=? AND `web_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 		if err != nil {
 			utmlog.Print(err)
 		}
@@ -219,17 +217,17 @@ func Run() {
 	})
 
 	utm.HandleFunc("/open/", func(w http.ResponseWriter, r *http.Request) {
-		message, _, err := models.DecodeData(strings.Split(r.URL.Path, "/")[2])
+		message, _, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignId, message.RecipientId, models.OpenTrace)
+		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.OpenTrace)
 		if err != nil {
 			utmlog.Print(err)
 		}
-		_, err = models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientId)
+		_, err = models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 		if err != nil {
 			utmlog.Print(err)
 		}

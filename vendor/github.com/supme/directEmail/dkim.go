@@ -4,8 +4,8 @@ import (
 	dkim "github.com/toorop/go-dkim"
 )
 
-func (self *Email) dkimSign(selector string, privateKey []byte) error {
-	domain, err := self.domainFromEmail(self.FromEmail)
+func (slf *Email) dkimSign(selector string, privateKey []byte) error {
+	domain, err := slf.domainFromEmail(slf.FromEmail)
 	if err != nil {
 		return err
 	}
@@ -18,9 +18,9 @@ func (self *Email) dkimSign(selector string, privateKey []byte) error {
 	options.AddSignatureTimestamp = true
 	options.Canonicalization = "simple/simple"
 
-	email :=  self.GetRawMessageBytes()
+	email := slf.GetRawMessageBytes()
 
-	if self.bodyLenght >= 50 {
+	if slf.bodyLenght >= 50 {
 		options.BodyLength = 50
 	}
 
@@ -28,7 +28,7 @@ func (self *Email) dkimSign(selector string, privateKey []byte) error {
 	if err != nil {
 		return err
 	}
-	self.SetRawMessageBytes(email)
+	slf.SetRawMessageBytes(email)
 
 	return nil
 }
