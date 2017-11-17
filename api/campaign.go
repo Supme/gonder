@@ -52,7 +52,7 @@ func campaign(req request) (js []byte, err error) {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
 
-			_, err := models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
+			_, err = models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				req.Content.Name,
 				req.Content.ProfileID,
 				req.Content.Subject,
@@ -63,7 +63,6 @@ func campaign(req request) (js []byte, err error) {
 				req.Content.Template,
 				req.ID,
 			)
-
 			if err != nil {
 				return js, err
 			}
@@ -82,7 +81,7 @@ func campaign(req request) (js []byte, err error) {
 				accepted = 0
 			}
 
-			_, err := models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.ID)
+			_, err = models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.ID)
 			if err != nil {
 				return js, err
 			}

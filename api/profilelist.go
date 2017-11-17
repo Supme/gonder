@@ -35,6 +35,9 @@ func getProfilesList() ([]pList, error) {
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&p.ID, &p.Name)
+		if err != nil {
+			return ps, err
+		}
 		ps = append(ps, p)
 	}
 	return ps, nil
