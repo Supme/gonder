@@ -59,13 +59,11 @@ func Run() {
 		startedCampaign.Lock()
 		if id, err := checkNextCampaign(); err == nil {
 			startedCampaign.campaigns = append(startedCampaign.campaigns, id)
-			capm := campaign{}
+			camp := campaign{}
 			go func() {
-				camplog.Printf("Start campaign id %s.", id)
-				capm.id = id
-				run(capm)
+				camp.id = id
+				run(camp)
 				removeStartedCampaign(id)
-				camplog.Printf("Finish campaign id %s", id)
 			}()
 		}
 		startedCampaign.Unlock()

@@ -48,6 +48,7 @@ func send(camp *campaign, id, email, name string, profileID int, iface, host str
 
 // Send campaign
 func (c campaign) send() {
+	camplog.Printf("Start campaign id %s.", c.id)
 	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.id)
 	checkErr(err)
 	defer query.Close()
@@ -59,52 +60,51 @@ func (c campaign) send() {
 		checkErr(err)
 
 		profileID, iface, host := ProfileNext(c.profileID)
-		go func(id, email, name string, profileId int, iface, host string) {
-			wg.Add(1)
-			defer wg.Done()
+		wg.Add(1)
+		go func(id, email, name string, profileId int, iface, host string, wg *sync.WaitGroup) {
 			send(&c, id, email, name, profileId, iface, host)
-		}(id, email, name, profileID, iface, host)
-
+			wg.Done()
+		}(id, email, name, profileID, iface, host, &wg)
 	}
-	wg.Wait()
-	camplog.Printf("Done campaign id %s.", c.id)
-}
 
-func (c campaign) resend() {
-	var id, email, name string
+	wg.Wait()
 
 	count := c.countSoftBounce()
-	if count == 0 {
-		return
+	if count != 0 && c.resendCount > 0 {
+		camplog.Printf("Done stream send campaign id %s but need %d resend.", c.id, count)
 	}
+}
 
-	if c.resendCount != 0 {
-		camplog.Printf("Start %d resend by campaign id %s ", count, c.id)
-	}
+const softBounceWhere = "`removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
 
+func (c campaign) resend() {
 	for n := 0; n < c.resendCount; n++ {
-		if c.countSoftBounce() == 0 {
-			return
+		count := c.countSoftBounce()
+		if count == 0 {
+			break
 		}
 		time.Sleep(time.Duration(c.resendDelay) * time.Second)
+		camplog.Printf("Start %d resend by campaign id %s ", count, c.id)
 
-		query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", c.id)
+		query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND "+softBounceWhere, c.id)
 		checkErr(err)
 		defer query.Close()
-
 		for query.Next() {
+			var id, email, name string
 			err = query.Scan(&id, &email, &name)
 			checkErr(err)
 			profileID, iface, host := ProfileNext(c.profileID)
 			send(&c, id, email, name, profileID, iface, host)
 		}
+		camplog.Printf("Done %d resend campaign id %s", n+1, c.id)
 	}
+	camplog.Printf("Finish campaign id %s", c.id)
 }
 
 func (c *campaign) countSoftBounce() int {
 	var count int
 	//err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
-	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(proxy)|(eof)).+'", c.id).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND "+softBounceWhere, c.id).Scan(&count)
 	checkErr(err)
 	return count
 }
