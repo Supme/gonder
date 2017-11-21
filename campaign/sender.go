@@ -96,7 +96,7 @@ func (c campaign) resend() {
 			profileID, iface, host := ProfileNext(c.profileID)
 			send(&c, id, email, name, profileID, iface, host)
 		}
-		camplog.Printf("Done %d resend campaign id %s", n+1, c.id)
+		camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(n+1), c.id)
 	}
 	camplog.Printf("Finish campaign id %s", c.id)
 }
