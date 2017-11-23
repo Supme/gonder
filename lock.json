@@ -1,6 +1,14 @@
 {
-    "memo": "10c304d2753219818436f2bd3cf28130e51257c227c6acd5a348d034957904d1",
+    "memo": "407f2a5c11471174a9754f216e07fbe32a3adc2f579378749dd906ed8e97531e",
     "projects": [
+        {
+            "name": "github.com/NYTimes/gziphandler",
+            "branch": "master",
+            "revision": "d6f46609c7629af3a02d791a4666866eed3cbd3e",
+            "packages": [
+                "."
+            ]
+        },
         {
             "name": "github.com/alyu/configparser",
             "branch": "master",
@@ -11,7 +19,7 @@
         },
         {
             "name": "github.com/boombuler/barcode",
-            "branch": "master",
+            "version": "v1.0.0",
             "revision": "3cfea5ab600ae37946be2b763b8ec2c1cf2d272d",
             "packages": [
                 ".",
@@ -29,7 +37,7 @@
         {
             "name": "github.com/gorilla/websocket",
             "branch": "master",
-            "revision": "7ca4275b84a9d500f68971c8c4a97f0ec18eb889",
+            "revision": "23059f29570f0e13fca80ef6aea0f04c11daaa4d",
             "packages": [
                 "."
             ]
@@ -67,6 +75,32 @@
             ]
         },
         {
+            "name": "github.com/tdewolff/minify",
+            "version": "v2.3.3",
+            "revision": "90df1aae5028a7cbb441bde86e86a55df6b5aa34",
+            "packages": [
+                ".",
+                "css",
+                "html",
+                "js",
+                "json"
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/parse",
+            "version": "v2.3.1",
+            "revision": "bace4cf682c41e03b154044b561575ff541b83e8",
+            "packages": [
+                ".",
+                "buffer",
+                "css",
+                "html",
+                "js",
+                "json",
+                "strconv"
+            ]
+        },
+        {
             "name": "github.com/tealeg/xlsx",
             "branch": "master",
             "revision": "2ee7bde0c2f1ddf862bd3ac7f3ac95df15ca7aa7",
@@ -85,7 +119,7 @@
         {
             "name": "golang.org/x/net",
             "branch": "master",
-            "revision": "9dfe39835686865bff950a07b394c12a98ddc811",
+            "revision": "c7086645de248775cbf2373cf5ca4d2fa664b8c1",
             "packages": [
                 "idna",
                 "proxy"
@@ -94,7 +128,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "0dd5e194bbf5eb84a39666eb4c98a4d007e4203a",
+            "revision": "82aafbf43bf885069dc71b7e7c2f9d7a614d47da",
             "packages": [
                 "unix"
             ]
