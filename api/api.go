@@ -112,7 +112,7 @@ func Run() {
 		w.Write(blank)
 	})
 
-	api.Handle("/panel", apiHandler(func(w http.ResponseWriter, r *http.Request) {
+	api.Handle("/panel", user.Check(func(w http.ResponseWriter, r *http.Request) {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
@@ -149,10 +149,10 @@ func Run() {
 
 	api.HandleFunc("/logout", user.Logout)
 
-	api.Handle("/status/ws/campaign.log", apiHandlerCheck(campaignLog))
-	api.Handle("/status/ws/api.log", apiHandlerCheck(apiLog))
-	api.Handle("/status/ws/utm.log", apiHandlerCheck(utmLog))
-	api.Handle("/status/ws/main.log", apiHandlerCheck(mainLog))
+	api.HandleFunc("/status/ws/campaign.log", user.Check(campaignLog))
+	api.HandleFunc("/status/ws/api.log", user.Check(apiLog))
+	api.HandleFunc("/status/ws/utm.log", user.Check(utmLog))
+	api.HandleFunc("/status/ws/main.log", user.Check(mainLog))
 
 	apilog.Println("API listening on port " + models.Config.APIPort + "...")
 	apilog.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
