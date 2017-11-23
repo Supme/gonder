@@ -15,7 +15,6 @@ import (
 	"syscall"
 )
 
-
 // Run starting gonder from command line
 func Run() {
 	var err error
