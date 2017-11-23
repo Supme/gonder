@@ -56,6 +56,7 @@ func Run() {
 
 	// Reports
 	api.HandleFunc("/report", user.Check(report))
+	api.HandleFunc("/report/status", user.Check(reportCampaignStatus))
 	api.HandleFunc("/report/jump", user.Check(reportJumpDetailedCount))
 	api.HandleFunc("/report/unsubscribed", user.Check(reportUnsubscribed))
 

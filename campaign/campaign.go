@@ -71,6 +71,17 @@ func Run() {
 	}
 }
 
+func GetStartedCampaigns() []string {
+	var started []string
+	startedCampaign.Lock()
+	started = startedCampaign.campaigns
+	startedCampaign.Unlock()
+	if started == nil {
+		started = []string{}
+	}
+	return started
+}
+
 func checkNextCampaign() (string, error) {
 	var launched bytes.Buffer
 	for i, s := range startedCampaign.campaigns {

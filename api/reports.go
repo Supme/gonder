@@ -4,9 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
 	"net/http"
 )
+
+func reportCampaignStatus(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var js []byte
+	type startedStruct struct {
+		Started []string `json:"started"`
+	}
+	var campsVar startedStruct
+	campsVar.Started = campSender.GetStartedCampaigns()
+	js, err = json.Marshal(campsVar)
+	if err != nil {
+		js = []byte(`{"status": "error", "message": "Get reports for this campaign"}`)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
 
 func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -124,20 +141,20 @@ func report(w http.ResponseWriter, r *http.Request) {
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	campaign := r.Form["campaign"][0]
-	if user.CampaignRight(campaign) {
+	campaignID := r.Form["campaign"][0]
+	if user.CampaignRight(campaignID) {
 		reports := make(map[string]interface{})
-		reports["Campaign"], err = reportCampaignInfo(campaign)
+		reports["Campaign"], err = reportCampaignInfo(campaignID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		reports["SendCount"] = reportSendCount(campaign)
-		reports["SuccessSendCount"] = reportSuccessSendCount(campaign)
-		reports["OpenMailCount"] = reportOpenMailCount(campaign)
-		reports["OpenWebVersionCount"] = reportOpenWebVersionCount(campaign)
-		reports["UnsubscribeCount"] = reportUnsubscribeCount(campaign)
-		reports["RecipientJumpCount"] = reportRecipientJumpCount(campaign)
+		reports["SendCount"] = reportSendCount(campaignID)
+		reports["SuccessSendCount"] = reportSuccessSendCount(campaignID)
+		reports["OpenMailCount"] = reportOpenMailCount(campaignID)
+		reports["OpenWebVersionCount"] = reportOpenWebVersionCount(campaignID)
+		reports["UnsubscribeCount"] = reportUnsubscribeCount(campaignID)
+		reports["RecipientJumpCount"] = reportRecipientJumpCount(campaignID)
 
 		js, err = json.Marshal(reports)
 		if err != nil {

@@ -23,8 +23,8 @@ var mx = struct {
 	stor: make(map[string]mxStor),
 }
 
-// DomainGetMX resolv domain MX records
-func DomainGetMX(domain string) ([]*net.MX, error) {
+// domainGetMX resolv domain MX records
+func domainGetMX(domain string) ([]*net.MX, error) {
 	var (
 		record []*net.MX
 		err    error
@@ -67,8 +67,8 @@ var (
 	profileMutex sync.Mutex
 )
 
-// ProfileNext get next free sending profile data and add connection count
-func ProfileNext(id int) (int, string, string) {
+// profileNext get next free sending profile data and add connection count
+func profileNext(id int) (int, string, string) {
 	var res profileData
 
 	profileMutex.Lock()
@@ -92,7 +92,7 @@ func ProfileNext(id int) (int, string, string) {
 			profileGroup[id]++
 
 			profileMutex.Unlock()
-			return ProfileNext(i)
+			return profileNext(i)
 		}
 
 		// Не достигли максимума потоков
@@ -108,7 +108,7 @@ func ProfileNext(id int) (int, string, string) {
 		for !profileCheck(id) {
 			time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
 		}
-		return ProfileNext(id)
+		return profileNext(id)
 
 	}
 
@@ -126,7 +126,7 @@ func ProfileNext(id int) (int, string, string) {
 
 	// и повторяем действие
 	profileMutex.Unlock()
-	return ProfileNext(id)
+	return profileNext(id)
 
 }
 
@@ -139,8 +139,8 @@ func profileCheck(id int) bool {
 	return free
 }
 
-// ProfileFree free one connection profile
-func ProfileFree(id int) {
+// profileFree free one connection profile
+func profileFree(id int) {
 	var res profileData
 
 	profileMutex.Lock()
