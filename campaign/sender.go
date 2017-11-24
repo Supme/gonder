@@ -35,7 +35,7 @@ func send(camp *campaign, id, email, name string, profileID int, iface, host str
 		checkErr(err)
 
 		result := r.send(camp, &iface, &host)
-		ProfileFree(profileID)
+		profileFree(profileID)
 
 		_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, r.id)
 		checkErr(err)
@@ -59,7 +59,7 @@ func (c campaign) send() {
 		err = query.Scan(&id, &email, &name)
 		checkErr(err)
 
-		profileID, iface, host := ProfileNext(c.profileID)
+		profileID, iface, host := profileNext(c.profileID)
 		wg.Add(1)
 		go func(id, email, name string, profileId int, iface, host string, wg *sync.WaitGroup) {
 			send(&c, id, email, name, profileId, iface, host)
@@ -93,7 +93,7 @@ func (c campaign) resend() {
 			var id, email, name string
 			err = query.Scan(&id, &email, &name)
 			checkErr(err)
-			profileID, iface, host := ProfileNext(c.profileID)
+			profileID, iface, host := profileNext(c.profileID)
 			send(&c, id, email, name, profileID, iface, host)
 		}
 		camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(n+1), c.id)

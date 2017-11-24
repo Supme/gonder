@@ -65,10 +65,10 @@ func profiles(req request) (js []byte, err error) {
 		if user.Right("save-profiles") {
 			err = saveProfiles(req.Changes)
 			if err != nil {
-				ps.Status = "error"
-				ps.Message = err.Error()
+				return js, err
 			}
 			js, err = json.Marshal(ps)
+			return js, err
 		}
 		return js, errors.New("Forbidden get profiles")
 

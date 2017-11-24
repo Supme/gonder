@@ -16,12 +16,19 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/NYTimes/gziphandler"
 	"github.com/supme/gonder/models"
+	"github.com/tdewolff/minify"
+	minifyCSS "github.com/tdewolff/minify/css"
+	minifyHTML "github.com/tdewolff/minify/html"
+	minifyJS "github.com/tdewolff/minify/js"
+	minifyJSON "github.com/tdewolff/minify/json"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"runtime"
 	"strconv"
 )
@@ -29,7 +36,24 @@ import (
 var (
 	user   auth
 	apilog *log.Logger
+	min    *minify.M
 )
+
+func init() {
+	min = minify.New()
+	min.AddFunc("text/css", minifyCSS.Minify)
+	min.AddFunc("text/html", minifyHTML.Minify)
+	min.AddFunc("application/javascript", minifyJS.Minify)
+	min.AddFunc("application/json", minifyJSON.Minify)
+}
+
+func apiHandler(fn http.HandlerFunc) http.Handler {
+	return gziphandler.GzipHandler(min.Middleware(fn))
+}
+
+func apiHandlerCheck(fn http.HandlerFunc) http.Handler {
+	return gziphandler.GzipHandler(min.Middleware(user.Check(fn)))
+}
 
 // Run start api server
 func Run() {
@@ -52,29 +76,28 @@ func Run() {
 	})
 
 	// API
-	api.HandleFunc("/api/", user.Check(apiRequest))
+	//api.HandleFunc("/api/", user.Check(apiRequest))
+	api.Handle("/api/", apiHandlerCheck(apiRequest))
 
 	// Reports
-	api.HandleFunc("/report", user.Check(report))
-	api.HandleFunc("/report/jump", user.Check(reportJumpDetailedCount))
-	api.HandleFunc("/report/unsubscribed", user.Check(reportUnsubscribed))
+	api.Handle("/report", apiHandlerCheck(report))
+	api.Handle("/report/status", apiHandlerCheck(reportCampaignStatus))
+	api.Handle("/report/jump", apiHandlerCheck(reportJumpDetailedCount))
+	api.Handle("/report/unsubscribed", apiHandlerCheck(reportUnsubscribed))
 
-	api.HandleFunc("/preview", user.Check(getMailPreview))
-	api.HandleFunc("/unsubscribe", user.Check(getUnsubscribePreview))
+	api.Handle("/preview", apiHandlerCheck(getMailPreview))
+	api.Handle("/unsubscribe", apiHandlerCheck(getUnsubscribePreview))
 
-	api.HandleFunc("/filemanager", user.Check(filemanager))
+	api.Handle("/filemanager", apiHandlerCheck(filemanager))
 
 	// Static dirs
-	api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
-	/*
-		m := minify.New()
-		m.AddFunc("text/css", css.Minify)
-		m.AddFunc("text/html", html.Minify)
-		m.AddFunc("application/javascript", js.Minify)
-		api.Handle("/assets/",m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"), r.URL.Path))
+	//api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	api.Handle("/assets/", apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"),
+				r.URL.Path))
 		})))
-	*/
+
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
 	api.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +112,7 @@ func Run() {
 		w.Write(blank)
 	})
 
-	api.HandleFunc("/panel", user.Check(func(w http.ResponseWriter, r *http.Request) {
+	api.Handle("/panel", user.Check(func(w http.ResponseWriter, r *http.Request) {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
