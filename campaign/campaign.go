@@ -29,7 +29,6 @@ var (
 		campaigns []string
 		sync.Mutex
 	}
-	campSum int
 	camplog *log.Logger
 )
 
@@ -44,10 +43,7 @@ func Run() {
 
 	for {
 		for {
-			startedCampaign.Lock()
-			campSum = len(startedCampaign.campaigns)
-			startedCampaign.Unlock()
-			if campSum <= models.Config.MaxCampaingns {
+			if GetStartedCampaignsCount() <= models.Config.MaxCampaingns {
 				break
 			}
 			time.Sleep(1 * time.Second)
@@ -66,6 +62,12 @@ func Run() {
 		startedCampaign.Unlock()
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func GetStartedCampaignsCount() int {
+	startedCampaign.Lock()
+	defer startedCampaign.Unlock()
+	return len(startedCampaign.campaigns)
 }
 
 func GetStartedCampaigns() []string {
