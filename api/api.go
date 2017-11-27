@@ -62,10 +62,7 @@ func Run() {
 		log.Printf("error opening api log file: %v", err)
 	}
 	defer l.Close()
-
-	multi := io.MultiWriter(l, os.Stdout)
-
-	apilog = log.New(multi, "", log.Ldate|log.Ltime)
+	apilog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
 
 	api := http.NewServeMux()
 

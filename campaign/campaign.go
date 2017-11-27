@@ -40,10 +40,7 @@ func Run() {
 		log.Printf("error opening campaign log file: %v", err)
 	}
 	defer l.Close()
-
-	multi := io.MultiWriter(l, os.Stdout)
-
-	camplog = log.New(multi, "", log.Ldate|log.Ltime)
+	camplog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
 
 	for {
 		for {
