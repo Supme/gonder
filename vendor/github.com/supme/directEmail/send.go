@@ -11,12 +11,11 @@ import (
 	"net/smtp"
 	"net/url"
 	"strings"
-	"time"
 )
 
 // A Email contains options for send email.
 type Email struct {
-	// Ip contains local IP address which use for send email
+	// Ip contains local IP address wich use for send email
 	// if blank use default interface
 	// if use socks5 proxy "socks://123.124.125.126:8080"
 	// and with auth "socks://user:password@123.124.125.126:8080"
@@ -48,10 +47,7 @@ type Email struct {
 	bodyLenght  int
 }
 
-const (
-	debugIs     = false
-	connTimeout = 5 * time.Minute // SMTP RFC
-)
+const debugIs = false
 
 // New returns a new Email instance for create and send email
 func New() Email {
@@ -59,24 +55,18 @@ func New() Email {
 }
 
 // SendThroughServer send email from SMTP server
-func (slf *Email) SendThroughServer(host string, port uint16, username, password string) error {
-	slf.Port = port
+func (self *Email) SendThroughServer(host string, port uint16, username, password string) error {
+	self.Port = port
 
-	dialFunc, err := slf.dialFunction()
+	dialFunc, err := self.dialFunction()
 	debug("Dialer selected, now dial to server\n")
 
-	conn, err := dialFunc("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", slf.Port)))
+	conn, err := dialFunc("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", self.Port)))
 	if err != nil {
 		debug("Not connected\n")
 		return err
 	}
-	defer conn.Close()
 	debug("Connected\n")
-
-	err = conn.SetDeadline(time.Now().Add(connTimeout))
-	if err != nil {
-		return err
-	}
 
 	client, err := smtp.NewClient(conn, host)
 	if err != nil {
@@ -89,72 +79,49 @@ func (slf *Email) SendThroughServer(host string, port uint16, username, password
 		password,
 		host,
 	)
-	slf.Host = "localhost"
+
+	if err := client.Hello("localhost"); err != nil {
+		return err
+	}
 
 	debug("Connected, now send email\n")
-
-	slf.cleanEmail()
-	return slf.sendWithTimeout(auth, host, client)
+	return self.send(auth, host, client)
 }
 
 // Send email directly
-func (slf *Email) Send() error {
+func (self *Email) Send() error {
 	var err error
 
-	server, err := slf.domainFromEmail(slf.ToEmail)
+	self.cleanEmail()
+
+	server, err := self.domainFromEmail(self.ToEmail)
 	if err != nil {
 		return errors.New("553 Bad ToEmail")
 	}
 
-	dialFunc, err := slf.dialFunction()
+	c := &Connect{}
+	c.hostname = self.Host
+	c.mapIP = self.MapIp
+	c.iface = self.Ip
+	c.portSMTP = int(self.Port)
+	client, err := c.newClient(server, true)
 	if err != nil {
-		return fmt.Errorf("421 %v", err)
+		return errors.New("421 Connect to server error: " + err.Error())
 	}
 
-	conn, err := slf.newClient(server, dialFunc)
-	if err != nil {
-		debug("Not connected\n")
-		return fmt.Errorf("421 %v", err)
-	}
-	defer conn.Close()
-	debug("Connected\n")
-
-	slf.cleanEmail()
-	return slf.sendWithTimeout(nil, "", conn)
+	return self.send(nil, "", client)
 }
 
-func (slf *Email) cleanEmail() {
-	slf.ToEmail = strings.TrimSpace(slf.ToEmail)
-	slf.FromEmail = strings.TrimSpace(slf.FromEmail)
+func (self *Email) cleanEmail() {
+	self.ToEmail = strings.TrimSpace(self.ToEmail)
+	self.FromEmail = strings.TrimSpace(self.FromEmail)
 }
 
 var testHookStartTLS func(*tls.Config)
 
-// sendWithTimeout hack for bad server
-func (slf *Email) sendWithTimeout(auth smtp.Auth, host string, client *smtp.Client) error {
-	var res error
-	err := make(chan error, 1)
-	go func() {
-		err <- slf.send(auth, host, client)
-	}()
-
-	select {
-	case res = <-err:
-
-	case <-time.After(connTimeout + time.Millisecond * 500):
-		res = fmt.Errorf("421 send timeout after %s", connTimeout.String())
-	}
-
-	return res
-}
-
-// send sending email message
-func (slf *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
+// Send sending email message
+func (self *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
 	var err error
-
-	if err := client.Hello(strings.TrimRight(slf.Host, ".")); err != nil {
-		return err
-	}
 
 	if auth != nil {
 		if ok, _ := client.Extension("STARTTLS"); ok {
@@ -173,11 +140,11 @@ func (slf *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
 		}
 	}
 
-	if err := client.Mail(slf.FromEmail); err != nil {
+	if err := client.Mail(self.FromEmail); err != nil {
 		return err
 	}
 
-	if err := client.Rcpt(slf.ToEmail); err != nil {
+	if err := client.Rcpt(self.ToEmail); err != nil {
 		return err
 	}
 
@@ -186,7 +153,7 @@ func (slf *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
 		return err
 	}
 
-	_, err = fmt.Fprint(w, slf.raw.String())
+	_, err = fmt.Fprint(w, self.raw.String())
 	if err != nil {
 		return err
 	}
@@ -202,18 +169,18 @@ func (slf *Email) send(auth smtp.Auth, host string, client *smtp.Client) error {
 
 type conn func(network, address string) (net.Conn, error)
 
-func (slf *Email) dialFunction() (conn, error) {
+func (self *Email) dialFunction() (conn, error) {
 	var dialFunc conn
 
-	if slf.Ip == "" {
+	if self.Ip == "" {
 		iface := net.Dialer{}
 		dialFunc = iface.Dial
 		debug("Dial function is default network interface\n")
 	} else {
-		if strings.ToLower(slf.Ip[0:8]) == "socks://" {
-			u, err := url.Parse(slf.Ip)
+		if strings.ToLower(self.Ip[0:8]) == "socks://" {
+			u, err := url.Parse(self.Ip)
 			if err != nil {
-				return nil, fmt.Errorf("Error parse socks: %s", err.Error())
+				return nil, errors.New(fmt.Sprintf("Error parse socks: %s", err.Error()))
 			}
 			var iface proxy.Dialer
 			if u.User != nil {
@@ -230,77 +197,18 @@ func (slf *Email) dialFunction() (conn, error) {
 					return dialFunc, err
 				}
 			}
-			slf.Ip = u.Host
+			self.Ip = u.Host
 			dialFunc = iface.Dial
-			debug("Dial function is socks proxy from ", slf.Ip[8:], "\n")
+			debug("Dial function is socks proxy from ", self.Ip[8:], "\n")
 		} else {
 			addr := &net.TCPAddr{
-				IP: net.ParseIP(slf.Ip),
+				IP: net.ParseIP(self.Ip),
 			}
-			iface := net.Dialer{
-				LocalAddr: addr,
-			}
+			iface := net.Dialer{LocalAddr: addr}
 			dialFunc = iface.Dial
 			debug("Dial function is ", addr.String(), " network interface\n")
 		}
 	}
 
 	return dialFunc, nil
-}
-
-func (slf *Email) newClient(server string, dialFunc conn) (client *smtp.Client, err error) {
-	var conn net.Conn
-
-	records, err := net.LookupMX(server)
-	if err != nil {
-		return
-	}
-	debug("MX for domain:\n")
-	for i := range records {
-		debug(" - ", records[i].Pref, " ", records[i].Host, "\n")
-	}
-
-	for i := range records {
-		server := strings.TrimRight(strings.TrimSpace(records[i].Host), ".")
-		debug("Connect to server ", server, "\n")
-		conn, err = dialFunc("tcp", net.JoinHostPort(server, fmt.Sprintf("%d", slf.Port)))
-		if err != nil {
-			debug("Not connected\n")
-			continue
-		}
-		debug("Connected\n")
-		client, err = smtp.NewClient(conn, server)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return
-	}
-
-	err = conn.SetDeadline(time.Now().Add(connTimeout))
-	if err != nil {
-		return
-	}
-
-	if slf.Ip == "" {
-		slf.Ip = conn.LocalAddr().String()
-	}
-
-	if slf.Host == "" {
-		var myGlobalIP string
-		myIP, _, err := net.SplitHostPort(strings.TrimLeft(slf.Ip, "socks://"))
-		myGlobalIP, ok := slf.MapIp[myIP]
-		if !ok {
-			myGlobalIP = myIP
-		}
-		names, err := net.LookupAddr(myGlobalIP)
-		if err != nil && len(names) < 1 {
-			return nil, err
-		}
-		debug("LookUp ", myGlobalIP, " this result ", names[0], "\n")
-		slf.Host = names[0]
-	}
-
-	return
 }

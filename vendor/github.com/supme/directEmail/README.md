@@ -1,6 +1,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Supme/directEmail)](https://goreportcard.com/report/github.com/Supme/directEmail)
 # directEmail
 
+Deprecate: later use https://github.com/Supme/smtpSender
+
 Example
 
 ```
