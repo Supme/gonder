@@ -1,9 +1,9 @@
 {
-    "memo": "407f2a5c11471174a9754f216e07fbe32a3adc2f579378749dd906ed8e97531e",
+    "memo": "bbe1289412d78c7ea4868643c337d0d686f1ace4b5f2dbcfb19cea27132b4f1c",
     "projects": [
         {
             "name": "github.com/NYTimes/gziphandler",
-            "branch": "master",
+            "version": "v1.0.0",
             "revision": "d6f46609c7629af3a02d791a4666866eed3cbd3e",
             "packages": [
                 "."
@@ -19,7 +19,7 @@
         },
         {
             "name": "github.com/boombuler/barcode",
-            "version": "v1.0.0",
+            "branch": "master",
             "revision": "3cfea5ab600ae37946be2b763b8ec2c1cf2d272d",
             "packages": [
                 ".",
@@ -29,7 +29,7 @@
         {
             "name": "github.com/go-sql-driver/mysql",
             "branch": "master",
-            "revision": "cd4cb909ce1a31435164be29bf3682031f61539a",
+            "revision": "14f4292c08c0daf077adddd5824cffc82a797ff4",
             "packages": [
                 "."
             ]
@@ -37,7 +37,7 @@
         {
             "name": "github.com/gorilla/websocket",
             "branch": "master",
-            "revision": "23059f29570f0e13fca80ef6aea0f04c11daaa4d",
+            "revision": "6f34763140ed8887aed6a044912009832b4733d7",
             "packages": [
                 "."
             ]
@@ -69,15 +69,23 @@
         {
             "name": "github.com/supme/directEmail",
             "branch": "master",
-            "revision": "384a31d8ebd0f2448ea6a446d78af5b51db4a0c5",
+            "revision": "e6b3542749cf1fe0abe1f39531da1166d9eb8f6c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/buffer",
+            "branch": "master",
+            "revision": "df6253e2a2cda5aba1b5d0c59fc5bdf0a98ae192",
             "packages": [
                 "."
             ]
         },
         {
             "name": "github.com/tdewolff/minify",
-            "version": "v2.3.3",
-            "revision": "90df1aae5028a7cbb441bde86e86a55df6b5aa34",
+            "branch": "master",
+            "revision": "18372f335a64957d5f8c8dea5bbe66c52cee8b32",
             "packages": [
                 ".",
                 "css",
@@ -88,22 +96,28 @@
         },
         {
             "name": "github.com/tdewolff/parse",
-            "version": "v2.3.1",
-            "revision": "bace4cf682c41e03b154044b561575ff541b83e8",
+            "branch": "master",
+            "revision": "6fcdbb47e4a6ecb8a8fb9ea7d70f814d60c7a3a9",
             "packages": [
                 ".",
-                "buffer",
                 "css",
                 "html",
                 "js",
-                "json",
-                "strconv"
+                "json"
+            ]
+        },
+        {
+            "name": "github.com/tdewolff/strconv",
+            "branch": "master",
+            "revision": "3e8091f4417ebaaa3910da63a45ea394ebbfb0e3",
+            "packages": [
+                "."
             ]
         },
         {
             "name": "github.com/tealeg/xlsx",
             "branch": "master",
-            "revision": "2ee7bde0c2f1ddf862bd3ac7f3ac95df15ca7aa7",
+            "revision": "a06c872a6c402f194e9c817cf30f3840a75f8ffe",
             "packages": [
                 "."
             ]
@@ -111,7 +125,7 @@
         {
             "name": "github.com/toorop/go-dkim",
             "branch": "master",
-            "revision": "2c853a63fe4c076c35ca2ad49ad725a7f8d3ad86",
+            "revision": "43c1bb05e85404d07a5020ad38c6b67b3a039b86",
             "packages": [
                 "."
             ]
@@ -119,7 +133,7 @@
         {
             "name": "golang.org/x/net",
             "branch": "master",
-            "revision": "c7086645de248775cbf2373cf5ca4d2fa664b8c1",
+            "revision": "a8b9294777976932365dabb6640cf1468d95c70f",
             "packages": [
                 "idna",
                 "proxy"
@@ -128,7 +142,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "82aafbf43bf885069dc71b7e7c2f9d7a614d47da",
+            "revision": "8f27ce8a604014414f8dfffc25cbcde83a3f2216",
             "packages": [
                 "unix"
             ]
@@ -144,16 +158,8 @@
             ]
         },
         {
-            "name": "google.golang.org/appengine",
-            "version": "v1.0.0",
-            "revision": "150dc57a1b433e64154302bdc40b6bb8aefa313a",
-            "packages": [
-                "cloudsql"
-            ]
-        },
-        {
             "name": "gopkg.in/fsnotify.v1",
-            "version": "v1.4.2",
+            "branch": "master",
             "revision": "629574ca2a5df945712d3079857300b5e4da0236",
             "packages": [
                 "."

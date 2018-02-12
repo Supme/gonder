@@ -3,19 +3,13 @@
         "github.com/alyu/configparser": {
             "branch": "master"
         },
-        "github.com/disintegration/gift": {
+        "github.com/boombuler/barcode": {
             "branch": "master"
         },
         "github.com/go-sql-driver/mysql": {
             "branch": "master"
         },
-        "github.com/golang/protobuf": {
-            "branch": "master"
-        },
         "github.com/gorilla/websocket": {
-            "branch": "master"
-        },
-        "github.com/howeyc/gopass": {
             "branch": "master"
         },
         "github.com/hpcloud/tail": {
@@ -30,22 +24,10 @@
         "github.com/supme/directEmail": {
             "branch": "master"
         },
+        "github.com/tdewolff/minify": {
+            "branch": "master"
+        },
         "github.com/tealeg/xlsx": {
-            "branch": "master"
-        },
-        "github.com/toorop/go-dkim": {
-            "branch": "master"
-        },
-        "google.golang.org/api": {
-            "branch": "master"
-        },
-        "google.golang.org/appengine": {
-            "branch": "master"
-        },
-        "google.golang.org/genproto": {
-            "branch": "master"
-        },
-        "gopkg.in/fsnotify.v1": {
             "branch": "master"
         }
     }

@@ -15,7 +15,7 @@ $('#campaignRecipient').w2grid({
         { field: 'result', caption: w2utils.lang('Result'), type: 'text' }
     ],
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '80px', resizable: false,
+        { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '100px', resizable: true,
             info: {
                 render : function (rec) {
                     var table;

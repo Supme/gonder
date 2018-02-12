@@ -57,6 +57,7 @@ func sender(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
+				return []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(req.ID, 10) + `}`), nil
 			} else {
 				return js, errors.New("Forbidden right to this group")
 			}
@@ -73,7 +74,7 @@ func sender(req request) (js []byte, err error) {
 			if err != nil {
 				return js, err
 			}
-			js = []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(recid, 10) + `}`)
+			return []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(recid, 10) + `}`), nil
 		}
 		return js, errors.New("Forbidden save groups")
 

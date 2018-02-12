@@ -27,11 +27,8 @@ func main() {
 		log.Printf("error opening log file: %v", err)
 	}
 	defer l.Close()
-
-	ml := io.MultiWriter(l, os.Stdout)
-
 	log.SetFlags(3)
-	log.SetOutput(ml)
+	log.SetOutput(io.MultiWriter(l, os.Stdout))
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
