@@ -113,21 +113,21 @@ func Run() {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
-				"/assets/jquery/jquery-3.1.1.min.js",
-				"/assets/w2ui/w2ui.min.js",
-				"/assets/w2ui/w2ui.min.css",
-				"/assets/locale/ru-ru.json",
-				"/assets/ckeditor/ckeditor.js",
-				"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
-				"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
-				"/assets/panel/layout.js",
-				"/assets/panel/group.js",
-				"/assets/panel/sender.js",
-				"/assets/panel/campaign.js",
-				"/assets/panel/recipient.js",
-				"/assets/panel/profile.js",
-				"/assets/panel/users.js",
-				"/assets/panel/editor.js",
+				//"/assets/jquery/jquery-3.1.1.min.js",
+				//"/assets/w2ui/w2ui.min.js",
+				//"/assets/w2ui/w2ui.min.css",
+				//"/assets/locale/ru-ru.json",
+				//"/assets/ckeditor/ckeditor.js",
+				//"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
+				//"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
+				//"/assets/panel/layout.js",
+				//"/assets/panel/group.js",
+				//"/assets/panel/sender.js",
+				//"/assets/panel/campaign.js",
+				//"/assets/panel/recipient.js",
+				//"/assets/panel/profile.js",
+				//"/assets/panel/users.js",
+				//"/assets/panel/editor.js",
 			} {
 				if err := pusher.Push(p, nil); err != nil {
 					apilog.Printf("Failed to push: %v", err)
