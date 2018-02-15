@@ -39,20 +39,46 @@ var (
 	min    *minify.M
 )
 
+const (
+	useGZIP = true
+
+	useMinify     = false
+	useMinifyCSS  = true
+	useMinifyHTML = true
+	useMinifyJS   = true
+	useMinifyJSON = true
+)
+
 func init() {
 	min = minify.New()
-	min.AddFunc("text/css", minifyCSS.Minify)
-	min.AddFunc("text/html", minifyHTML.Minify)
-	min.AddFunc("application/javascript", minifyJS.Minify)
-	min.AddFunc("application/json", minifyJSON.Minify)
+	if useMinifyCSS {
+		min.AddFunc("text/css", minifyCSS.Minify)
+	}
+	if useMinifyHTML {
+		min.AddFunc("text/html", minifyHTML.Minify)
+	}
+	if useMinifyJS {
+		min.AddFunc("application/javascript", minifyJS.Minify)
+	}
+	if useMinifyJSON {
+		min.AddFunc("application/json", minifyJSON.Minify)
+	}
 }
 
-func apiHandler(fn http.HandlerFunc) http.Handler {
-	return gziphandler.GzipHandler(min.Middleware(fn))
-}
-
-func apiHandlerCheck(fn http.HandlerFunc) http.Handler {
-	return gziphandler.GzipHandler(min.Middleware(user.Check(fn)))
+func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
+	var handler http.Handler
+	if checkAuth {
+		handler = user.Check(fn)
+	} else {
+		handler = fn
+	}
+	if useMinify {
+		handler = min.Middleware(handler)
+	}
+	if useGZIP {
+		handler = gziphandler.GzipHandler(handler)
+	}
+	return handler
 }
 
 // Run start api server
@@ -74,18 +100,18 @@ func Run() {
 
 	// API
 	//api.HandleFunc("/api/", user.Check(apiRequest))
-	api.Handle("/api/", apiHandlerCheck(apiRequest))
+	api.Handle("/api/", apiHandler(apiRequest, true))
 
 	// Reports
-	api.Handle("/report", apiHandlerCheck(report))
-	api.Handle("/report/status", apiHandlerCheck(reportCampaignStatus))
-	api.Handle("/report/jump", apiHandlerCheck(reportJumpDetailedCount))
-	api.Handle("/report/unsubscribed", apiHandlerCheck(reportUnsubscribed))
+	api.Handle("/report", apiHandler(report, true))
+	api.Handle("/report/status", apiHandler(reportCampaignStatus, true))
+	api.Handle("/report/jump", apiHandler(reportJumpDetailedCount, true))
+	api.Handle("/report/unsubscribed", apiHandler(reportUnsubscribed, true))
 
-	api.Handle("/preview", apiHandlerCheck(getMailPreview))
-	api.Handle("/unsubscribe", apiHandlerCheck(getUnsubscribePreview))
+	api.Handle("/preview", apiHandler(getMailPreview, true))
+	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
 
-	api.Handle("/filemanager", apiHandlerCheck(filemanager))
+	api.Handle("/filemanager", apiHandler(filemanager, true))
 
 	// Static dirs
 	//api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
@@ -93,7 +119,7 @@ func Run() {
 		func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"),
 				r.URL.Path))
-		})))
+		}), false))
 
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
@@ -113,21 +139,21 @@ func Run() {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
-				//"/assets/jquery/jquery-3.1.1.min.js",
-				//"/assets/w2ui/w2ui.min.js",
-				//"/assets/w2ui/w2ui.min.css",
-				//"/assets/locale/ru-ru.json",
-				//"/assets/ckeditor/ckeditor.js",
-				//"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
-				//"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
-				//"/assets/panel/layout.js",
-				//"/assets/panel/group.js",
-				//"/assets/panel/sender.js",
-				//"/assets/panel/campaign.js",
-				//"/assets/panel/recipient.js",
-				//"/assets/panel/profile.js",
-				//"/assets/panel/users.js",
-				//"/assets/panel/editor.js",
+				"/assets/jquery/jquery-3.1.1.min.js",
+				"/assets/w2ui/w2ui.min.js",
+				"/assets/w2ui/w2ui.min.css",
+				"/assets/locale/ru-ru.json",
+				"/assets/ckeditor/ckeditor.js",
+				"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
+				"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
+				"/assets/panel/layout.js",
+				"/assets/panel/group.js",
+				"/assets/panel/sender.js",
+				"/assets/panel/campaign.js",
+				"/assets/panel/recipient.js",
+				"/assets/panel/profile.js",
+				"/assets/panel/users.js",
+				"/assets/panel/editor.js",
 			} {
 				if err := pusher.Push(p, nil); err != nil {
 					apilog.Printf("Failed to push: %v", err)
