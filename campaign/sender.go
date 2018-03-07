@@ -11,11 +11,13 @@ import (
 	"time"
 )
 
+type sending struct {
+	campaigns map[string]Campaign
+	sync.RWMutex
+}
+
 var (
-	startedCampaign struct {
-		campaigns []string
-		sync.Mutex
-	}
+	Sending sending
 	camplog *log.Logger
 )
 
@@ -28,59 +30,64 @@ func Run() {
 	defer l.Close()
 	camplog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
 
+	Sending.campaigns = map[string]Campaign{}
+
 	for {
-		for {
-			if GetStartedCampaignsCount() <= models.Config.MaxCampaingns {
-				break
-			}
+		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
 		}
 
-		startedCampaign.Lock()
-		if id, err := checkNextCampaign(); err == nil {
-			startedCampaign.campaigns = append(startedCampaign.campaigns, id)
+		Sending.Lock()
+		if id, err := Sending.checkNext(); err == nil {
 			camp, err := GetCampaign(id)
 			checkErr(err)
+			Sending.campaigns[id] = camp
 			go func() {
 				camp.Send()
-				removeStartedCampaign(id)
+				Sending.removeStarted(id)
 			}()
 		}
-		startedCampaign.Unlock()
+		Sending.Unlock()
 		time.Sleep(10 * time.Second)
 	}
 }
 
-func GetStartedCampaignsCount() int {
-	startedCampaign.Lock()
-	defer startedCampaign.Unlock()
-	return len(startedCampaign.campaigns)
+func (s *sending) Count() int {
+	s.Lock()
+	defer s.Unlock()
+	return len(s.campaigns)
 }
 
-func GetStartedCampaigns() []string {
-	var started []string
-	startedCampaign.Lock()
-	started = startedCampaign.campaigns
-	startedCampaign.Unlock()
-	if started == nil {
-		started = []string{}
+func (s *sending) Started() []string {
+	started := []string{}
+
+	s.Lock()
+	for id := range s.campaigns {
+		started = append(started, id)
 	}
+ 	s.Unlock()
+
 	return started
 }
 
-func checkNextCampaign() (string, error) {
+func (s *sending) checkNext() (string, error) {
 	var launched bytes.Buffer
-	for i, s := range startedCampaign.campaigns {
+
+	i := 0
+	for id := range s.campaigns {
 		if i != 0 {
 			launched.WriteString(",")
 		}
-		launched.WriteString("'" + s + "'")
+		launched.WriteString("'" + id + "'")
+		i++
 	}
+
 	var query bytes.Buffer
 	query.WriteString("SELECT t1.`id` FROM `campaign` t1 WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0")
 	if launched.String() != "" {
 		query.WriteString(" AND t1.`id` NOT IN (" + launched.String() + ")")
 	}
+	query.WriteString(" LIMIT 1")
 
 	var id string
 	err := models.Db.QueryRow(query.String()).Scan(&id)
@@ -91,15 +98,10 @@ func checkNextCampaign() (string, error) {
 	return id, err
 }
 
-func removeStartedCampaign(id string) {
-	startedCampaign.Lock()
-	for i := range startedCampaign.campaigns {
-		if startedCampaign.campaigns[i] == id {
-			startedCampaign.campaigns = append(startedCampaign.campaigns[:i], startedCampaign.campaigns[i+1:]...)
-			break
-		}
-	}
-	startedCampaign.Unlock()
+func (s *sending) removeStarted(id string) {
+	s.Lock()
+	delete(s.campaigns, id)
+	s.Unlock()
 	return
 }
 

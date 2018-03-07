@@ -131,7 +131,7 @@ func (ep emailPool) Stop(id string){
 
 func (ep emailPool) StopAll(){
 	p := ep.List()
-	for id, _ := range p {
+	for id := range p {
 		ep.Stop(id)
 	}
 }
