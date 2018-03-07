@@ -6,7 +6,7 @@ import (
 	"github.com/supme/gonder/models"
 )
 
-type Recipient struct {
+type recipient struct {
 	ID         string
 	CampaignID string
 	Email      string
@@ -14,8 +14,8 @@ type Recipient struct {
 	Params     map[string]interface{}
 }
 
-func GetRecipient(id string) (Recipient, error) {
-	recipient := Recipient{ID: id}
+func getRecipient(id string) (recipient, error) {
+	recipient := recipient{ID: id}
 	err := models.Db.
 		QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", &recipient.ID).
 		Scan(&recipient.CampaignID, &recipient.Email, &recipient.Name)
@@ -41,15 +41,15 @@ func GetRecipient(id string) (Recipient, error) {
 	return recipient, nil
 }
 
-func (recipient *Recipient) Unsubscribed() bool {
+func (r *recipient) unsubscribed() bool {
 	var unsubscribeCount int
-	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", recipient.CampaignID, recipient.Email).Scan(&unsubscribeCount)
+	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
 		return false
 	}
 	return true
 }
 
-func (recipient *Recipient) UnsubscribeEmailHeaderURL() string {
-	return models.EncodeUTM("unsubscribe", "mail", map[string]interface{}{"RecipientId": recipient.ID, "RecipientEmail": recipient.Email})
+func (r *recipient) unsubscribeEmailHeaderURL() string {
+	return models.EncodeUTM("unsubscribe", "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
 }

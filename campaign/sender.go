@@ -12,7 +12,7 @@ import (
 )
 
 type sending struct {
-	campaigns map[string]Campaign
+	campaigns map[string]campaign
 	sync.RWMutex
 }
 
@@ -30,7 +30,7 @@ func Run() {
 	defer l.Close()
 	camplog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
 
-	Sending.campaigns = map[string]Campaign{}
+	Sending.campaigns = map[string]campaign{}
 
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
@@ -39,11 +39,11 @@ func Run() {
 
 		Sending.Lock()
 		if id, err := Sending.checkNext(); err == nil {
-			camp, err := GetCampaign(id)
+			camp, err := getCampaign(id)
 			checkErr(err)
 			Sending.campaigns[id] = camp
 			go func() {
-				camp.Send()
+				camp.send()
 				Sending.removeStarted(id)
 			}()
 		}
