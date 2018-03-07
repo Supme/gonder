@@ -45,6 +45,7 @@ func init() {
 	if err != nil {
 		checkErr(createDb())
 	}
+	InitEmailPool()
 }
 
 func createDb() error {
