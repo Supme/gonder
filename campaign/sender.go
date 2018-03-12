@@ -36,7 +36,7 @@ func Run() {
 	Sending.campaigns = map[string]campaign{}
 
 	breakSigs := make(chan os.Signal, 1)
-	signal.Notify(breakSigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	signal.Notify(breakSigs, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL)
 
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
