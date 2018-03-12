@@ -5,7 +5,9 @@ import (
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
+	campSender "github.com/supme/gonder/campaign"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -80,10 +82,12 @@ func campaign(req request) (js []byte, err error) {
 			} else {
 				accepted = 0
 			}
-
 			_, err = models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.ID)
 			if err != nil {
 				return js, err
+			}
+			if accepted == 0 {
+				go campSender.Sending.Stop(strconv.Itoa(int(req.ID)))
 			}
 		} else {
 			return js, errors.New("Forbidden accept campaign")

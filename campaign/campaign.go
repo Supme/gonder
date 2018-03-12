@@ -30,14 +30,15 @@ type campaign struct {
 
 	subjectTmpl *template.Template
 	htmlTmpl    *template.Template
-	stopSend chan struct{}
-	stopResend chan struct{}
-	finish chan struct{}
+	Stop chan struct{}
+	Finish chan struct{}
 }
 
 func getCampaign(id string) (campaign, error) {
 	var subject, html string
 	c := campaign{ID: id}
+	c.Stop = make(chan struct{})
+	c.Finish = make(chan struct{})
 
 	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
@@ -63,6 +64,7 @@ func getCampaign(id string) (campaign, error) {
 
 	html = replaceLinks(html)
 
+	// ToDo QR code
 	c.htmlTmpl, err = template.New("HTML").
 		Funcs(template.FuncMap{
 			"RedirectUrl": c.tmplFuncRedirectUrl,
@@ -93,40 +95,63 @@ func getCampaign(id string) (campaign, error) {
 }
 
 func (c *campaign) send() {
-	c.stopSend = make(chan struct{})
-	c.stopResend = make(chan struct{})
-	c.finish = make(chan struct{}, 1)
-
 	pipe, err := models.EmailPool.Get(c.ProfileID)
 	checkErr(err)
 
 	camplog.Printf("Start campaign id %s.", c.ID)
 	c.streamSend(pipe)
-	resend := c.HasResend()
-	if resend > 0 && c.ResendCount > 0 {
-		camplog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
-	}
-	if c.HasResend() > 0 {
-		for i := 1; i <= c.ResendCount; i++ {
-			resend := c.HasResend()
-			if resend == 0 {
-				break
-			}
-			time.Sleep(time.Duration(c.ResendDelay) * time.Second)
-			camplog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.ID)
-			c.resend(pipe)
-			camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.ID)
+	select {
+	case <-c.Stop:
+		camplog.Printf("Campaign %s stoped", c.ID)
+		goto End
+	default:
+		resend := c.HasResend()
+		if resend > 0 && c.ResendCount > 0 {
+			camplog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
 		}
+		if resend > 0 {
+			for i := 1; i <= c.ResendCount; i++ {
+				select {
+				case <-c.Stop:
+					goto Done
+				default:
+					resend := c.HasResend()
+					if resend == 0 {
+						goto Finish
+					}
+
+					timer := time.NewTimer(time.Duration(c.ResendDelay) * time.Second)
+					select {
+					case <-c.Stop:
+						goto Done
+					case <-timer.C:
+						timer.Stop()
+					}
+
+					camplog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.ID)
+					c.resend(pipe)
+				}
+
+				select {
+				case <-c.Stop:
+					goto Done
+				default:
+					camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.ID)
+				}
+			}
+		}
+		Finish:
+			camplog.Printf("Finish campaign id %s", c.ID)
 	}
-
-	close(c.finish)
-	camplog.Printf("Finish campaign id %s", c.ID)
-}
-
-func (c *campaign) stop() {
-	c.stopSend <-struct{}{}
-	c.stopResend <-struct{}{}
-	<-c.finish
+	Done:
+		select {
+		case <-c.Stop:
+			camplog.Printf("Campaign %s stoped", c.ID)
+		default:
+			close(c.Stop)
+		}
+	End:
+		close(c.Finish)
 }
 
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
@@ -137,9 +162,9 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	wg := &sync.WaitGroup{}
 	for query.Next() {
 		select {
-		case <-c.stopSend:
-			break
-
+		case <-c.Stop:
+			camplog.Printf("Stop signal for campaign %s recieved", c.ID)
+			goto Done
 		default:
 			var rID string
 			err = query.Scan(&rID)
@@ -200,7 +225,9 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			}
 		}
 	}
-	wg.Wait()
+
+	Done:
+		wg.Wait()
 }
 
 const softBounceWhere = "LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
@@ -220,9 +247,9 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	oneEmail := make(chan struct{})
 	for query.Next() {
 		select {
-		case <-c.stopResend:
-			break
-
+		case <-c.Stop:
+			camplog.Printf("Stop signal for campaign %s recieved", c.ID)
+			return
 		default:
 			var rID string
 			err = query.Scan(&rID)

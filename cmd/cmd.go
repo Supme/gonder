@@ -201,7 +201,7 @@ func stopProcess(name string) error {
 	}
 	p, _ := strconv.Atoi(string(pid))
 	process, _ := os.FindProcess(p)
-	err = process.Kill()
+	err = process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
 	}

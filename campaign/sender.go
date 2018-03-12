@@ -3,17 +3,20 @@ package campaign
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"github.com/supme/gonder/models"
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
 type sending struct {
 	campaigns map[string]campaign
-	sync.RWMutex
+	mu sync.RWMutex
 }
 
 var (
@@ -32,42 +35,116 @@ func Run() {
 
 	Sending.campaigns = map[string]campaign{}
 
+	breakSigs := make(chan os.Signal, 1)
+	signal.Notify(breakSigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
 		}
 
-		Sending.Lock()
+		if Sending.Count() > 0 {
+			camp, err := Sending.checkExpired()
+			checkErr(err)
+			Sending.Stop(camp...)
+		}
+
 		if id, err := Sending.checkNext(); err == nil {
 			camp, err := getCampaign(id)
 			checkErr(err)
-			Sending.campaigns[id] = camp
+			Sending.add(camp)
 			go func() {
 				camp.send()
 				Sending.removeStarted(id)
 			}()
 		}
-		Sending.Unlock()
-		time.Sleep(10 * time.Second)
+		timer := time.NewTimer(10 * time.Second)
+		select {
+		case <-breakSigs:
+			Sending.StopAll()
+			goto End
+		case <-timer.C:
+			continue
+		}
+	}
+
+	End:
+		camplog.Println("Stoped all campaign for exit")
+		os.Exit(0)
+}
+
+func (s *sending) add(c campaign) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.campaigns[c.ID] = c
+}
+
+func (s *sending) Stop(id ...string) {
+	for i := range id {
+		s.stop(id[i])
+	}
+}
+
+func (s *sending) stop(id string) {
+	s.mu.Lock()
+	if _, ok := s.campaigns[id]; ok {
+		close(s.campaigns[id].Stop)
+		<-s.campaigns[id].Finish
+		delete(s.campaigns, id)
+	}
+	s.mu.Unlock()
+}
+
+func (s *sending) StopAll()  {
+	started := s.Started()
+	for i := range started {
+		s.stop(started[i])
 	}
 }
 
 func (s *sending) Count() int {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return len(s.campaigns)
 }
 
 func (s *sending) Started() []string {
 	started := []string{}
-
-	s.Lock()
+	s.mu.Lock()
 	for id := range s.campaigns {
 		started = append(started, id)
 	}
- 	s.Unlock()
-
+ 	s.mu.Unlock()
 	return started
+}
+
+func (s *sending) checkExpired() ([]string, error) {
+	var (
+		expired  []string
+		launched bytes.Buffer
+	)
+	i := 0
+	for id := range s.campaigns {
+		if i != 0 {
+			launched.WriteString(",")
+		}
+		launched.WriteString("'" + id + "'")
+		i++
+	}
+	if launched.String() != "" {
+		query, err := models.Db.Query("SELECT `id` FROM `campaign` WHERE `id` IN (" + launched.String() + ") AND NOW()>=`end_time`")
+		if err != nil {
+			return expired, err
+		}
+		defer query.Close()
+		for query.Next() {
+			var id string
+			query.Scan(&id)
+			expired = append(expired, id)
+		}
+	}
+	fmt.Println("Expired", expired)
+	return expired, nil
 }
 
 func (s *sending) checkNext() (string, error) {
@@ -99,9 +176,11 @@ func (s *sending) checkNext() (string, error) {
 }
 
 func (s *sending) removeStarted(id string) {
-	s.Lock()
-	delete(s.campaigns, id)
-	s.Unlock()
+	s.mu.Lock()
+	if _, ok := s.campaigns[id]; ok {
+		delete(s.campaigns, id)
+	}
+	s.mu.Unlock()
 	return
 }
 
