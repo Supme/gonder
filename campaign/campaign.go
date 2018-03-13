@@ -35,7 +35,10 @@ type campaign struct {
 }
 
 func getCampaign(id string) (campaign, error) {
-	var subject, html string
+	var (
+		subject string
+		html HTML
+	)
 	c := campaign{ID: id}
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
@@ -62,14 +65,14 @@ func getCampaign(id string) (campaign, error) {
 		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
 	}
 
-	html = replaceLinks(html)
+
 
 	// ToDo QR code
 	c.htmlTmpl, err = template.New("HTML").
 		Funcs(template.FuncMap{
 			"RedirectUrl": c.tmplFuncRedirectUrl,
 		}).
-		Parse(html)
+		Parse(html.Prepare())
 	if err != nil {
 		return c, fmt.Errorf("error parse campaign '%s' html template: %s", c.ID, err)
 	}
@@ -347,31 +350,41 @@ func (c *campaign) webHTMLTemplFunc(r recipient) func(io.Writer) error {
 	}
 }
 
-// Regexp for replace all http and https in message to link on utm service
+func (c *campaign) tmplFuncRedirectUrl(p map[string]interface{}, u string) string {
+	return models.EncodeUTM("redirect", u, p)
+}
+
+type HTML string
+
 var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
 
-func replaceLinks(tmpl string) string {
-	if strings.Index(tmpl, "{{.StatPng}}") == -1 {
-		if strings.Index(tmpl, "</body>") == -1 {
-			tmpl = tmpl + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
+func (html HTML) Prepare() string {
+	tmp := string(html)
+
+	// add StatPng if not exist
+	if strings.Index(tmp, "{{.StatPng}}") == -1 {
+		if strings.Index(tmp, "</body>") == -1 {
+			tmp = tmp + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
 		} else {
-			tmpl = strings.Replace(tmpl, "</body>", "\n<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>\n</body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "\n<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>\n</body>", -1)
 		}
 	}
-	return reReplaceLink.ReplaceAllStringFunc(tmpl, func(str string) string {
+
+	// make absolute URL
+	tmp = strings.Replace(tmp,"\"/files/", "\""+models.Config.URL+"/files/", -1)
+	tmp = strings.Replace(tmp, "'/files/", "'"+models.Config.URL+"/files/", -1)
+
+	// replace http and https href link to utm redirect
+	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
 		// get only url
 		s := strings.Replace(str, `'`, "", -1)
 		s = strings.Replace(s, `"`, "", -1)
 		s = strings.Replace(s, "href=", "", 1)
-		if str != "{{.WebUrl}}" || str != "{{.UnsubscribeUrl}}" || strings.HasPrefix(str, "{{RedirectUrl") {
+		if str != "{{.WebUrl}}" || str != "{{.UnsubscribeUrl}}" || strings.HasPrefix(strings.Replace(str, " ", "", -1), "{{RedirectUrl") {
 			return `href="{{RedirectUrl . "` + s + `"}}"`
 		}
 		return `href="` + s + `"`
 	})
 
+	return tmp
 }
-
-func (c *campaign) tmplFuncRedirectUrl(p map[string]interface{}, u string) string {
-	return models.EncodeUTM("redirect", u, p)
-}
-

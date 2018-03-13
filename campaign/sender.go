@@ -147,6 +147,7 @@ func (s *sending) checkExpired() ([]string, error) {
 	return expired, nil
 }
 
+// ToDo return slice campaign id
 func (s *sending) checkNext() (string, error) {
 	var launched bytes.Buffer
 
