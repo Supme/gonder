@@ -344,10 +344,6 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 	}
 }
 
-//func (c *campaign) tmplFuncRedirectUrl(p map[string]interface{}, u string) string {
-//	return models.EncodeUTM("redirect", u, p)
-//}
-
 type htmlString string
 
 var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
