@@ -37,6 +37,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ToDo fix get right template then move unsubscribe template from models
 func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
 	if user.Right("get-recipients") && user.CampaignRight(r.FormValue("campaignId")) {
 
