@@ -3,7 +3,6 @@ package campaign
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"github.com/supme/gonder/models"
 	"io"
 	"log"
@@ -57,6 +56,7 @@ func Run() {
 				camp.send()
 				Sending.removeStarted(id)
 			}()
+			continue
 		}
 		timer := time.NewTimer(10 * time.Second)
 		select {
@@ -143,7 +143,6 @@ func (s *sending) checkExpired() ([]string, error) {
 			expired = append(expired, id)
 		}
 	}
-	fmt.Println("Expired", expired)
 	return expired, nil
 }
 
