@@ -13,7 +13,7 @@ type emailPool struct {
 }
 
 type emailPoolStorage struct {
-	name string
+	name        string
 	config      []smtpSender.Config
 	resendDelay int
 	resendCount int
@@ -35,7 +35,7 @@ func InitEmailPool() error {
 	for q.Next() {
 		var (
 			id          string
-			name string
+			name        string
 			cnf         smtpSender.Config
 			resendDelay int
 			resendCount int
@@ -56,7 +56,7 @@ func InitEmailPool() error {
 		pipe.Start()
 
 		EmailPool.storage[id] = emailPoolStorage{
-			name: name,
+			name:        name,
 			config:      []smtpSender.Config{cnf},
 			resendDelay: resendDelay,
 			resendCount: resendCount,
@@ -71,9 +71,9 @@ func InitEmailPool() error {
 	for q.Next() {
 		var (
 			id          string
-			name string
-			iface	string
-			cnf	[]smtpSender.Config
+			name        string
+			iface       string
+			cnf         []smtpSender.Config
 			resendDelay int
 			resendCount int
 		)
@@ -99,8 +99,8 @@ func InitEmailPool() error {
 		pipe.Start()
 
 		EmailPool.storage[id] = emailPoolStorage{
-			name: name,
-		 	config:      cnf,
+			name:        name,
+			config:      cnf,
 			resendDelay: resendDelay,
 			resendCount: resendCount,
 			pipe:        &pipe,
@@ -120,7 +120,7 @@ func (ep emailPool) Get(id string) (*smtpSender.Pipe, error) {
 	return nil, errors.New("don't have this pipe")
 }
 
-func (ep emailPool) Stop(id string){
+func (ep emailPool) Stop(id string) {
 	ep.Lock()
 	if _, ok := ep.storage[id]; ok {
 		ep.storage[id].pipe.Stop()
@@ -129,13 +129,12 @@ func (ep emailPool) Stop(id string){
 	ep.Unlock()
 }
 
-func (ep emailPool) StopAll(){
+func (ep emailPool) StopAll() {
 	p := ep.List()
 	for id := range p {
 		ep.Stop(id)
 	}
 }
-
 
 func (ep emailPool) List() map[string]string {
 	pools := map[string]string{}

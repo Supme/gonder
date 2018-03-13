@@ -15,7 +15,7 @@ import (
 
 type sending struct {
 	campaigns map[string]campaign
-	mu sync.RWMutex
+	mu        sync.RWMutex
 }
 
 var (
@@ -68,9 +68,9 @@ func Run() {
 		}
 	}
 
-	End:
-		camplog.Println("Stoped all campaign for exit")
-		os.Exit(0)
+End:
+	camplog.Println("Stoped all campaign for exit")
+	os.Exit(0)
 }
 
 func (s *sending) add(c campaign) {
@@ -95,7 +95,7 @@ func (s *sending) stop(id string) {
 	s.mu.Unlock()
 }
 
-func (s *sending) StopAll()  {
+func (s *sending) StopAll() {
 	started := s.Started()
 	for i := range started {
 		s.stop(started[i])
@@ -114,7 +114,7 @@ func (s *sending) Started() []string {
 	for id := range s.campaigns {
 		started = append(started, id)
 	}
- 	s.mu.Unlock()
+	s.mu.Unlock()
 	return started
 }
 

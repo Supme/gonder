@@ -28,16 +28,17 @@ type campaign struct {
 	ResendCount     int
 	Attachments     []string
 
-	subjectTmpl *template.Template
-	htmlTmpl    *template.Template
-	Stop chan struct{}
-	Finish chan struct{}
+	subjectTmplFunc *template.Template
+	htmlTmpl        string
+	htmlTmplFunc    *template.Template
+	Stop            chan struct{}
+	Finish          chan struct{}
 }
 
 func getCampaign(id string) (campaign, error) {
 	var (
 		subject string
-		html HTML
+		html    htmlString
 	)
 	c := campaign{ID: id}
 	c.Stop = make(chan struct{})
@@ -60,22 +61,13 @@ func getCampaign(id string) (campaign, error) {
 		return c, err
 	}
 
-	c.subjectTmpl, err = template.New("Subject").Parse(subject)
+	c.subjectTmplFunc, err = template.New("Subject").Parse(subject)
 	if err != nil {
 		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
 	}
 
-
-
-	// ToDo QR code
-	c.htmlTmpl, err = template.New("HTML").
-		Funcs(template.FuncMap{
-			"RedirectUrl": c.tmplFuncRedirectUrl,
-		}).
-		Parse(html.Prepare())
-	if err != nil {
-		return c, fmt.Errorf("error parse campaign '%s' html template: %s", c.ID, err)
-	}
+	c.htmlTmpl = html.Prepare()
+	c.htmlTmplFunc = template.New("HTML")
 
 	var attachments *sql.Rows
 	attachments, err = models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.ID)
@@ -143,18 +135,18 @@ func (c *campaign) send() {
 				}
 			}
 		}
-		Finish:
-			camplog.Printf("Finish campaign id %s", c.ID)
+	Finish:
+		camplog.Printf("Finish campaign id %s", c.ID)
 	}
-	Done:
-		select {
-		case <-c.Stop:
-			camplog.Printf("Campaign %s stoped", c.ID)
-		default:
-			close(c.Stop)
-		}
-	End:
-		close(c.Finish)
+Done:
+	select {
+	case <-c.Stop:
+		camplog.Printf("Campaign %s stoped", c.ID)
+	default:
+		close(c.Stop)
+	}
+End:
+	close(c.Finish)
 }
 
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
@@ -172,7 +164,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			var rID string
 			err = query.Scan(&rID)
 			checkErr(err)
-			r, err := getRecipient(rID)
+			r, err := GetRecipient(rID)
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
@@ -203,12 +195,12 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			bldr.SetFrom(c.FromName, c.FromEmail)
 			bldr.SetTo(r.Name, r.Email)
 			bldr.AddHeader(
-				"List-Unsubscribe: " + models.EncodeUTM("unsubscribe", "mail", r.Params) + "\nPrecedence: bulk",
+				"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", "mail", r.Params)+"\nPrecedence: bulk",
 				"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
 				"X-Postmaster-Msgtype: campaign"+c.ID,
 			)
 			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			bldr.AddHTMLFunc(c.htmlTemplFunc(r))
+			bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false))
 			bldr.AddAttachment(c.Attachments...)
 			email := bldr.Email(r.ID, func(result smtpSender.Result) {
 				var res string
@@ -229,8 +221,8 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 		}
 	}
 
-	Done:
-		wg.Wait()
+Done:
+	wg.Wait()
 }
 
 const softBounceWhere = "LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
@@ -243,7 +235,7 @@ func (c *campaign) HasResend() int {
 }
 
 func (c *campaign) resend(pipe *smtpSender.Pipe) {
-	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND " + softBounceWhere, c.ID)
+	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND "+softBounceWhere, c.ID)
 	checkErr(err)
 	defer query.Close()
 
@@ -257,7 +249,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			var rID string
 			err = query.Scan(&rID)
 			checkErr(err)
-			r, err := getRecipient(rID)
+			r, err := GetRecipient(rID)
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
@@ -292,7 +284,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				"X-Postmaster-Msgtype: campaign"+c.ID,
 			)
 			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			bldr.AddHTMLFunc(c.htmlTemplFunc(r))
+			bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false))
 			bldr.AddAttachment(c.Attachments...)
 			email := bldr.Email(r.ID, func(result smtpSender.Result) {
 				var res string
@@ -315,51 +307,53 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	}
 }
 
-func (c *campaign) subjectTemplFunc(r recipient) func(io.Writer) error {
+func (c *campaign) subjectTemplFunc(r Recipient) func(io.Writer) error {
 	return func(w io.Writer) error {
-		r.Params["RecipientId"] = r.ID
-		r.Params["CampaignId"] = r.CampaignID
-		r.Params["RecipientEmail"] = r.Email
-		r.Params["RecipientName"] = r.Name
-		return c.subjectTmpl.Execute(w, r.Params)
+		return c.subjectTmplFunc.Execute(w, r.Params)
 	}
 }
 
-func (c *campaign) htmlTemplFunc(r recipient) func(io.Writer) error {
+func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Writer) error {
 	return func(w io.Writer) error {
-		r.Params["RecipientId"] = r.ID
-		r.Params["CampaignId"] = r.CampaignID
-		r.Params["RecipientEmail"] = r.Email
-		r.Params["RecipientName"] = r.Name
-		r.Params["StatPng"] = models.EncodeUTM("open", "", r.Params)
-		r.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", r.Params)
-		r.Params["WebUrl"] = models.EncodeUTM("web", "", r.Params)
-		return c.htmlTmpl.Execute(w, r.Params)
+		if preview {
+			if web {
+				r.Params["WebUrl"] = nil
+			} else {
+				r.Params["WebUrl"] = "/preview?id=" + r.ID + "&type=web"
+			}
+			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+			r.Params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + r.CampaignID
+			c.htmlTmplFunc.Funcs(template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
+					return strings.TrimSpace(url[len(url)-1])
+				},
+			}).Parse(c.htmlTmpl)
+		} else {
+			if web {
+				r.Params["WebUrl"] = nil
+			} else {
+				r.Params["WebUrl"] = models.EncodeUTM("web", "", r.Params)
+			}
+			c.htmlTmplFunc.Funcs(template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string { return models.EncodeUTM("redirect", u, p) },
+			}).Parse(c.htmlTmpl)
+		}
+
+		return c.htmlTmplFunc.Execute(w, r.Params)
 	}
 }
 
-func (c *campaign) webHTMLTemplFunc(r recipient) func(io.Writer) error {
-	return func(w io.Writer) error {
-		r.Params["RecipientId"] = r.ID
-		r.Params["CampaignId"] = r.CampaignID
-		r.Params["RecipientEmail"] = r.Email
-		r.Params["RecipientName"] = r.Name
-		r.Params["StatPng"] = models.EncodeUTM("open", "", r.Params)
-		r.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", r.Params)
-		return c.htmlTmpl.Execute(w, r.Params)
-	}
-}
+//func (c *campaign) tmplFuncRedirectUrl(p map[string]interface{}, u string) string {
+//	return models.EncodeUTM("redirect", u, p)
+//}
 
-func (c *campaign) tmplFuncRedirectUrl(p map[string]interface{}, u string) string {
-	return models.EncodeUTM("redirect", u, p)
-}
-
-type HTML string
+type htmlString string
 
 var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
 
-func (html HTML) Prepare() string {
-	tmp := string(html)
+func (h htmlString) Prepare() string {
+	tmp := string(h)
 
 	// add StatPng if not exist
 	if strings.Index(tmp, "{{.StatPng}}") == -1 {
@@ -371,7 +365,7 @@ func (html HTML) Prepare() string {
 	}
 
 	// make absolute URL
-	tmp = strings.Replace(tmp,"\"/files/", "\""+models.Config.URL+"/files/", -1)
+	tmp = strings.Replace(tmp, "\"/files/", "\""+models.Config.URL+"/files/", -1)
 	tmp = strings.Replace(tmp, "'/files/", "'"+models.Config.URL+"/files/", -1)
 
 	// replace http and https href link to utm redirect

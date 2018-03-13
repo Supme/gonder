@@ -14,6 +14,7 @@ type utm struct {
 	Email string `json:"email"`
 	Data  string `json:"data"`
 }
+
 func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 	if _, ok := params["RecipientId"]; !ok {
 		return "Parameters don`t have CampaignId"
@@ -38,7 +39,7 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 			Email: params["RecipientEmail"].(string),
 			Data:  data,
 		})
-	return Config.URL + "/" + cmd + "/" +base64.URLEncoding.EncodeToString(j)
+	return Config.URL + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
 // Decode utm data string and return Message whis prefilled id and email

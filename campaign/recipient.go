@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/supme/gonder/models"
+	"io"
 )
 
-type recipient struct {
+type Recipient struct {
 	ID         string
 	CampaignID string
 	Email      string
@@ -14,8 +15,8 @@ type recipient struct {
 	Params     map[string]interface{}
 }
 
-func getRecipient(id string) (recipient, error) {
-	recipient := recipient{ID: id}
+func GetRecipient(id string) (Recipient, error) {
+	recipient := Recipient{ID: id}
 	err := models.Db.
 		QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", &recipient.ID).
 		Scan(&recipient.CampaignID, &recipient.Email, &recipient.Name)
@@ -38,10 +39,17 @@ func getRecipient(id string) (recipient, error) {
 		recipient.Params[k] = v
 	}
 
+	recipient.Params["RecipientId"] = recipient.ID
+	recipient.Params["CampaignId"] = recipient.CampaignID
+	recipient.Params["RecipientEmail"] = recipient.Email
+	recipient.Params["RecipientName"] = recipient.Name
+	recipient.Params["StatPng"] = models.EncodeUTM("open", "", recipient.Params)
+	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", recipient.Params)
+
 	return recipient, nil
 }
 
-func (r *recipient) unsubscribed() bool {
+func (r *Recipient) unsubscribed() bool {
 	var unsubscribeCount int
 	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
@@ -50,6 +58,12 @@ func (r *recipient) unsubscribed() bool {
 	return true
 }
 
-func (r *recipient) unsubscribeEmailHeaderURL() string {
+func (r *Recipient) unsubscribeEmailHeaderURL() string {
 	return models.EncodeUTM("unsubscribe", "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
+}
+
+func (r Recipient) WebHTML(web bool, preview bool) func(io.Writer) error {
+	camp, err := getCampaign(r.CampaignID)
+	checkErr(err)
+	return camp.htmlTemplFunc(r, web, preview)
 }

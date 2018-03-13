@@ -1,12 +1,12 @@
 package models
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"reflect"
-	"unsafe"
-	"fmt"
 	"strconv"
+	"unsafe"
 )
 
 func GetIP(r *http.Request) string {
@@ -28,7 +28,7 @@ func Conv1st2nd(num int) string {
 		lastTwoNum, _ = strconv.Atoi(strNum[len(strNum)-2:])
 	}
 
-	if num % 10 == 0 {
+	if num%10 == 0 {
 		suffix = "th"
 	} else if lastTwoNum >= 11 && lastTwoNum <= 20 {
 		suffix = "th"

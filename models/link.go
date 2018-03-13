@@ -11,7 +11,6 @@ type jsonData struct {
 	Data  string `json:"data"`
 }
 
-
 // ToDo Remove it
 func encodeUTM(message *Message, data string) string {
 	j, _ := json.Marshal(
