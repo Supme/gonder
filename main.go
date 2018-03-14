@@ -32,8 +32,5 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	//	models.Config.Get()
-	defer models.Config.Close()
-
 	cmd.Run()
 }

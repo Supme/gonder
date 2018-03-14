@@ -7,6 +7,8 @@ import (
 	"github.com/supme/smtpSender"
 	"io"
 	"math/rand"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,7 +40,7 @@ type campaign struct {
 func getCampaign(id string) (campaign, error) {
 	var (
 		subject string
-		html    htmlString
+		//html    htmlString
 	)
 	c := campaign{ID: id}
 	c.Stop = make(chan struct{})
@@ -51,7 +53,7 @@ func getCampaign(id string) (campaign, error) {
 		&c.DkimPrivateKey,
 		&c.DkimUse,
 		&subject,
-		&html,
+		&c.htmlTmpl,
 		&c.ProfileID,
 		&c.SendUnsubscribe,
 		&c.ResendDelay,
@@ -66,7 +68,8 @@ func getCampaign(id string) (campaign, error) {
 		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
 	}
 
-	c.htmlTmpl = html.Prepare()
+	prepareHTMLTemplate(&c.htmlTmpl)
+	fmt.Println(c.htmlTmpl)
 	c.htmlTmplFunc = template.New("HTML")
 
 	var attachments *sql.Rows
@@ -329,7 +332,7 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 					return strings.TrimSpace(url[len(url)-1])
 				},
 			}).Parse(c.htmlTmpl)
-		} else {
+			} else {
 			if web {
 				r.Params["WebUrl"] = nil
 			} else {
@@ -344,37 +347,44 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 	}
 }
 
-type htmlString string
+var (
+	reReplaceLink = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+	reReplaceRelativeSrc = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
+	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
+)
 
-var reReplaceLink = regexp.MustCompile(`[hH][rR][eE][fF]\s*?=\s*?["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+func prepareHTMLTemplate(html *string) {
+	var tmp = *html
 
-func (h htmlString) Prepare() string {
-	tmp := string(h)
+	part := make([]string, 5)
 
 	// add StatPng if not exist
 	if strings.Index(tmp, "{{.StatPng}}") == -1 {
 		if strings.Index(tmp, "</body>") == -1 {
 			tmp = tmp + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "\n<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>\n</body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/></body>", -1)
 		}
 	}
 
 	// make absolute URL
-	tmp = strings.Replace(tmp, "\"/files/", "\""+models.Config.URL+"/files/", -1)
-	tmp = strings.Replace(tmp, "'/files/", "'"+models.Config.URL+"/files/", -1)
+	tmp = reReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = reReplaceRelativeSrc.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(models.Config.URL, part[3]) + part[4]
+	})
+	tmp = reReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = reReplaceRelativeHref.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(models.Config.URL, part[3]) + part[4]
+	})
 
 	// replace http and https href link to utm redirect
 	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
-		// get only url
-		s := strings.Replace(str, `'`, "", -1)
-		s = strings.Replace(s, `"`, "", -1)
-		s = strings.Replace(s, "href=", "", 1)
-		if str != "{{.WebUrl}}" || str != "{{.UnsubscribeUrl}}" || strings.HasPrefix(strings.Replace(str, " ", "", -1), "{{RedirectUrl") {
-			return `href="{{RedirectUrl . "` + s + `"}}"`
-		}
-		return `href="` + s + `"`
+		part = reReplaceLink.FindStringSubmatch(str)
+		u, err := url.Parse(part[4])
+		checkErr(err)
+		part[4] = u.RequestURI()
+		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
 	})
 
-	return tmp
+	*html = tmp
 }

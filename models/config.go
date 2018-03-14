@@ -34,7 +34,7 @@ var (
 	Config config
 )
 
-func init() {
+func Init() {
 	var err error
 	Config.Update()
 	Db, err = sql.Open(Config.dbType, Config.dbString)
@@ -66,10 +66,6 @@ func createDb() error {
 		}
 	}
 	return nil
-}
-
-func (c *config) Close() {
-	Db.Close()
 }
 
 func (c *config) Update() {
