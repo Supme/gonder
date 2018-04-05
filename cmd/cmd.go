@@ -134,7 +134,7 @@ func Run() {
 		}
 
 		if os.Args[1] == "daemonize" {
-
+			models.Init()
 			if os.Args[2] == "sender" {
 				fmt.Println("Start campaign mailer")
 				go campaign.Run()
@@ -152,6 +152,7 @@ func Run() {
 	}
 
 	if len(os.Args) == 1 {
+		models.Init()
 		fmt.Println("Start api http server")
 		go api.Run()
 
@@ -201,7 +202,7 @@ func stopProcess(name string) error {
 	}
 	p, _ := strconv.Atoi(string(pid))
 	process, _ := os.FindProcess(p)
-	err = process.Kill()
+	err = process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
 	}

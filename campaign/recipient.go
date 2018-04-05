@@ -1,95 +1,69 @@
 package campaign
 
 import (
-	"github.com/supme/directEmail"
+	"database/sql"
+	"errors"
 	"github.com/supme/gonder/models"
-	"math/rand"
-	"strconv"
-	"time"
+	"io"
 )
 
-type recipient struct {
-	id, toEmail, toName string
+type Recipient struct {
+	ID         string
+	CampaignID string
+	Email      string
+	Name       string
+	Params     map[string]interface{}
 }
 
-// Check recipient for unsubscribe
-func (r *recipient) checkUnsubscribe(campaignID string) bool {
+func GetRecipient(id string) (Recipient, error) {
+	recipient := Recipient{ID: id}
+	err := models.Db.
+		QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", &recipient.ID).
+		Scan(&recipient.CampaignID, &recipient.Email, &recipient.Name)
+	if err == sql.ErrNoRows {
+		return recipient, errors.New("recipient does not exist")
+	} else if err != nil {
+		return recipient, err
+	}
+
+	recipient.Params = map[string]interface{}{}
+
+	paramQuery, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", id)
+	if err != nil {
+		return recipient, err
+	}
+
+	for paramQuery.Next() {
+		var k, v string
+		err = paramQuery.Scan(&k, &v)
+		recipient.Params[k] = v
+	}
+
+	recipient.Params["RecipientId"] = recipient.ID
+	recipient.Params["CampaignId"] = recipient.CampaignID
+	recipient.Params["RecipientEmail"] = recipient.Email
+	recipient.Params["RecipientName"] = recipient.Name
+	recipient.Params["StatPng"] = models.EncodeUTM("open", "", recipient.Params)
+	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", recipient.Params)
+
+	return recipient, nil
+}
+
+func (r *Recipient) unsubscribed() bool {
 	var unsubscribeCount int
-	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", campaignID, r.toEmail).Scan(&unsubscribeCount)
+	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
 	if unsubscribeCount == 0 {
 		return false
 	}
 	return true
 }
 
-// Send mail for recipient this campaign data
-func (r *recipient) send(c *campaign, iface, host *string) (res string) {
-	start := time.Now()
-
-	email := directEmail.New()
-	// ToDo to config for NAT
-	//email.MapIp = map[string]string {
-	//	"192.168.0.10": "31.33.34.35",
-	//}
-	email.Ip, email.Host = *iface, *host
-	email.FromEmail = c.fromEmail
-	email.FromName = c.fromName
-	email.Attachment(c.attachments...)
-	email.ToEmail = r.toEmail
-	email.ToName = r.toName
-
-	message := new(models.Message)
-	message.CampaignID = c.id
-	message.RecipientID = r.id
-	message.CampaignSubject = c.subject
-	message.CampaignTemplate = c.body
-	message.RecipientEmail = r.toEmail
-	message.RecipientName = r.toName
-
-	m, err := message.RenderMessage()
-	if err != nil {
-		res = err.Error()
-		return
-	}
-	email.Subject = message.CampaignSubject
-	email.TextHtml(m)
-	email.Header(
-		"List-Unsubscribe: "+message.UnsubscribeMailLink()+"\nPrecedence: bulk",
-		"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.id+"."+r.id+"@"+*host+">",
-		"X-Postmaster-Msgtype: campaign"+c.id,
-	)
-
-	var dkimSelector string
-	if c.dkimUse {
-		dkimSelector = c.dkimSelector
-	}
-	err = email.RenderWithDkim(dkimSelector, c.dkimPrivateKey) // ToDo DKIM to database sender
-	if err != nil {
-		res = err.Error()
-		return
-	}
-
-	if models.Config.RealSend {
-		// Send mail
-		err = email.Send()
-		if err != nil {
-			res = err.Error()
-			logResult(c.id, r.id, r.toEmail, res, time.Since(start))
-			return
-		}
-		res = "Ok"
-		logResult(c.id, r.id, r.toEmail, res, time.Since(start))
-	} else {
-		wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
-		time.Sleep(wait)
-		res = "Test send"
-		logResult(c.id, r.id, r.toEmail, res, time.Since(start))
-	}
-
-	return
+func (r *Recipient) unsubscribeEmailHeaderURL() string {
+	return models.EncodeUTM("unsubscribe", "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
 }
 
-func logResult(params ...interface{}) {
-	camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", params...)
-
+func (r Recipient) WebHTML(web bool, preview bool) func(io.Writer) error {
+	camp, err := getCampaign(r.CampaignID)
+	checkErr(err)
+	return camp.htmlTemplFunc(r, web, preview)
 }

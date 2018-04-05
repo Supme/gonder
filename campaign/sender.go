@@ -1,140 +1,191 @@
 package campaign
 
 import (
+	"bytes"
+	"database/sql"
 	"github.com/supme/gonder/models"
+	"io"
+	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
-type campaign struct {
-	id, fromEmail, fromName, subject, body string
-	dkimSelector                           string
-	dkimPrivateKey                         []byte
-	dkimUse                                bool
-	sendUnsubscribe                        bool
-	profileID, resendDelay, resendCount    int
-	attachments                            []string
+type sending struct {
+	campaigns map[string]campaign
+	mu        sync.RWMutex
 }
 
-func run(camp campaign) {
-	camp.get()
-	camp.send()
-	camp.resend()
-}
+var (
+	Sending sending
+	camplog *log.Logger
+)
 
-// Send for recipient from campaign
-func send(camp *campaign, id, email, name string, profileID int, iface, host string) {
-	r := recipient{
-		id:      id,
-		toEmail: email,
-		toName:  name,
+// Run start look database for ready campaign for send
+func Run() {
+	l, err := os.OpenFile("log/campaign.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("error opening campaign log file: %v", err)
 	}
+	defer l.Close()
+	camplog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
 
-	if r.checkUnsubscribe(camp.id) == false || camp.sendUnsubscribe {
-		_, err := models.Db.Exec("UPDATE recipient SET status='Sending', date=NOW() WHERE id=?", r.id)
-		checkErr(err)
+	Sending.campaigns = map[string]campaign{}
 
-		result := r.send(camp, &iface, &host)
-		profileFree(profileID)
+	breakSigs := make(chan os.Signal, 1)
+	signal.Notify(breakSigs, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL)
 
-		_, err = models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", result, r.id)
-		checkErr(err)
-	} else {
-		_, err := models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.id)
-		checkErr(err)
-		camplog.Printf("Recipient id %s email %s is unsubscribed", r.id, r.toEmail)
-	}
-}
-
-// Send campaign
-func (c campaign) send() {
-	camplog.Printf("Start campaign id %s.", c.id)
-	query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.id)
-	checkErr(err)
-	defer query.Close()
-
-	var wg sync.WaitGroup
-	for query.Next() {
-		var id, email, name string
-		err = query.Scan(&id, &email, &name)
-		checkErr(err)
-
-		profileID, iface, host := profileNext(c.profileID)
-		wg.Add(1)
-		go func(id, email, name string, profileId int, iface, host string, wg *sync.WaitGroup) {
-			send(&c, id, email, name, profileId, iface, host)
-			wg.Done()
-		}(id, email, name, profileID, iface, host, &wg)
-	}
-
-	wg.Wait()
-
-	count := c.countSoftBounce()
-	if count != 0 && c.resendCount > 0 {
-		camplog.Printf("Done stream send campaign id %s but need %d resend.", c.id, count)
-	}
-}
-
-const softBounceWhere = "`removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
-
-func (c campaign) resend() {
-	for n := 0; n < c.resendCount; n++ {
-		count := c.countSoftBounce()
-		if count == 0 {
-			break
+	for {
+		for Sending.Count() >= models.Config.MaxCampaingns {
+			time.Sleep(1 * time.Second)
 		}
-		time.Sleep(time.Duration(c.resendDelay) * time.Second)
-		camplog.Printf("Start %d resend by campaign id %s ", count, c.id)
 
-		query, err := models.Db.Query("SELECT `id`, `email`, `name` FROM `recipient` WHERE `campaign_id`=? AND "+softBounceWhere, c.id)
-		checkErr(err)
+		if Sending.Count() > 0 {
+			camp, err := Sending.checkExpired()
+			checkErr(err)
+			Sending.Stop(camp...)
+		}
+
+		if id, err := Sending.checkNext(); err == nil {
+			camp, err := getCampaign(id)
+			checkErr(err)
+			Sending.add(camp)
+			go func() {
+				camp.send()
+				Sending.removeStarted(id)
+			}()
+			continue
+		}
+		timer := time.NewTimer(10 * time.Second)
+		select {
+		case <-breakSigs:
+			Sending.StopAll()
+			goto End
+		case <-timer.C:
+			continue
+		}
+	}
+
+End:
+	camplog.Println("Stoped all campaign for exit")
+	os.Exit(0)
+}
+
+func (s *sending) add(c campaign) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.campaigns[c.ID] = c
+}
+
+func (s *sending) Stop(id ...string) {
+	for i := range id {
+		s.stop(id[i])
+	}
+}
+
+func (s *sending) stop(id string) {
+	s.mu.Lock()
+	if _, ok := s.campaigns[id]; ok {
+		close(s.campaigns[id].Stop)
+		<-s.campaigns[id].Finish
+		delete(s.campaigns, id)
+	}
+	s.mu.Unlock()
+}
+
+func (s *sending) StopAll() {
+	started := s.Started()
+	for i := range started {
+		s.stop(started[i])
+	}
+}
+
+func (s *sending) Count() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.campaigns)
+}
+
+func (s *sending) Started() []string {
+	started := []string{}
+	s.mu.Lock()
+	for id := range s.campaigns {
+		started = append(started, id)
+	}
+	s.mu.Unlock()
+	return started
+}
+
+func (s *sending) checkExpired() ([]string, error) {
+	var (
+		expired  []string
+		launched bytes.Buffer
+	)
+	i := 0
+	for id := range s.campaigns {
+		if i != 0 {
+			launched.WriteString(",")
+		}
+		launched.WriteString("'" + id + "'")
+		i++
+	}
+	if launched.String() != "" {
+		query, err := models.Db.Query("SELECT `id` FROM `campaign` WHERE `id` IN (" + launched.String() + ") AND NOW()>=`end_time`")
+		if err != nil {
+			return expired, err
+		}
 		defer query.Close()
 		for query.Next() {
-			var id, email, name string
-			err = query.Scan(&id, &email, &name)
-			checkErr(err)
-			profileID, iface, host := profileNext(c.profileID)
-			send(&c, id, email, name, profileID, iface, host)
+			var id string
+			query.Scan(&id)
+			expired = append(expired, id)
 		}
-		camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(n+1), c.id)
 	}
-	camplog.Printf("Finish campaign id %s", c.id)
+	return expired, nil
 }
 
-func (c *campaign) countSoftBounce() int {
-	var count int
-	//err := models.Db.QueryRow("SELECT COUNT(DISTINCT r.`id`) FROM `recipient` as r,`status` as s WHERE r.`campaign_id`=? AND r.`removed`=0 AND s.`bounce_id`=2 AND UPPER(`r`.`status`) LIKE CONCAT('%',s.`pattern`,'%')", c.id).Scan(&count)
-	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND "+softBounceWhere, c.id).Scan(&count)
+// ToDo return slice campaign id
+func (s *sending) checkNext() (string, error) {
+	var launched bytes.Buffer
+
+	i := 0
+	for id := range s.campaigns {
+		if i != 0 {
+			launched.WriteString(",")
+		}
+		launched.WriteString("'" + id + "'")
+		i++
+	}
+
+	var query bytes.Buffer
+	query.WriteString("SELECT t1.`id` FROM `campaign` t1 WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0")
+	if launched.String() != "" {
+		query.WriteString(" AND t1.`id` NOT IN (" + launched.String() + ")")
+	}
+	query.WriteString(" LIMIT 1")
+
+	var id string
+	err := models.Db.QueryRow(query.String()).Scan(&id)
+	if err == sql.ErrNoRows {
+		return "", err
+	}
 	checkErr(err)
-	return count
+	return id, err
 }
 
-// Get all info for campaign
-func (c *campaign) get() {
-	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", c.id).Scan(
-		&c.fromEmail,
-		&c.fromName,
-		&c.dkimSelector,
-		&c.dkimPrivateKey,
-		&c.dkimUse,
-		&c.subject,
-		&c.body,
-		&c.profileID,
-		&c.sendUnsubscribe,
-		&c.resendDelay,
-		&c.resendCount,
-	)
-	checkErr(err)
+func (s *sending) removeStarted(id string) {
+	s.mu.Lock()
+	if _, ok := s.campaigns[id]; ok {
+		delete(s.campaigns, id)
+	}
+	s.mu.Unlock()
+	return
+}
 
-	attachment, err := models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.id)
-	checkErr(err)
-	defer attachment.Close()
-
-	c.attachments = nil
-	var location string
-	for attachment.Next() {
-		err = attachment.Scan(&location)
-		checkErr(err)
-		c.attachments = append(c.attachments, location)
+func checkErr(err error) {
+	if err != nil {
+		camplog.Println(err)
 	}
 }

@@ -16,7 +16,7 @@ func reportCampaignStatus(w http.ResponseWriter, r *http.Request) {
 		Started []string `json:"started"`
 	}
 	var campsVar startedStruct
-	campsVar.Started = campSender.GetStartedCampaigns()
+	campsVar.Started = campSender.Sending.Started()
 	js, err = json.Marshal(campsVar)
 	if err != nil {
 		js = []byte(`{"status": "error", "message": "Get reports for this campaign"}`)
@@ -141,7 +141,11 @@ func report(w http.ResponseWriter, r *http.Request) {
 	if err = r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	campaignID := r.Form["campaign"][0]
+
+	var campaignID string
+	if len(r.Form["campaign"]) > 0 {
+		campaignID = r.Form["campaign"][0]
+	}
 	if user.CampaignRight(campaignID) {
 		reports := make(map[string]interface{})
 		reports["Campaign"], err = reportCampaignInfo(campaignID)

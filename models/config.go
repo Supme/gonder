@@ -34,7 +34,7 @@ var (
 	Config config
 )
 
-func init() {
+func Init() {
 	var err error
 	Config.Update()
 	Db, err = sql.Open(Config.dbType, Config.dbString)
@@ -45,6 +45,7 @@ func init() {
 	if err != nil {
 		checkErr(createDb())
 	}
+	InitEmailPool()
 }
 
 func createDb() error {
@@ -65,10 +66,6 @@ func createDb() error {
 		}
 	}
 	return nil
-}
-
-func (c *config) Close() {
-	Db.Close()
 }
 
 func (c *config) Update() {
@@ -127,7 +124,7 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.APIPort = apiConfig.ValueOf("port")
 
-	c.Version = "0.9"
+	c.Version = "0.10"
 }
 
 func FromRootDir(path string) string {

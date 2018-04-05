@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"github.com/boombuler/barcode"
 	"github.com/boombuler/barcode/qr"
+	"github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
 	"html/template"
 	"image/png"
@@ -52,20 +53,24 @@ func Run() {
 		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
 	})
 
+	// robots.txt
 	// ToDo disallow all
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
 	})
 
+	// favicon.ico
 	utm.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/x-icon")
 		ico, _ := base64.StdEncoding.DecodeString("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAByGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/8q2uP9yGSL/yra4/3IZIv/Ktrj/yra4/3IZIv9yGSL/yra4/8q2uP9yGSL/yra4/3IZIv/Ktrj/chki/3IZIv/Ktrj/chki/+je3/9yGSL/yra4/3IZIv/Ktrj/chki/8q2uP9yGSL/chki/8q2uP9yGSL/yra4/3IZIv9yGSL/yra4/+je3//Ktrj/chki/8q2uP9yGSL/yra4/3IZIv/Ktrj/yra4/3IZIv/Ktrj/yra4/3IZIv9yGSL/chki/+je3/9yGSL/yra4/3IZIv/Ktrj/chki/8q2uP9yGSL/yra4/3IZIv9yGSL/yra4/3IZIv/Ktrj/chki/3IZIv/Ktrj/chki/8q2uP9yGSL/yra4/8q2uP9yGSL/chki/8q2uP/Ktrj/chki/8q2uP/Ktrj/yra4/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/+je3//o3t//6N7f/+je3//o3t//6N7f/+je3/9yGSL/6N7f/+je3//o3t//6N7f/+je3//o3t//chki/3IZIv/o3t//yra4/8q2uP/Ktrj/yra4/8q2uP/Ktrj/chki/8q2uP/Ktrj/yra4/8q2uP/Ktrj/6N7f/3IZIv9yGSL/6N7f/8q2uP9yGSL/chki/3IZIv/Ktrj/6N7f/3IZIv/Ktrj/yra4/3IZIv9yGSL/yra4/+je3/9yGSL/chki/+je3//Ktrj/chki/8q2uP/o3t//6N7f/8q2uP9yGSL/6N7f/+je3/9yGSL/chki/8q2uP/o3t//chki/3IZIv/o3t//yra4/3IZIv/o3t//yra4/8q2uP/Ktrj/chki/8q2uP/Ktrj/chki/3IZIv/Ktrj/6N7f/3IZIv9yGSL/6N7f/+je3/9yGSL/chki/3IZIv9yGSL/chki/3IZIv/Ktrj/yra4/8q2uP/Ktrj/6N7f/+je3/9yGSL/chki/+je3//o3t//6N7f/+je3//o3t//6N7f/+je3/9yGSL/6N7f/+je3//o3t//6N7f/+je3//o3t//chki/3IZIv/Ktrj/yra4/8q2uP/Ktrj/yra4/8q2uP/Ktrj/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==")
 		w.Write(ico)
 	})
 
+	// folder files
 	utm.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
+	// unsubscribe
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -89,10 +94,6 @@ func Run() {
 						http.Error(w, "", http.StatusInternalServerError)
 					} else {
 						t.Execute(w, map[string]string{
-							// ToDo remove
-							"campaignId":  message.CampaignID,
-							"recipientId": message.RecipientID,
-
 							"CampaignId":     message.CampaignID,
 							"RecipientId":    message.RecipientID,
 							"RecipientEmail": message.RecipientEmail,
@@ -107,10 +108,6 @@ func Run() {
 					http.Error(w, "", http.StatusInternalServerError)
 				} else {
 					t.Execute(w, map[string]string{
-						// ToDo remove
-						"campaignId":  message.CampaignID,
-						"recipientId": message.RecipientID,
-
 						"CampaignId":     message.CampaignID,
 						"RecipientId":    message.RecipientID,
 						"RecipientEmail": message.RecipientEmail,
@@ -121,6 +118,7 @@ func Run() {
 		}
 	})
 
+	// unsubscribe with extra parameters from form
 	utm.HandleFunc("/unsubscribe", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if r.Method == "POST" {
@@ -156,10 +154,6 @@ func Run() {
 					return
 				}
 				t.Execute(w, map[string]string{
-					// ToDo remove
-					"campaignId":  message.CampaignID,
-					"recipientId": message.RecipientID,
-
 					"CampaignId":     message.CampaignID,
 					"RecipientId":    message.RecipientID,
 					"RecipientEmail": message.RecipientEmail,
@@ -169,6 +163,7 @@ func Run() {
 		}
 	})
 
+	// redirect link
 	utm.HandleFunc("/redirect/", func(w http.ResponseWriter, r *http.Request) {
 		message, data, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
@@ -204,15 +199,22 @@ func Run() {
 		if err != nil {
 			utmlog.Print(err)
 		}
-		data, err := message.RenderMessage()
+
+		recipient, err := campaign.GetRecipient(message.RecipientID)
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte(data))
+
+		tmplFunc := recipient.WebHTML(true, false)
+		err = tmplFunc(w)
+		if err != nil {
+			utmlog.Println(err)
+		}
 	})
 
+	// StatPng
 	utm.HandleFunc("/open/", func(w http.ResponseWriter, r *http.Request) {
 		message, _, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
 		if err != nil {
@@ -234,6 +236,7 @@ func Run() {
 		w.Write(gif)
 	})
 
+	// QRcode generator
 	utm.HandleFunc("/code/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("qr") != "" {
 			size := int(200)
