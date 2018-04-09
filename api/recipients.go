@@ -12,10 +12,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 type recipTable struct {
@@ -57,7 +55,6 @@ type safeProgress struct {
 var progress = safeProgress{cnt: map[string]int{}}
 
 func recipients(req request) (js []byte, err error) {
-
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
@@ -87,18 +84,26 @@ func recipients(req request) (js []byte, err error) {
 				if err != nil {
 					return js, err
 				}
-				filename := strconv.FormatInt(time.Now().UnixNano(), 16)
-				file := models.FromRootDir("tmp/" + filename)
-				err = ioutil.WriteFile(file, content, 0644)
+				file, err := ioutil.TempFile("", "gonder_recipient_load_")
+				if err != nil {
+					return js, err
+				}
+				_, err = file.Write(content)
+				if err != nil {
+					return js, err
+				}
+				filename := file.Name()
+				err = file.Close()
 				if err != nil {
 					return js, err
 				}
 				apilog.Print(user.name, " upload file ", req.FileName)
 
-				if path.Ext(req.FileName) == ".csv" {
+				switch path.Ext(req.FileName) {
+				case ".csv":
 					go func() {
 						progress.Lock()
-						progress.cnt[filename] = 0
+						progress.cnt[file.Name()] = 0
 						progress.Unlock()
 						err = recipientCsv(req.Campaign, filename)
 						if err != nil {
@@ -110,10 +115,10 @@ func recipients(req request) (js []byte, err error) {
 					}()
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
-				} else if path.Ext(req.FileName) == ".xlsx" {
+				case ".xlsx":
 					go func() {
 						progress.Lock()
-						progress.cnt[filename] = 0
+						progress.cnt[file.Name()] = 0
 						progress.Unlock()
 						err = recipientXlsx(req.Campaign, filename)
 						if err != nil {
@@ -125,9 +130,10 @@ func recipients(req request) (js []byte, err error) {
 					}()
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
 
-				} else {
+				default:
 					return js, errors.New("This not csv or xlsx file")
 				}
+
 			} else {
 				err = errors.New("Forbidden upload recipients")
 			}
@@ -440,14 +446,13 @@ func recipientCsv(campaignID int64, file string) error {
 	title := make(map[int]string)
 	data := make(map[string]string)
 	var email, name string
-	f := models.FromRootDir("tmp/" + file)
-	defer os.Remove(f)
 
-	csvfile, err := os.Open(f)
+	csvfile, err := os.Open(file)
 	if err != nil {
 		return err
 	}
 	defer csvfile.Close()
+	defer os.Remove(file)
 
 	reader := csv.NewReader(csvfile)
 	reader.FieldsPerRecord = -1
@@ -517,17 +522,15 @@ func recipientCsv(campaignID int64, file string) error {
 }
 
 func recipientXlsx(campaignID int64, file string) error {
-
 	title := make(map[int]string)
 	data := make(map[string]string)
 	var email, name string
 
-	f := models.FromRootDir("tmp/" + file)
-	xlFile, err := xlsx.OpenFile(f)
+	xlFile, err := xlsx.OpenFile(file)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(f)
+	defer os.Remove(file)
 
 	if xlFile.Sheets[0] != nil {
 		var tx *sql.Tx

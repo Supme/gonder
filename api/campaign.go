@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var rexpRemoveQuotes = regexp.MustCompile(`(href|src)=["'](.*?)["']`)
+
 func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
 	case "get":
@@ -49,10 +51,11 @@ func campaign(req request) (js []byte, err error) {
 			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)
 
 			// fix visual editor replace &amp;
-			r := regexp.MustCompile(`(href|src)=["'](.*?)["']`)
-			req.Content.Template = r.ReplaceAllStringFunc(req.Content.Template, func(str string) string {
+			req.Content.Template = rexpRemoveQuotes.ReplaceAllStringFunc(req.Content.Template, func(str string) string {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
+
+			// ToDo check right working template
 
 			_, err = models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				req.Content.Name,
