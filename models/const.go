@@ -5,5 +5,7 @@ const (
 	WebVersion  = "web_version"
 	Unsubscribe = "unsubscribe"
 
-	UnavaibleRecentTime = "Unavaible recent time"
+	StatusUnavaibleRecentTime = "Unavaible recent time"
+	StatusUnsubscribe         = "Unsubscribe"
+	StatusSending             = "Sending"
 )

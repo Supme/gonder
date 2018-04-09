@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/supme/gonder/models"
 	"github.com/supme/smtpSender"
@@ -10,9 +11,11 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"text/template"
 	"time"
 )
@@ -69,7 +72,7 @@ func getCampaign(id string) (campaign, error) {
 	}
 
 	prepareHTMLTemplate(&c.htmlTmpl)
-	fmt.Println(c.htmlTmpl)
+	//fmt.Println(c.htmlTmpl)
 	c.htmlTmplFunc = template.New("HTML")
 
 	var attachments *sql.Rows
@@ -80,8 +83,8 @@ func getCampaign(id string) (campaign, error) {
 	defer attachments.Close()
 
 	c.Attachments = nil
-	var location string
 	for attachments.Next() {
+		var location string
 		err = attachments.Scan(&location)
 		if err != nil {
 			return c, err
@@ -98,6 +101,7 @@ func (c *campaign) send() {
 
 	camplog.Printf("Start campaign id %s.", c.ID)
 	c.streamSend(pipe)
+
 	select {
 	case <-c.Stop:
 		camplog.Printf("Campaign %s stoped", c.ID)
@@ -152,10 +156,17 @@ End:
 	close(c.Finish)
 }
 
+func (c *campaign) prepareQueryUpdateRecipientStatus() (*sql.Stmt, error) {
+	return models.Db.Prepare("UPDATE recipient SET status=?, date=NOW() WHERE id=?")
+}
+
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.ID)
 	checkErr(err)
 	defer query.Close()
+
+	updateRecipientStatus, err := c.prepareQueryUpdateRecipientStatus()
+	checkErr(err)
 
 	wg := &sync.WaitGroup{}
 	for query.Next() {
@@ -171,12 +182,15 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
-				_, err := models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.ID)
+				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
-				camplog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
+				camplog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
 				continue
 			}
+
 			wg.Add(1)
+			_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			checkErr(err)
 
 			if !models.Config.RealSend {
 				var res string
@@ -187,7 +201,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				} else {
 					res = "Ok Test send"
 				}
-				_, err := models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", res, r.ID)
+				_, err := updateRecipientStatus.Exec(res, r.ID)
 				checkErr(err)
 				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, wait.String())
 				wg.Done()
@@ -212,12 +226,16 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				} else {
 					res = result.Err.Error()
 				}
-				_, err := models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", res, result.ID)
+				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
 				wg.Done()
 			})
-			err = pipe.Send(email)
+			if !models.Config.RealSend {
+				err = fakeSend(email)
+			} else {
+				err = pipe.Send(email)
+			}
 			if err != nil {
 				break
 			}
@@ -230,19 +248,15 @@ Done:
 
 const softBounceWhere = "LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
 
-func (c *campaign) HasResend() int {
-	var count int
-	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND removed=0 AND "+softBounceWhere, c.ID).Scan(&count)
-	checkErr(err)
-	return count
-}
-
 func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND "+softBounceWhere, c.ID)
 	checkErr(err)
 	defer query.Close()
 
-	oneEmail := make(chan struct{})
+	updateRecipientStatus, err := c.prepareQueryUpdateRecipientStatus()
+	checkErr(err)
+
+	wg := &sync.WaitGroup{}
 	for query.Next() {
 		select {
 		case <-c.Stop:
@@ -256,28 +270,16 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
-				_, err := models.Db.Exec("UPDATE recipient SET status='Unsubscribe', date=NOW() WHERE id=?", r.ID)
+				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
 				camplog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
 				continue
 			}
 
-			if !models.Config.RealSend {
-				var res string
-				wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
-				time.Sleep(wait)
-				if rand.Intn(2) == 0 {
-					res = "421 Test send"
-				} else {
-					res = "Ok Test send"
-				}
-				_, err := models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", res, r.ID)
-				checkErr(err)
-				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, wait.String())
-				continue
-			}
+			wg.Add(1)
+			_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			checkErr(err)
 
-			oneEmail <- struct{}{}
 			bldr := new(smtpSender.Builder)
 			bldr.SetFrom(c.FromName, c.FromEmail)
 			bldr.SetTo(r.Name, r.Email)
@@ -296,18 +298,56 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				} else {
 					res = result.Err.Error()
 				}
-				_, err := models.Db.Exec("UPDATE recipient SET status=?, date=NOW() WHERE id=?", res, result.ID)
+				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
-				<-oneEmail
+				wg.Done()
 			})
-			err = pipe.Send(email)
+			if !models.Config.RealSend {
+				err = fakeSend(email)
+			} else {
+				err = pipe.Send(email)
+			}
 			if err != nil {
 				camplog.Println(err)
 				break
 			}
 		}
+		wg.Wait()
 	}
+}
+
+var fakeStream int64
+
+func fakeSend(email smtpSender.Email) error {
+	for atomic.LoadInt64(&fakeStream) > 5 {
+		runtime.Gosched()
+	}
+	atomic.AddInt64(&fakeStream, 1)
+	go func() {
+		var res error
+		wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
+		time.Sleep(wait)
+		if rand.Intn(4) == 0 {
+			res = errors.New("421 Test send")
+		} else {
+			res = errors.New("Ok Test send")
+		}
+		atomic.AddInt64(&fakeStream, -1)
+		email.ResultFunc(smtpSender.Result{
+			ID: email.ID,
+			Duration: wait,
+			Err: res,
+		})
+	}()
+	return nil
+}
+
+func (c *campaign) HasResend() int {
+	var count int
+	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND removed=0 AND "+softBounceWhere, c.ID).Scan(&count)
+	checkErr(err)
+	return count
 }
 
 func (c *campaign) subjectTemplFunc(r Recipient) func(io.Writer) error {
@@ -331,8 +371,9 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 					url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
 					return strings.TrimSpace(url[len(url)-1])
 				},
+				// ToDo more functions (example QRcode generator)
 			}).Parse(c.htmlTmpl)
-			} else {
+		} else {
 			if web {
 				r.Params["WebUrl"] = nil
 			} else {
@@ -340,6 +381,7 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			}
 			c.htmlTmplFunc.Funcs(template.FuncMap{
 				"RedirectUrl": func(p map[string]interface{}, u string) string { return models.EncodeUTM("redirect", u, p) },
+				// ToDo more functions (example QRcode generator)
 			}).Parse(c.htmlTmpl)
 		}
 
@@ -348,8 +390,8 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 }
 
 var (
-	reReplaceLink = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
-	reReplaceRelativeSrc = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
+	reReplaceLink         = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+	reReplaceRelativeSrc  = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
 	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
 )
 

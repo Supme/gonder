@@ -226,7 +226,7 @@ func recipients(req request) (js []byte, err error) {
 // ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
 // ToDo optimize this
 func markUnavaibleRecentTime(campaignID int64) (cnt int64, err error) {
-	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.UnavaibleRecentTime))
+	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.StatusUnavaibleRecentTime))
 	if err != nil {
 		return
 	}

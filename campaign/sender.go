@@ -35,7 +35,7 @@ func Run() {
 	Sending.campaigns = map[string]campaign{}
 
 	breakSigs := make(chan os.Signal, 1)
-	signal.Notify(breakSigs, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGKILL)
+	signal.Notify(breakSigs, syscall.SIGTERM)
 
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
@@ -75,8 +75,8 @@ End:
 
 func (s *sending) add(c campaign) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.campaigns[c.ID] = c
+	s.mu.Unlock()
 }
 
 func (s *sending) Stop(id ...string) {
@@ -103,9 +103,11 @@ func (s *sending) StopAll() {
 }
 
 func (s *sending) Count() int {
+	var count int
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.campaigns)
+	count = len(s.campaigns)
+	s.mu.Unlock()
+	return count
 }
 
 func (s *sending) Started() []string {

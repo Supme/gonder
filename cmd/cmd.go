@@ -15,6 +15,11 @@ import (
 	"syscall"
 )
 
+var (
+	errFailedFindProcess = errors.New("Failed to find process")
+	errProcessNotResponse = errors.New("Process not response to signal.")
+)
+
 // Run starting gonder from command line
 func Run() {
 	var err error
@@ -187,10 +192,7 @@ func startProcess(name string) error {
 
 func stopProcess(name string) error {
 	err := checkPid(name)
-	if err != nil {
-		fmt.Println("Process " + name + " not found:")
-		return err
-	}
+
 	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
@@ -202,6 +204,11 @@ func stopProcess(name string) error {
 	}
 	p, _ := strconv.Atoi(string(pid))
 	process, _ := os.FindProcess(p)
+	if err != nil {
+		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+		return errFailedFindProcess
+	}
+	// ToDo wait
 	err = process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
@@ -241,12 +248,12 @@ func checkPid(name string) error {
 	process, err := os.FindProcess(p)
 	if err != nil {
 		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
-		return errors.New("Failed to find process")
+		return errFailedFindProcess
 	}
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
 		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
-		return errors.New("Process not response to signal.")
+		return errProcessNotResponse
 	}
 
 	return nil
