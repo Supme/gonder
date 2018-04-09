@@ -6,6 +6,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
+	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,7 +56,10 @@ func campaign(req request) (js []byte, err error) {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
 
-			// ToDo check right working template
+			_, err := template.New("").Parse(req.Content.Template)
+			if err != nil {
+				return js, err
+			}
 
 			_, err = models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				req.Content.Name,

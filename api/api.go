@@ -188,10 +188,12 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	req, err := parseRequest(r.FormValue("request"))
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": "%s"}`, err)))
+		w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": %s}`, strconv.Quote(err.Error()))))
 		return
 	}
 
@@ -221,10 +223,9 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		js = []byte(fmt.Sprintf(`{"status": "error", "message": "%s"}`, err))
-	} else if js == nil {
+		js = []byte(fmt.Sprintf(`{"status": "error", "message": %s}`, strconv.Quote(err.Error())))
+	} else if js == nil || string(js) == "" {
 		js = []byte(`{"status": "success", "message": ""}`)
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }

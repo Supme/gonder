@@ -79,6 +79,7 @@ var config = {
                                 $.ajax({
                                     type: "POST",
                                     url: '/api/campaign',
+                                    dataType: "json",
                                     data: {"request": JSON.stringify(
                                         {
                                             "cmd": "save",
@@ -99,9 +100,10 @@ var config = {
                                 }).done(function(data) {
                                     if (data['status'] == 'error') {
                                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                                    } else {
+                                        w2ui.layout.lock('main', w2utils.lang('Saved'), false);
+                                        w2ui['sidebar'].click('parameter');
                                     }
-                                    w2ui.layout.lock('main', w2utils.lang('Saved'), false);
-                                    w2ui['sidebar'].click('parameter');
                                     setTimeout(function(){
                                         w2ui.layout.unlock('main');
                                     }, 1500);

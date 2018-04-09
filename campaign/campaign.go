@@ -335,9 +335,9 @@ func fakeSend(email smtpSender.Email) error {
 		}
 		atomic.AddInt64(&fakeStream, -1)
 		email.ResultFunc(smtpSender.Result{
-			ID: email.ID,
+			ID:       email.ID,
 			Duration: wait,
-			Err: res,
+			Err:      res,
 		})
 	}()
 	return nil
