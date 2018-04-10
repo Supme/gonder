@@ -24,6 +24,9 @@
         "github.com/supme/directEmail": {
             "branch": "master"
         },
+        "github.com/supme/smtpSender": {
+            "branch": "developed"
+        },
         "github.com/tdewolff/minify": {
             "branch": "master"
         },

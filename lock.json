@@ -1,10 +1,10 @@
 {
-    "memo": "bbe1289412d78c7ea4868643c337d0d686f1ace4b5f2dbcfb19cea27132b4f1c",
+    "memo": "2bf535bc9ddef6c49b25c177e29d4745e1dae7048cd3c74dcf0caf65fb4b075e",
     "projects": [
         {
             "name": "github.com/NYTimes/gziphandler",
-            "version": "v1.0.0",
-            "revision": "d6f46609c7629af3a02d791a4666866eed3cbd3e",
+            "version": "v1.0.1",
+            "revision": "2600fb119af974220d3916a5916d6e31176aac1b",
             "packages": [
                 "."
             ]
@@ -70,6 +70,14 @@
             "name": "github.com/supme/directEmail",
             "branch": "master",
             "revision": "e6b3542749cf1fe0abe1f39531da1166d9eb8f6c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/supme/smtpSender",
+            "branch": "developed",
+            "revision": "4f3d30eadfea264480a6df0744183c4bc758aa7d",
             "packages": [
                 "."
             ]
@@ -142,7 +150,7 @@
         {
             "name": "golang.org/x/sys",
             "branch": "master",
-            "revision": "8f27ce8a604014414f8dfffc25cbcde83a3f2216",
+            "revision": "3b87a42e500a6dc65dae1a55d0b641295971163e",
             "packages": [
                 "unix"
             ]

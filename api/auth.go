@@ -26,6 +26,7 @@ func (a *auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 				ip := models.GetIP(r)
 				apilog.Printf("%s bad user login '%s'", ip, user)
 				if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
+					// ToDo use smtpSender
 					go func() {
 						email := directEmail.New()
 						email.FromEmail = models.Config.GonderMail

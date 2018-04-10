@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	errFailedFindProcess = errors.New("Failed to find process")
+	errFailedFindProcess  = errors.New("Failed to find process")
 	errProcessNotResponse = errors.New("Process not response to signal.")
 )
 
