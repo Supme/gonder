@@ -8,7 +8,6 @@ import (
 	"github.com/supme/smtpSender"
 	"io"
 	"math/rand"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -379,8 +378,11 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			} else {
 				r.Params["WebUrl"] = models.EncodeUTM("web", "", r.Params)
 			}
-			c.htmlTmplFunc.Funcs(template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string { return models.EncodeUTM("redirect", u, p) },
+			c.htmlTmplFunc.Funcs(
+				template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", u, p)
+				},
 				// ToDo more functions (example QRcode generator)
 			}).Parse(c.htmlTmpl)
 		}
@@ -422,9 +424,6 @@ func prepareHTMLTemplate(html *string) {
 	// replace http and https href link to utm redirect
 	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
 		part = reReplaceLink.FindStringSubmatch(str)
-		u, err := url.Parse(part[4])
-		checkErr(err)
-		part[4] = u.RequestURI()
 		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
 	})
 
