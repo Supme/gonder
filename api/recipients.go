@@ -58,7 +58,7 @@ func recipients(req request) (js []byte, err error) {
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
-			if !user.Right("get-recipients") || !user.CampaignRight(req.Campaign) {
+			if !user.Right("get-recipients") && !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden get recipients")
 			}
 			var rs recipsTable
@@ -69,7 +69,7 @@ func recipients(req request) (js []byte, err error) {
 			js, err = json.Marshal(rs)
 
 		case "add":
-			if !user.Right("upload-recipients") || !user.CampaignRight(req.Campaign) {
+			if !user.Right("upload-recipients") && !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden add recipients")
 			}
 			err = addRecipients(req.Campaign, req.Recipients)
@@ -78,7 +78,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "upload":
-			if user.Right("upload-recipients") || user.CampaignRight(req.Campaign) {
+			if user.Right("upload-recipients") && user.CampaignRight(req.Campaign) {
 				var content []byte
 				content, err = base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
@@ -160,7 +160,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "resend4xx":
-			if !user.Right("accept-campaign") || !user.CampaignRight(req.Campaign) {
+			if !user.Right("accept-campaign") && !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden resend campaign")
 			}
 			err = resendCampaign(req.Campaign)
@@ -169,7 +169,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "deduplicate":
-			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
+			if !user.Right("delete-recipients") && !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
 			}
 			var cnt int64
@@ -181,7 +181,7 @@ func recipients(req request) (js []byte, err error) {
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
 		case "unavaible":
-			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
+			if !user.Right("delete-recipients") && !user.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden mark unavaible recipients")
 			}
 			var cnt int64
