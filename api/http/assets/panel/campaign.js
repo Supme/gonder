@@ -35,7 +35,6 @@ $('#campaign').w2grid({
                 } else {
                     w2confirm(w2utils.lang('Are you sure you want to clone a campaign?'), function (btn) {
                         if (btn == 'Yes') {
-                            console.log("Clone campaignId="+campaignId);
                             var id, name;
                             $.ajax({
                                 type: "GET",
@@ -100,6 +99,7 @@ $('#campaign').w2grid({
             $("#campaignEndDate").val(w2utils.formatDate((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.dateFormat));
             $("#campaignEndTime").val(w2utils.formatTime((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.timeFormat));
             $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"]);
+            $("#campaignCompressHTML").prop("checked", data["compressHTML"]);
             $("#campaignTemplate").val(data["template"]);
             $('#campaignAcceptSend').prop('checked', data["accepted"]);
 

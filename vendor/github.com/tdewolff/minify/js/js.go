@@ -16,12 +16,15 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+// DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{}
+
 // Minifier is a JS minifier.
 type Minifier struct{}
 
 // Minify minifies JS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{}).Minify(m, w, r, params)
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
@@ -32,6 +35,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	whitespaceQueued := false
 
 	l := js.NewLexer(r)
+	defer l.Restore()
+
 	for {
 		tt, data := l.Next()
 		if tt == js.ErrorToken {
@@ -59,7 +64,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		} else {
 			first := data[0]
 			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) &&
-				(tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
+				(tt == js.IdentifierToken || tt == js.NumericToken || tt == js.StringToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
 				if lineTerminatorQueued && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') &&
 					(tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-' || first == '!' || first == '~') {
 					if _, err := w.Write(newlineBytes); err != nil {
@@ -70,10 +75,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						return err
 					}
 				}
-			} else if lineTerminatorQueued && (prev == js.IdentifierToken || prev == js.PunctuatorToken && prevLast == '}') && tt == js.StringToken {
-				if _, err := w.Write(newlineBytes); err != nil {
-					return err
-				}
 			}
 			if _, err := w.Write(data); err != nil {
 				return err
@@ -83,6 +84,5 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			lineTerminatorQueued = false
 			whitespaceQueued = false
 		}
-		l.Free(len(data))
 	}
 }

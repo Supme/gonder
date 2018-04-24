@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/buffer"
 )
 
 // ErrNotExist is returned when no minifier exists for a given mimetype.
@@ -112,11 +112,11 @@ func (m *M) Match(mediatype string) (string, map[string]string, MinifierFunc) {
 	mimetype, params := parse.Mediatype([]byte(mediatype))
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		return string(mimetype), params, minifier.Minify
-	} else {
-		for _, minifier := range m.pattern {
-			if minifier.pattern.Match(mimetype) {
-				return minifier.pattern.String(), params, minifier.Minify
-			}
+	}
+
+	for _, minifier := range m.pattern {
+		if minifier.pattern.Match(mimetype) {
+			return minifier.pattern.String(), params, minifier.Minify
 		}
 	}
 	return string(mimetype), params, nil
@@ -231,6 +231,12 @@ type minifyResponseWriter struct {
 	mediatype string
 }
 
+// WriteHeader intercepts any header writes and removes the Content-Length header.
+func (w *minifyResponseWriter) WriteHeader(status int) {
+	w.ResponseWriter.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+}
+
 // Write intercepts any writes to the response writer.
 // The first write will extract the Content-Type as the mediatype. Otherwise it falls back to the RequestURI extension.
 func (w *minifyResponseWriter) Write(b []byte) (int, error) {
@@ -266,7 +272,8 @@ func (m *M) ResponseWriter(w http.ResponseWriter, r *http.Request) *minifyRespon
 func (m *M) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mw := m.ResponseWriter(w, r)
+		defer mw.Close()
+
 		next.ServeHTTP(mw, r)
-		mw.Close()
 	})
 }

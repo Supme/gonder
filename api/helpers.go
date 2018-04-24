@@ -15,6 +15,7 @@ type campaignData struct {
 	SenderID        int    `json:"senderId"`
 	StartDate       int64  `json:"startDate"`
 	EndDate         int64  `json:"endDate"`
+	CompressHTML    bool   `json:"compressHTML"`
 	SendUnsubscribe bool   `json:"sendUnsubscribe"`
 	Accepted        bool   `json:"accepted"`
 	Template        string `json:"template"`

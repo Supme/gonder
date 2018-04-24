@@ -22,6 +22,9 @@ import (
 
 // Read and modify a configuration file
 func Example() {
+    // set a custom delimiter to be used for key/value seperation
+    configparser.Delimiter = "="
+    
     config, err := configparser.Read("/etc/config.ini")
     if err != nil {
         log.Fatal(err)

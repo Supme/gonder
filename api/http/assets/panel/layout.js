@@ -91,6 +91,7 @@ var config = {
                                                 "senderId": $('#campaignSenderId').data('selected').id,
                                                 "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
                                                 "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
+                                                "compressHTML": $("#campaignCompressHTML").is(":checked"),
                                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
                                                 "template": editor.getData() == '' ? $("#campaignTemplate").val() : editor.getData()
                                             }
@@ -185,6 +186,7 @@ $('#parameter').w2form({
         { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: 'h24' } },
         { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
         { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: 'h24' } },
+        { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
         { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
         { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }
     ]

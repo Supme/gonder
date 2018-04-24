@@ -34,6 +34,8 @@ var (
 	Config config
 )
 
+const version = "0.10.3"
+
 func Init() {
 	var err error
 	Config.Update()
@@ -124,7 +126,7 @@ func (c *config) Update() {
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.APIPort = apiConfig.ValueOf("port")
 
-	c.Version = "0.10"
+	c.Version = version
 }
 
 func FromRootDir(path string) string {

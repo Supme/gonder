@@ -1,5 +1,5 @@
 // Package html minifies HTML5 following the specifications at http://www.w3.org/TR/html5/syntax.html.
-package html // import "github.com/tdewolff/minify/html"
+package minifyEmail
 
 import (
 	"bytes"
@@ -33,6 +33,7 @@ var DefaultMinifier = &Minifier{}
 
 // Minifier is an HTML minifier.
 type Minifier struct {
+	KeepComments            bool
 	KeepConditionalComments bool
 	KeepDefaultAttrVals     bool
 	KeepDocumentTags        bool
@@ -80,7 +81,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case html.CommentToken:
-			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]"))) {
+			if o.KeepComments {
+				if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			} else if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) { // downlevel-hidden

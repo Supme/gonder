@@ -27,6 +27,9 @@ import (
 	"sync"
 )
 
+// Delimiter is the delimiter to be used between section key and values.
+var Delimiter = "="
+
 // Configuration represents a configuration file with its sections and options.
 type Configuration struct {
 	filePath        string                // configuration file
@@ -35,7 +38,7 @@ type Configuration struct {
 	mutex           sync.RWMutex
 }
 
-// A Section in a configuration
+// A Section in a configuration.
 type Section struct {
 	fqn            string
 	options        map[string]string
@@ -372,7 +375,7 @@ func (s *Section) String() string {
 	for _, opt := range s.orderedOptions {
 		value := s.options[opt]
 		if value != "" {
-			parts = append(parts, opt, "=", value, "\n")
+			parts = append(parts, opt, Delimiter, value, "\n")
 		} else {
 			parts = append(parts, opt, "\n")
 		}

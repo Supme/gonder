@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/tdewolff/buffer"
+	"github.com/tdewolff/parse/buffer"
 )
 
 var identifierStart = []*unicode.RangeTable{unicode.Lu, unicode.Ll, unicode.Lt, unicode.Lm, unicode.Lo, unicode.Nl, unicode.Other_ID_Start}
@@ -31,6 +31,30 @@ const (
 	StringToken
 	RegexpToken
 	TemplateToken
+)
+
+// TokenState determines a state in which next token should be read
+type TokenState uint32
+
+// TokenState values
+const (
+	ExprState TokenState = iota
+	StmtParensState
+	SubscriptState
+	PropNameState
+)
+
+// ParsingContext determines the context in which following token should be parsed.
+// This affects parsing regular expressions and template literals.
+type ParsingContext uint32
+
+// ParsingContext values
+const (
+	GlobalContext ParsingContext = iota
+	StmtParensContext
+	ExprParensContext
+	BracesContext
+	TemplateContext
 )
 
 // String returns the string representation of a TokenType.
@@ -66,17 +90,32 @@ func (tt TokenType) String() string {
 
 // Lexer is the state for the lexer.
 type Lexer struct {
-	r *buffer.Lexer
-
-	regexpState   bool
-	templateState bool
+	r         *buffer.Lexer
+	stack     []ParsingContext
+	state     TokenState
+	emptyLine bool
 }
 
 // NewLexer returns a new Lexer for a given io.Reader.
 func NewLexer(r io.Reader) *Lexer {
 	return &Lexer{
-		r: buffer.NewLexer(r),
+		r:         buffer.NewLexer(r),
+		stack:     make([]ParsingContext, 0, 16),
+		state:     ExprState,
+		emptyLine: true,
 	}
+}
+
+func (l *Lexer) enterContext(context ParsingContext) {
+	l.stack = append(l.stack, context)
+}
+
+func (l *Lexer) leaveContext() ParsingContext {
+	ctx := GlobalContext
+	if last := len(l.stack) - 1; last >= 0 {
+		ctx, l.stack = l.stack[last], l.stack[:last]
+	}
+	return ctx
 }
 
 // Err returns the error encountered during lexing, this is often io.EOF but also other errors can be returned.
@@ -84,9 +123,9 @@ func (l *Lexer) Err() error {
 	return l.r.Err()
 }
 
-// Free frees up bytes of length n from previously shifted tokens.
-func (l *Lexer) Free(n int) {
-	l.r.Free(n)
+// Restore restores the NULL byte at the end of the buffer.
+func (l *Lexer) Restore() {
+	l.r.Restore()
 }
 
 // Next returns the next Token. It returns ErrorToken when an error was encountered. Using Err() one can retrieve the error message.
@@ -94,34 +133,75 @@ func (l *Lexer) Next() (TokenType, []byte) {
 	tt := UnknownToken
 	c := l.r.Peek(0)
 	switch c {
-	case '(', ')', '[', ']', '{', '}', ';', ',', '~', '?', ':':
-		if c == '}' && l.templateState && l.consumeTemplateToken() {
+	case '(':
+		if l.state == StmtParensState {
+			l.enterContext(StmtParensContext)
+		} else {
+			l.enterContext(ExprParensContext)
+		}
+		l.state = ExprState
+		l.r.Move(1)
+		tt = PunctuatorToken
+	case ')':
+		if l.leaveContext() == StmtParensContext {
+			l.state = ExprState
+		} else {
+			l.state = SubscriptState
+		}
+		l.r.Move(1)
+		tt = PunctuatorToken
+	case '{':
+		l.enterContext(BracesContext)
+		l.state = ExprState
+		l.r.Move(1)
+		tt = PunctuatorToken
+	case '}':
+		if l.leaveContext() == TemplateContext && l.consumeTemplateToken() {
 			tt = TemplateToken
 		} else {
+			// will work incorrectly for objects or functions divided by something,
+			// but that's an extremely rare case
+			l.state = ExprState
 			l.r.Move(1)
 			tt = PunctuatorToken
 		}
+	case ']':
+		l.state = SubscriptState
+		l.r.Move(1)
+		tt = PunctuatorToken
+	case '[', ';', ',', '~', '?', ':':
+		l.state = ExprState
+		l.r.Move(1)
+		tt = PunctuatorToken
 	case '<', '>', '=', '!', '+', '-', '*', '%', '&', '|', '^':
-		if l.consumeLongPunctuatorToken() {
+		if (c == '<' || (l.emptyLine && c == '-')) && l.consumeCommentToken() {
+			return CommentToken, l.r.Shift()
+		} else if l.consumeLongPunctuatorToken() {
+			l.state = ExprState
 			tt = PunctuatorToken
 		}
 	case '/':
 		if l.consumeCommentToken() {
 			return CommentToken, l.r.Shift()
-		} else if l.regexpState && l.consumeRegexpToken() {
+		} else if l.state == ExprState && l.consumeRegexpToken() {
+			l.state = SubscriptState
 			tt = RegexpToken
 		} else if l.consumeLongPunctuatorToken() {
+			l.state = ExprState
 			tt = PunctuatorToken
 		}
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':
 		if l.consumeNumericToken() {
 			tt = NumericToken
+			l.state = SubscriptState
 		} else if c == '.' {
+			l.state = PropNameState
 			l.r.Move(1)
 			tt = PunctuatorToken
 		}
 	case '\'', '"':
 		if l.consumeStringToken() {
+			l.state = SubscriptState
 			tt = StringToken
 		}
 	case ' ', '\t', '\v', '\f':
@@ -135,13 +215,27 @@ func (l *Lexer) Next() (TokenType, []byte) {
 		}
 		tt = LineTerminatorToken
 	case '`':
-		l.templateState = true
 		if l.consumeTemplateToken() {
 			tt = TemplateToken
 		}
 	default:
 		if l.consumeIdentifierToken() {
 			tt = IdentifierToken
+			if l.state != PropNameState {
+				switch hash := ToHash(l.r.Lexeme()); hash {
+				case 0, This, False, True, Null:
+					l.state = SubscriptState
+				case If, While, For, With:
+					l.state = StmtParensState
+				default:
+					// This will include keywords that can't be followed by a regexp, but only
+					// by a specified char (like `switch` or `try`), but we don't check for syntax
+					// errors as we don't attempt to parse a full JS grammar when streaming
+					l.state = ExprState
+				}
+			} else {
+				l.state = SubscriptState
+			}
 		} else if c >= 0xC0 {
 			if l.consumeWhitespace() {
 				for l.consumeWhitespace() {
@@ -157,27 +251,8 @@ func (l *Lexer) Next() (TokenType, []byte) {
 		}
 	}
 
-	// differentiate between divisor and regexp state, because the '/' character is ambiguous!
-	// ErrorToken, WhitespaceToken and CommentToken are already returned
-	if tt == LineTerminatorToken || tt == PunctuatorToken && regexpStateByte[c] {
-		l.regexpState = true
-	} else if tt == IdentifierToken {
-		switch hash := ToHash(l.r.Lexeme()); hash {
-		case 0: // Custom identifier
-		case This:
-		case False:
-		case True:
-		case Null:
-			l.regexpState = false
-		default:
-			// This will include keywords that can't be followed by a regexp, but only
-			// by a specified char (like `if` or `try`), but we don't check for syntax
-			// errors as we don't attempt to parse a full JS grammar when streaming
-			l.regexpState = true
-		}
-	} else {
-		l.regexpState = false
-	}
+	l.emptyLine = tt == LineTerminatorToken
+
 	if tt == UnknownToken {
 		_, n := l.r.PeekRune(0)
 		l.r.Move(n)
@@ -283,41 +358,60 @@ func (l *Lexer) consumeUnicodeEscape() bool {
 	return true
 }
 
+func (l *Lexer) consumeSingleLineComment() {
+	for {
+		c := l.r.Peek(0)
+		if c == '\r' || c == '\n' || c == 0 {
+			break
+		} else if c >= 0xC0 {
+			if r, _ := l.r.PeekRune(0); r == '\u2028' || r == '\u2029' {
+				break
+			}
+		}
+		l.r.Move(1)
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 
 func (l *Lexer) consumeCommentToken() bool {
-	if l.r.Peek(0) != '/' || l.r.Peek(1) != '/' && l.r.Peek(1) != '*' {
-		return false
-	}
-	if l.r.Peek(1) == '/' {
-		l.r.Move(2)
-		// single line
-		for {
-			c := l.r.Peek(0)
-			if c == '\r' || c == '\n' || c == 0 {
-				break
-			} else if c >= 0xC0 {
-				mark := l.r.Pos()
-				if r, _ := l.r.PeekRune(0); r == '\u2028' || r == '\u2029' {
-					l.r.Rewind(mark)
+	c := l.r.Peek(0)
+	if c == '/' {
+		c = l.r.Peek(1)
+		if c == '/' {
+			// single line
+			l.r.Move(2)
+			l.consumeSingleLineComment()
+		} else if c == '*' {
+			// multi line
+			l.r.Move(2)
+			for {
+				c := l.r.Peek(0)
+				if c == '*' && l.r.Peek(1) == '/' {
+					l.r.Move(2)
+					return true
+				} else if c == 0 {
 					break
+				} else if l.consumeLineTerminator() {
+					l.emptyLine = true
+				} else {
+					l.r.Move(1)
 				}
 			}
-			l.r.Move(1)
+		} else {
+			return false
 		}
+	} else if c == '<' && l.r.Peek(1) == '!' && l.r.Peek(2) == '-' && l.r.Peek(3) == '-' {
+		// opening HTML-style single line comment
+		l.r.Move(4)
+		l.consumeSingleLineComment()
+	} else if c == '-' && l.r.Peek(1) == '-' && l.r.Peek(2) == '>' {
+		// closing HTML-style single line comment
+		// (only if current line didn't contain any meaningful tokens)
+		l.r.Move(3)
+		l.consumeSingleLineComment()
 	} else {
-		l.r.Move(2)
-		// multi line
-		for {
-			c := l.r.Peek(0)
-			if c == '*' && l.r.Peek(1) == '/' {
-				l.r.Move(2)
-				return true
-			} else if c == 0 {
-				break
-			}
-			l.r.Move(1)
-		}
+		return false
 	}
 	return true
 }
@@ -505,6 +599,8 @@ func (l *Lexer) consumeRegexpToken() bool {
 			if l.consumeLineTerminator() {
 				l.r.Rewind(mark)
 				return false
+			} else if l.r.Peek(0) == 0 {
+				return true
 			}
 		} else if l.consumeLineTerminator() {
 			l.r.Rewind(mark)
@@ -539,10 +635,12 @@ func (l *Lexer) consumeTemplateToken() bool {
 	for {
 		c := l.r.Peek(0)
 		if c == '`' {
-			l.templateState = false
+			l.state = SubscriptState
 			l.r.Move(1)
 			return true
 		} else if c == '$' && l.r.Peek(1) == '{' {
+			l.enterContext(TemplateContext)
+			l.state = ExprState
 			l.r.Move(2)
 			return true
 		} else if c == 0 {

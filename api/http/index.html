@@ -81,7 +81,7 @@
         var ws = null;
         var refreshNum;
         function startStatusLog(file){
-            const logMaxRows = 200;
+            var logMaxRows = 200;
             var statusData = [];
             var statusLog = $("#statusLog");
             var wsuri = window.location.protocol=="https:"?"wss://":"ws://";

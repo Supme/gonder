@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
   `send_unsubscribe` tinyint(1) NOT NULL DEFAULT '0',
-  `accepted` tinyint(1) NOT NULL DEFAULT '0'
+  `accepted` tinyint(1) NOT NULL DEFAULT '0',
+  `compress_html` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `group` (

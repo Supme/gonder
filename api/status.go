@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/hpcloud/tail"
+	"github.com/gravitational/tail"
 	"net/http"
 	"os"
 )

@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/supme/gonder/campaign/minifyEmail"
 	"github.com/supme/gonder/models"
 	"github.com/supme/smtpSender"
+	"github.com/tdewolff/minify"
 	"io"
 	"math/rand"
 	"path/filepath"
@@ -35,6 +37,8 @@ type campaign struct {
 	subjectTmplFunc *template.Template
 	htmlTmpl        string
 	htmlTmplFunc    *template.Template
+	compressHTML 	bool
+
 	Stop            chan struct{}
 	Finish          chan struct{}
 }
@@ -42,13 +46,12 @@ type campaign struct {
 func getCampaign(id string) (campaign, error) {
 	var (
 		subject string
-		//html    htmlString
 	)
 	c := campaign{ID: id}
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`body`,t1.`compress_html`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
 		&c.FromName,
 		&c.DkimSelector,
@@ -56,6 +59,7 @@ func getCampaign(id string) (campaign, error) {
 		&c.DkimUse,
 		&subject,
 		&c.htmlTmpl,
+		&c.compressHTML,
 		&c.ProfileID,
 		&c.SendUnsubscribe,
 		&c.ResendDelay,
@@ -70,7 +74,7 @@ func getCampaign(id string) (campaign, error) {
 		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
 	}
 
-	prepareHTMLTemplate(&c.htmlTmpl)
+	prepareHTMLTemplate(&c.htmlTmpl, c.compressHTML)
 	//fmt.Println(c.htmlTmpl)
 	c.htmlTmplFunc = template.New("HTML")
 
@@ -397,8 +401,29 @@ var (
 	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
 )
 
-func prepareHTMLTemplate(html *string) {
-	var tmp = *html
+func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
+	var (
+		tmp string
+		err error
+	)
+	if useCompress {
+		m := minify.New()
+		m.Add("email/html", &minifyEmail.Minifier{
+			KeepComments: true,
+			KeepConditionalComments: true,
+			KeepDefaultAttrVals: false,
+			KeepDocumentTags: false,
+			KeepEndTags: false,
+			KeepWhitespace: false,
+		})
+
+		tmp, err = m.String("email/html", *htmlTmpl)
+		if err != nil {
+			camplog.Print(err)
+		}
+	} else {
+		tmp = *htmlTmpl
+	}
 
 	part := make([]string, 5)
 
@@ -427,5 +452,5 @@ func prepareHTMLTemplate(html *string) {
 		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
 	})
 
-	*html = tmp
+	*htmlTmpl = tmp
 }

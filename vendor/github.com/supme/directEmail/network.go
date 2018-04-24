@@ -1,23 +1,23 @@
 package directEmail
 
 import (
-	"errors"
 	"fmt"
+	"errors"
 	"net"
 )
 
 // SetInterfaceDefault set default interface for sending
-func (slf *Email) SetInterfaceDefault(ip string) {
-	slf.Ip = ""
+func (self *Email) SetInterfaceDefault(ip string) {
+	self.Ip = ""
 }
 
 // SetInterfaceByIp set IP from which the sending will be made
-func (slf *Email) SetInterfaceByIp(ip string) {
-	slf.Ip = ip
+func (self *Email) SetInterfaceByIp(ip string) {
+	self.Ip = ip
 }
 
 // SetInterfaceByName set interface from which the sending will be made
-func (slf *Email) SetInterfaceByName(name string) error {
+func (self *Email) SetInterfaceByName(name string) error {
 	iface, err := net.InterfaceByName(name)
 	if err != nil {
 		return err
@@ -30,16 +30,16 @@ func (slf *Email) SetInterfaceByName(name string) error {
 		fmt.Printf("%+v", addrs)
 		return errors.New("Interface have more then one address")
 	}
-	slf.Ip = addrs[0].String()
+	self.Ip = addrs[0].String()
 	return nil
 }
 
 // // SetInterfaceBySocks set SOCKS server through which the sending will be made
-func (slf *Email) SetInterfaceSocks(server string, port int) {
-	slf.Ip = fmt.Sprintf("socks://%s:%d", server, port)
+func (self *Email) SetInterfaceSocks(server string, port int) {
+	self.Ip = fmt.Sprintf("socks://%s:%d", server, port)
 }
 
 // SetMapGlobalIpForLocal set glibal IP for local IP address
-func (slf *Email) SetMapGlobalIpForLocal(globalIp, localIp string) {
-	slf.MapIp[localIp] = globalIp
+func (self *Email) SetMapGlobalIpForLocal(globalIp, localIp string) {
+	self.MapIp[localIp] = globalIp
 }

@@ -20,7 +20,7 @@ func campaign(req request) (js []byte, err error) {
 	case "get":
 		if user.Right("get-campaign") && user.CampaignRight(req.ID) {
 			var start, end mysql.NullTime
-			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.ID).Scan(
+			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.ID).Scan(
 				&req.Content.ID,
 				&req.Content.Name,
 				&req.Content.ProfileID,
@@ -28,6 +28,7 @@ func campaign(req request) (js []byte, err error) {
 				&req.Content.SenderID,
 				&start,
 				&end,
+				&req.Content.CompressHTML,
 				&req.Content.SendUnsubscribe,
 				&req.Content.Template,
 				&req.Content.Accepted,
@@ -56,18 +57,19 @@ func campaign(req request) (js []byte, err error) {
 				return strings.Replace(str, "&amp;", "&", -1)
 			})
 
-			_, err := template.New("").Parse(req.Content.Template)
+			_, err := template.New("check").Parse(req.Content.Template)
 			if err != nil {
 				return js, err
 			}
 
-			_, err = models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
+			_, err = models.Db.Exec("UPDATE campaign SET `name`=?,`profile_id`=?,`subject`=?,`sender_id`=?,`start_time`=?,`end_time`=?,`compress_html`=?,`send_unsubscribe`=?,`body`=? WHERE id=?",
 				req.Content.Name,
 				req.Content.ProfileID,
 				req.Content.Subject,
 				req.Content.SenderID,
 				start,
 				end,
+				req.Content.CompressHTML,
 				req.Content.SendUnsubscribe,
 				req.Content.Template,
 				req.ID,
