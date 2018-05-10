@@ -34,8 +34,6 @@ var (
 	Config config
 )
 
-const version = "0.10.3"
-
 func Init() {
 	var err error
 	Config.Update()
