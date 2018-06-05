@@ -398,7 +398,7 @@ func getRecipients(req request) (recipsTable, error) {
 	}
 
 	var query *sql.Rows
-	query, err = models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) FROM `recipient`"+partWhere, partParams...)
+	query, err = models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) as `open` FROM `recipient`" + partWhere, partParams...)
 	if err != nil {
 		return rs, err
 	}
@@ -414,7 +414,7 @@ func getRecipients(req request) (recipsTable, error) {
 	if err != nil {
 		return rs, err
 	}
-	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`"+partWhere, partParams...).Scan(&rs.Total)
+	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`" + partWhere, partParams...).Scan(&rs.Total)
 	return rs, err
 
 }

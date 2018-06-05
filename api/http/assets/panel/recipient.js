@@ -37,7 +37,7 @@ $('#campaignRecipient').w2grid({
         },
         { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '15%', resizable: true },
         { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '15%', resizable: true },
-        { field: 'open', caption: w2utils.lang('Opened'), sortable: false, size: '60px', resizable: false, style: 'text-align: center' },
+        { field: 'open', caption: w2utils.lang('Opened'), sortable: true, size: '60px', resizable: false, style: 'text-align: center' },
         { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '60%', resizable: true }
     ],
     multiSelect: false,
