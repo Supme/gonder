@@ -21,6 +21,7 @@ $('#campaign').w2grid({
     url: '/api/campaigns',
     method: 'GET',
     toolbar: {
+
         items: [
             {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'}
         ],
@@ -58,26 +59,33 @@ $('#campaign').w2grid({
             }
         }
     },
-    onAdd: function (event) {
-        var id, name;
-        $.ajax({
-            type: "GET",
-            //async: false,
-            dataType: 'json',
-            data: {"request": JSON.stringify({"cmd": "add", "id": parseInt(w2ui['group'].getSelection()[0])})},
-            url: '/api/campaigns'
-        }).done(function(data) {
-            if (data['status'] == 'error') {
-                w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-            } else {
-                id = data["recid"];
-                name = data["name"];
-                w2ui.campaign.add({recid: id, name: name}, true);
-                w2ui.campaign.editField(id, 1);
-            }
-        });
 
+    onAdd: function (event) {
+        var groupId;
+        groupId = parseInt(w2ui['group'].getSelection()[0]);
+        if (isNaN(groupId)) {
+            w2alert(w2utils.lang('Select group.'));
+        } else {
+            var id, name;
+            $.ajax({
+                type: "GET",
+                //async: false,
+                dataType: 'json',
+                data: {"request": JSON.stringify({"cmd": "add", "id": groupId})},
+                url: '/api/campaigns'
+            }).done(function(data) {
+                if (data['status'] == 'error') {
+                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                } else {
+                    id = data["recid"];
+                    name = data["name"];
+                    w2ui.campaign.add({recid: id, name: name}, true);
+                    w2ui.campaign.editField(id, 1);
+                }
+            });
+        }
     },
+
     onSelect: function (event) {
         w2ui.layout.lock('main', w2utils.lang('Loading...'), true);
         var record = this.get(event.recid);
@@ -111,6 +119,7 @@ $('#campaign').w2grid({
         });
         // --- /Get campaign data ---
     },
+
     onSave: function(event) {
         console.log(event);
     }

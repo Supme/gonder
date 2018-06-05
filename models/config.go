@@ -58,12 +58,21 @@ func createDb() error {
 			return err
 		}
 		query := strings.Split(string(sql), ";")
-		for i := range query {
-			_, err = Db.Exec(query[i])
+		tx, err := Db.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		for i := range query[:len(query)-1] {
+			_, err = tx.Exec(query[i])
 			if err != nil {
 				return err
 			}
 		}
+		if err = tx.Commit(); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }

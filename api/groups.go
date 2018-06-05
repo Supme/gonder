@@ -57,9 +57,7 @@ func groups(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(g)
-			if err != nil {
-				return js, err
-			}
+			return js, err
 		}
 		return js, errors.New("Forbidden add groups")
 
