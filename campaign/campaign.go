@@ -397,8 +397,8 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 
 var (
 	reReplaceLink         = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
-	reReplaceRelativeSrc  = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
-	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])\s*?(.?\/?[files\/].*?)(["'])`)
+	reReplaceRelativeSrc  = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
+	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
 )
 
 func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
