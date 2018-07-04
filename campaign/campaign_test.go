@@ -1,8 +1,8 @@
 package campaign
 
 import (
-			"github.com/supme/gonder/models"
-		"testing"
+	"github.com/supme/gonder/models"
+	"testing"
 )
 
 var (
@@ -90,18 +90,18 @@ var (
 )
 
 var r = Recipient{
-	ID: "test",
+	ID:         "test",
 	CampaignID: "testCampaign",
-	Email: "test@site.tld",
-	Name: "Вася",
+	Email:      "test@site.tld",
+	Name:       "Вася",
 	Params: map[string]interface{}{
-		"Sex":"male",
+		"Sex": "male",
 		"Age": 32,
 	},
 }
 
 var c = campaign{
-	ID:"testCampaign",
+	ID:       "testCampaign",
 	htmlTmpl: tmpl,
 }
 

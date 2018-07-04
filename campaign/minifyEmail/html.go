@@ -466,7 +466,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 					}
 
-
 				}
 			}
 			if _, err := w.Write(gtBytes); err != nil {

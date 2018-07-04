@@ -37,10 +37,10 @@ type campaign struct {
 	subjectTmplFunc *template.Template
 	htmlTmpl        string
 	htmlTmplFunc    *template.Template
-	compressHTML 	bool
+	compressHTML    bool
 
-	Stop            chan struct{}
-	Finish          chan struct{}
+	Stop   chan struct{}
+	Finish chan struct{}
 }
 
 func getCampaign(id string) (campaign, error) {
@@ -384,11 +384,11 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			}
 			c.htmlTmplFunc.Funcs(
 				template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.htmlTmpl)
+					"RedirectUrl": func(p map[string]interface{}, u string) string {
+						return models.EncodeUTM("redirect", u, p)
+					},
+					// ToDo more functions (example QRcode generator)
+				}).Parse(c.htmlTmpl)
 		}
 
 		return c.htmlTmplFunc.Execute(w, r.Params)
@@ -409,12 +409,12 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 	if useCompress {
 		m := minify.New()
 		m.Add("email/html", &minifyEmail.Minifier{
-			KeepComments: true,
+			KeepComments:            true,
 			KeepConditionalComments: true,
-			KeepDefaultAttrVals: false,
-			KeepDocumentTags: false,
-			KeepEndTags: false,
-			KeepWhitespace: false,
+			KeepDefaultAttrVals:     false,
+			KeepDocumentTags:        false,
+			KeepEndTags:             false,
+			KeepWhitespace:          false,
 		})
 
 		tmp, err = m.String("email/html", *htmlTmpl)
