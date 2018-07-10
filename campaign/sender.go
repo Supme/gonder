@@ -7,9 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -34,9 +32,6 @@ func Run() {
 
 	Sending.campaigns = map[string]campaign{}
 
-	breakSigs := make(chan os.Signal, 1)
-	signal.Notify(breakSigs, syscall.SIGTERM)
-
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
@@ -60,15 +55,11 @@ func Run() {
 		}
 		timer := time.NewTimer(10 * time.Second)
 		select {
-		case <-breakSigs:
-			Sending.StopAll()
-			goto End
 		case <-timer.C:
 			continue
 		}
 	}
 
-End:
 	camplog.Println("Stoped all campaign for exit")
 	os.Exit(0)
 }
