@@ -111,13 +111,11 @@ func Run() {
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
 
-	api.Handle("/filemanager", apiHandler(filemanager, true))
-
 	// Static dirs
 	//api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
 	api.Handle("/assets/", apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, path.Join(models.FromRootDir("api/http/"),
+			http.ServeFile(w, r, path.Join(models.FromRootDir("http/"),
 				r.URL.Path))
 		}), false))
 
@@ -162,7 +160,7 @@ func Run() {
 		} else {
 			apilog.Print("Push not supported")
 		}
-		if f, err := ioutil.ReadFile(models.FromRootDir("api/http/index.html")); err != nil {
+		if f, err := ioutil.ReadFile(models.FromRootDir("http/index.html")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			w.Write(f)

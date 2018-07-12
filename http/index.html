@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Gonder panel</title>
+
+    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css" />
+
+    <link rel="stylesheet" type="text/css" href="assets/codemirror/codemirror.css" />
+    <link rel="stylesheet" type="text/css" href="assets/codemirror/dracula.css" />
+    <script src="assets/codemirror/codemirror.js"></script>
+    <script src="assets/codemirror/selection-pointer.js"></script>
+    <script src="assets/codemirror/xml.js"></script>
+    <script src="assets/codemirror/javascript.js"></script>
+    <script src="assets/codemirror/css.js"></script>
+    <script src="assets/codemirror/htmlmixed.js"></script>
+    <style>
+        .CodeMirror {
+            border: 1px solid #eee;
+            height: auto;
+        }
+    </style>
+
+</head>
+<body>
+
+    <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
+
+    <div id="bottom" style="visibility: hidden">
+        <div id="group" style="position: absolute; left: 0; width: 39.9%; height: 99%;"></div>
+        <div id="campaign" style="position: absolute; right: 0; width: 59.9%; height: 99%;"></div>
+    </div>
+
+    <div id="formbox" style="visibility: hidden;">
+        <div id="parameter" style="display: none"></div>
+        <div id="template" style="display: none">
+            <div id="templateTabs"></div>
+            <div id="templateContent">
+                <div id="campaignTemplateCodeContainer" style="height: calc(100% - 30px); display: none;">
+                    <div style="position: absolute; height: calc(100% - 30px); overflow-y: scroll;">
+                        <textarea id="campaignTemplateCode"></textarea>
+                    </div>
+                </div>
+                <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
+                    <div id="campaignTemplatePreview" style="position: absolute; width: 600px; height: calc(100% - 30px); overflow-y: scroll;"></div>
+                </div>
+                <div id="campaignTemplateHelp" style="display: none;">
+                    System variables:
+                    <ul>
+                        <li>{{.CampaignId}}</li>
+                        <li>{{.RecipientEmail}}</li>
+                        <li>{{.RecipientName}}</li>
+                        <li>{{.StatPng}}</li>
+                        <li>{{.UnsubscribeUrl}}</li>
+                        <li>{{.WebUrl}}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="recipient" style="width: 100%; height: 100%; position: absolute; top: 0px; left: 0px; display: none;">
+            <div id="campaignRecipient" style="height: 90%; min-height: 300px; max-height: 650px"></div>
+            <div id="recipientUpload">
+                <div class="w2ui-field w2ui-span3">
+                    <label></label>
+                    <div>
+                        <input id="recipientUploadFile" style="width: 350px;">
+                        <button id="recipientUploadButton" class="btn">Upload</button>
+                        <button id="recipientClearButton" class="btn">Clear</button>
+                        <button id="recipientResend" class="btn">Resend by 4xx code</button>
+                        <button id="recipientDeduplicate" class="btn">Deduplicate</button>
+                        <button id="recipientUnavaible" class="btn">Mark unavaible</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="profile" style="height: 100%; display: none;"></div>
+        <div id="users" style="height: 100%; display: none;"></div>
+        <div id="status" style="height: 100%; display: none;">
+            <div>
+                <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
+                <input id="statusLogUtm" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('utm.log');"> Utm
+                <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
+                <input id="statusLogMain" type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
+            </div>
+            <div id="statusLog" style="overflow-y: auto; height:95%; border:1px solid rgb(223, 223, 223); background: #fff; padding: 5px; font-size: 12px;">Select log</div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var cm;
+        $(document).ready(
+            function () {
+            $.ajaxSetup({
+                cache: true
+            });
+            $.getScript('assets/w2ui/w2ui.min.js', function () {
+                w2utils.locale('/assets/w2ui/locale/ru-ru.json');
+                w2utils.locale('/assets/panel/locale/ru-ru.json');
+
+                $.getScript('assets/panel/layout.js', function() {
+                    $.getScript('assets/panel/template.js', function () {
+                        cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateCode"), {
+                            lineNumbers: true,
+                            mode: {
+                                name: "htmlmixed",
+                                scriptTypes: [{matches: /\/x-handlebars-template|\/x-mustache/i,mode: null}]
+                            },
+                            selectionPointer: true,
+                            theme: "dracula"
+                        });
+                        $.getScript('assets/panel/group.js', function () {
+                            $.getScript('assets/panel/sender.js');
+                            $.getScript('assets/panel/campaign.js');
+                        });
+                        $.getScript('assets/panel/recipient.js');
+                        $.getScript('assets/panel/profile.js');
+                        $.getScript('assets/panel/users.js');
+                    });
+                });
+            });
+        });
+
+        var ws = null;
+        var refreshNum;
+        function startStatusLog(file){
+            var logMaxRows = 200;
+            var statusData = [];
+            var statusLog = $("#statusLog");
+            var wsuri = window.location.protocol=="https:"?"wss://":"ws://";
+            wsuri += window.location.hostname;
+            wsuri += window.location.port==""?"":":"+window.location.port;
+            wsuri += "/status/ws/" + file;
+
+            if (ws == null) {
+                ws = new WebSocket(wsuri);
+            } else {
+                ws.close();
+                clearInterval(refreshNum);
+                setTimeout(function(){}, 2000);
+                ws = new WebSocket(wsuri);
+            }
+
+            statusLog.empty();
+
+            ws.onopen = function() {
+                console.log("websocket connected to " + wsuri);
+            };
+
+            ws.onclose = function(e) {
+                console.log("websocket connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
+            };
+
+            ws.onerror = function (e) {
+                console.log("websocket connection error " + e);
+            };
+
+            refreshNum = setInterval(function () {
+                if (statusLog.is(':visible') && (statusLog.prop("scrollTop") == statusLog.prop("scrollHeight")-statusLog.prop("clientHeight"))) {
+                    statusLog.empty();
+                    statusData.forEach(function(entry) {
+                        statusLog.append(entry+"<br/>");
+                    });
+                    statusLog.scrollTop(statusLog.prop("scrollHeight"));
+
+                }
+            }, logMaxRows);
+            ws.onmessage = function(e) {
+                statusData.push(e.data);
+                if (statusData.length > logMaxRows) {
+                    statusData = statusData.slice(statusData.length-logMaxRows, statusData.length);
+                }
+            };
+        }
+    </script>
+
+</body>
+</html>
