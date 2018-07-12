@@ -4,19 +4,19 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
 
-    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js"></script>
-    <script type="application/javascript" src="assets/w2ui/w2ui.min.js"></script>
+    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
+    <script type="application/javascript" src="assets/w2ui/w2ui.min.js?{{.version}}"></script>
 
-    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css" />
+    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css?{{.version}}" />
 
-    <link rel="stylesheet" type="text/css" href="assets/codemirror/codemirror.css" />
-    <link rel="stylesheet" type="text/css" href="assets/codemirror/dracula.css" />
-    <script src="assets/codemirror/codemirror.js"></script>
-    <script src="assets/codemirror/selection-pointer.js"></script>
-    <script src="assets/codemirror/xml.js"></script>
-    <script src="assets/codemirror/javascript.js"></script>
-    <script src="assets/codemirror/css.js"></script>
-    <script src="assets/codemirror/htmlmixed.js"></script>
+    <link rel="stylesheet" type="text/css" href="assets/codemirror/codemirror.css?{{.version}}" />
+    <link rel="stylesheet" type="text/css" href="assets/codemirror/dracula.css?{{.version}}" />
+    <script src="assets/codemirror/codemirror.js?{{.version}}"></script>
+    <script src="assets/codemirror/selection-pointer.js?{{.version}}"></script>
+    <script src="assets/codemirror/xml.js?{{.version}}"></script>
+    <script src="assets/codemirror/javascript.js?{{.version}}"></script>
+    <script src="assets/codemirror/css.js?{{.version}}"></script>
+    <script src="assets/codemirror/htmlmixed.js?{{.version}}"></script>
     <style>
         .CodeMirror {
             border: 1px solid #eee;
@@ -105,10 +105,10 @@
             $.ajaxSetup({
                 cache: true
             });
-            w2utils.locale('assets/w2ui/locale/ru-ru.json');
-            w2utils.locale('assets/panel/locale/ru-ru.json');
-                $.getScript('assets/panel/layout.js', function() {
-                    $.getScript('assets/panel/template.js', function () {
+            w2utils.locale('assets/w2ui/locale/ru-ru.json?{{.version}}');
+            w2utils.locale('assets/panel/locale/ru-ru.json?{{.version}}');
+                $.getScript('assets/panel/layout.js?{{.version}}', function() {
+                    $.getScript('assets/panel/template.js?{{.version}}', function () {
                         cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateCode"), {
                             lineNumbers: true,
                             mode: {
@@ -118,13 +118,13 @@
                             selectionPointer: true,
                             theme: "dracula"
                         });
-                        $.getScript('assets/panel/group.js', function () {
-                            $.getScript('assets/panel/sender.js');
-                            $.getScript('assets/panel/campaign.js');
+                        $.getScript('assets/panel/group.js?{{.version}}', function () {
+                            $.getScript('assets/panel/sender.js?{{.version}}');
+                            $.getScript('assets/panel/campaign.js?{{.version}}');
                         });
-                        $.getScript('assets/panel/recipient.js');
-                        $.getScript('assets/panel/profile.js');
-                        $.getScript('assets/panel/users.js');
+                        $.getScript('assets/panel/recipient.js?{{.version}}');
+                        $.getScript('assets/panel/profile.js?{{.version}}');
+                        $.getScript('assets/panel/users.js?{{.version}}');
                     });
                 });
             }

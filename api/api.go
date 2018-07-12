@@ -23,9 +23,9 @@ import (
 	minifyHTML "github.com/tdewolff/minify/html"
 	minifyJS "github.com/tdewolff/minify/js"
 	minifyJSON "github.com/tdewolff/minify/json"
+	"html/template"
 	"io"
-	"io/ioutil"
-	"log"
+		"log"
 	"net/http"
 	"os"
 	"path"
@@ -111,10 +111,10 @@ func Run() {
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
 
-	// Static dirs
-	//api.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(models.FromRootDir("api/http/assets/")))))
+	// Assets static dirs
 	api.Handle("/assets/", apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600 * 24 * 7))
 			http.ServeFile(w, r, path.Join(models.FromRootDir("http/"),
 				r.URL.Path))
 		}), false))
@@ -137,21 +137,19 @@ func Run() {
 		if pusher, ok := w.(http.Pusher); ok {
 			// Push is supported.
 			for _, p := range []string{
-				"/assets/jquery/jquery-3.1.1.min.js",
-				"/assets/w2ui/w2ui.min.js",
-				"/assets/w2ui/w2ui.min.css",
-				"/assets/locale/ru-ru.json",
-				"/assets/ckeditor/ckeditor.js",
-				"/assets/ckeditor/plugins/codemirror/js/codemirror.min.js",
-				"/assets/ckeditor/plugins/codemirror/css/codemirror.min.css",
-				"/assets/panel/layout.js",
-				"/assets/panel/group.js",
-				"/assets/panel/sender.js",
-				"/assets/panel/campaign.js",
-				"/assets/panel/recipient.js",
-				"/assets/panel/profile.js",
-				"/assets/panel/users.js",
-				"/assets/panel/editor.js",
+				"/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
+				"/assets/w2ui/w2ui.min.js?" + models.Config.Version,
+				"/assets/w2ui/w2ui.min.css?" + models.Config.Version,
+				"/assets/w2ui/locale/ru-ru.json?" + models.Config.Version,
+				"/assets/panel/locale/ru-ru.json?" + models.Config.Version,
+				"/assets/panel/layout.js?" + models.Config.Version,
+				"/assets/panel/group.js?" + models.Config.Version,
+				"/assets/panel/sender.js?" + models.Config.Version,
+				"/assets/panel/campaign.js?" + models.Config.Version,
+				"/assets/panel/recipient.js?" + models.Config.Version,
+				"/assets/panel/profile.js?" + models.Config.Version,
+				"/assets/panel/users.js?" + models.Config.Version,
+				"/assets/panel/template.js?" + models.Config.Version,
 			} {
 				if err := pusher.Push(p, nil); err != nil {
 					apilog.Printf("Failed to push: %v", err)
@@ -160,10 +158,19 @@ func Run() {
 		} else {
 			apilog.Print("Push not supported")
 		}
-		if f, err := ioutil.ReadFile(models.FromRootDir("http/index.html")); err != nil {
+
+		tmpl := template.Must(template.ParseFiles(models.FromRootDir("http/index.html")))
+		if err != nil {
+			apilog.Print(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			w.Write(f)
+			return
+		}
+		err = tmpl.Execute(w, map[string]string{
+			"version": models.Config.Version,
+		})
+		if err != nil {
+			apilog.Print(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}))
 
