@@ -57,6 +57,7 @@
     "Clone": "Клонировать",
     "Are you sure to activate campaign?": "Вы уверены что хотите активировать кампанию?",
     "Are you sure to deactivate campaign?": "Вы уверены что хотите деактивировать кампанию?",
-    "Use DKIM": "Использовать DKIM"
+    "Use DKIM": "Использовать DKIM",
+    "You can't save an accepted for send campaign.": "Вы не можете сохранить допущенную к отправке кампанию."
   }
 }

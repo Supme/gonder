@@ -164,7 +164,6 @@ func Run() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			w.Write(f)
-			//fmt.Fprintf(w, string(f))
 		}
 	}))
 

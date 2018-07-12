@@ -5,6 +5,7 @@
     <title>Gonder panel</title>
 
     <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js"></script>
+    <script type="application/javascript" src="assets/w2ui/w2ui.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css" />
 
@@ -38,24 +39,33 @@
         <div id="template" style="display: none">
             <div id="templateTabs"></div>
             <div id="templateContent">
-                <div id="campaignTemplateCodeContainer" style="height: calc(100% - 30px); display: none;">
+                <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
+                    <div id="campaignTemplateSize" style="margin: 5px; height: 20px">
+                        <button onclick="$('#campaignTemplatePreview').width(360)">360px</button>
+                        <button onclick="$('#campaignTemplatePreview').width(420)">420px</button>
+                        <button onclick="$('#campaignTemplatePreview').width(768)">768px</button>
+                        <button onclick="$('#campaignTemplatePreview').width(1024)">1024px</button>
+                        <button onclick="$('#campaignTemplatePreview').width(1280)">1280px</button>
+                    </div>
+                    <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid #333; width: 768px; height: calc(100% - 60px); overflow-y: scroll;"></div>
+                </div>
+                <div id="campaignTemplateCodeContainer" style="height: calc(100% - 40px); display: none;">
                     <div style="position: absolute; height: calc(100% - 30px); overflow-y: scroll;">
                         <textarea id="campaignTemplateCode"></textarea>
                     </div>
                 </div>
-                <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
-                    <div id="campaignTemplatePreview" style="position: absolute; width: 600px; height: calc(100% - 30px); overflow-y: scroll;"></div>
-                </div>
-                <div id="campaignTemplateHelp" style="display: none;">
-                    System variables:
-                    <ul>
-                        <li>{{.CampaignId}}</li>
-                        <li>{{.RecipientEmail}}</li>
-                        <li>{{.RecipientName}}</li>
-                        <li>{{.StatPng}}</li>
-                        <li>{{.UnsubscribeUrl}}</li>
-                        <li>{{.WebUrl}}</li>
-                    </ul>
+                <div id="campaignTemplateHelpContainer" style="display: none;">
+                    <div id="campaignTemplateHelp" style="margin: 10px;">
+                        System variables:
+                        <ul>
+                            <li>{{.CampaignId}}</li>
+                            <li>{{.RecipientEmail}}</li>
+                            <li>{{.RecipientName}}</li>
+                            <li>{{.StatPng}}</li>
+                            <li>{{.UnsubscribeUrl}}</li>
+                            <li>{{.WebUrl}}</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -95,10 +105,8 @@
             $.ajaxSetup({
                 cache: true
             });
-            $.getScript('assets/w2ui/w2ui.min.js', function () {
-                w2utils.locale('/assets/w2ui/locale/ru-ru.json');
-                w2utils.locale('/assets/panel/locale/ru-ru.json');
-
+            w2utils.locale('assets/w2ui/locale/ru-ru.json');
+            w2utils.locale('assets/panel/locale/ru-ru.json');
                 $.getScript('assets/panel/layout.js', function() {
                     $.getScript('assets/panel/template.js', function () {
                         cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateCode"), {
@@ -119,8 +127,8 @@
                         $.getScript('assets/panel/users.js');
                     });
                 });
-            });
-        });
+            }
+        );
 
         var ws = null;
         var refreshNum;

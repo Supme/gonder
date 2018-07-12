@@ -7,13 +7,9 @@ import (
 	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
 	"html/template"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
+		"strconv"
+		"time"
 )
-
-var rexpRemoveQuotes = regexp.MustCompile(`(href|src)=["'](.*?)["']`)
 
 func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
@@ -49,15 +45,22 @@ func campaign(req request) (js []byte, err error) {
 
 	case "save":
 		if user.Right("save-campaign") && user.CampaignRight(req.ID) {
+			var accepted bool
+			row := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", req.ID)
+			err = row.Scan(&accepted)
+			if err != nil {
+				return js, err
+			}
+
+			if accepted {
+				return js, errors.New("You can't save an accepted for send campaign.")
+			}
+
+
 			start := time.Unix(req.Content.StartDate, 0).Format(time.RFC3339)
 			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)
 
-			// fix visual editor replace &amp;
-			req.Content.Template = rexpRemoveQuotes.ReplaceAllStringFunc(req.Content.Template, func(str string) string {
-				return strings.Replace(str, "&amp;", "&", -1)
-			})
-
-			_, err := template.New("check").Parse(req.Content.Template)
+			_, err = template.New("check").Parse(req.Content.Template)
 			if err != nil {
 				return js, err
 			}
