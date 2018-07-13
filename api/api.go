@@ -115,7 +115,7 @@ func Run() {
 	api.Handle("/assets/", apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600 * 24 * 7))
-			http.ServeFile(w, r, path.Join(models.FromRootDir("http/"),
+			http.ServeFile(w, r, path.Join(models.FromRootDir("panel/"),
 				r.URL.Path))
 		}), false))
 
@@ -159,7 +159,7 @@ func Run() {
 			apilog.Print("Push not supported")
 		}
 
-		tmpl := template.Must(template.ParseFiles(models.FromRootDir("http/index.html")))
+		tmpl := template.Must(template.ParseFiles(models.FromRootDir("panel/index.html")))
 		if err != nil {
 			apilog.Print(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
