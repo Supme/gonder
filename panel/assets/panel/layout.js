@@ -55,10 +55,6 @@ var config = {
                         $('#profile').hide();
                         $('#users').hide();
                         $('#status').hide();
-                        // editor.commands.source.exec();
-                        // setTimeout(function(){
-                        //     if (editor.mode == "source") editor.commands.source.exec();
-                        // }, 10);
                         break;
                     case 'recipient':
                         w2ui['recipient'].url = '/api/recipients';

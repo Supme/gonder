@@ -24,6 +24,12 @@
         }
     </style>
 
+    <link href="assets/grapesjs/grapes.min.css" rel="stylesheet"/>
+    <link href="assets/grapesjs/grapesjs-preset-newsletter.css" rel="stylesheet"/>
+
+    <script src="assets/grapesjs/grapes.min.js"></script>
+    <script src="assets/grapesjs/grapesjs-preset-newsletter.min.js"></script>
+
 </head>
 <body>
 
@@ -40,7 +46,7 @@
             <div id="templateTabs"></div>
             <div id="templateContent">
                 <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
-                    <div id="campaignTemplateSize" style="margin: 5px; height: 20px">
+                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 20px">
                         <button onclick="$('#campaignTemplatePreview').width(360)">360px</button>
                         <button onclick="$('#campaignTemplatePreview').width(420)">420px</button>
                         <button onclick="$('#campaignTemplatePreview').width(768)">768px</button>
@@ -50,7 +56,7 @@
                     <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid #333; width: 768px; height: calc(100% - 60px); overflow-y: scroll;"></div>
                 </div>
                 <div id="campaignTemplateCodeContainer" style="height: calc(100% - 40px); display: none;">
-                    <div style="position: absolute; height: calc(100% - 30px); overflow-y: scroll;">
+                    <div style="position: absolute; width: 100%; height: calc(100% - 30px); overflow-y: scroll;">
                         <textarea id="campaignTemplateCode"></textarea>
                     </div>
                 </div>
@@ -66,6 +72,10 @@
                             <li>&#123;&#123;.WebUrl&#125;&#125;</li>
                         </ul>
                     </div>
+                </div>
+                <div id="campaignTemplateGrapesjsContainer" style="display: none;">
+                    <div id="campaignTemplateGrapesjsButton" style="margin: 5px; height: 20px"></div>
+                    <div id="campaignTemplateGrapesjs" style="position: absolute; border: 1px solid #333; height: calc(100% - 60px);"></div>
                 </div>
             </div>
         </div>
@@ -100,6 +110,7 @@
 
     <script type="text/javascript">
         var cm;
+        var gjs;
         $(document).ready(
             function () {
             $.ajaxSetup({
@@ -118,6 +129,18 @@
                             selectionPointer: true,
                             theme: "dracula"
                         });
+
+                        gjs = grapesjs.init({
+                            container : '#campaignTemplateGrapesjs',
+                            storageManager: { type: null },
+                            plugins: ['gjs-preset-newsletter'],
+                            pluginsOpts: {
+                                'gjs-preset-newsletter': {
+                                    //modalTitleImport: 'Import template',
+                                }
+                            }
+                        });
+
                         $.getScript('assets/panel/group.js?{{.version}}', function () {
                             $.getScript('assets/panel/sender.js?{{.version}}');
                             $.getScript('assets/panel/campaign.js?{{.version}}');
