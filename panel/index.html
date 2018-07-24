@@ -17,19 +17,21 @@
     <script src="assets/codemirror/javascript.js?{{.version}}"></script>
     <script src="assets/codemirror/css.js?{{.version}}"></script>
     <script src="assets/codemirror/htmlmixed.js?{{.version}}"></script>
+
+
+    <link href="assets/grapesjs/grapes.min.css?{{.version}}" rel="stylesheet"/>
+    <link href="assets/grapesjs/grapesjs-preset-newsletter.css?{{.version}}" rel="stylesheet"/>
+
+    <script src="assets/grapesjs/grapes.min.js?{{.version}}"></script>
+    <script src="assets/grapesjs/grapesjs-preset-newsletter.min.js?{{.version}}"></script>
+
+    <script src="assets/panel/panel.js?{{.version}}"></script>
     <style>
         .CodeMirror {
             border: 1px solid #eee;
-            height: auto;
+            height: 100%;
         }
     </style>
-
-    <link href="assets/grapesjs/grapes.min.css" rel="stylesheet"/>
-    <link href="assets/grapesjs/grapesjs-preset-newsletter.css" rel="stylesheet"/>
-
-    <script src="assets/grapesjs/grapes.min.js"></script>
-    <script src="assets/grapesjs/grapesjs-preset-newsletter.min.js"></script>
-
 </head>
 <body>
 
@@ -55,8 +57,8 @@
                     </div>
                     <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid #333; width: 768px; height: calc(100% - 60px); overflow-y: scroll;"></div>
                 </div>
-                <div id="campaignTemplateCodeContainer" style="height: calc(100% - 40px); display: none;">
-                    <div style="position: absolute; width: 100%; height: calc(100% - 30px); overflow-y: scroll;">
+                <div id="campaignTemplateCodeContainer" style="display: none;">
+                    <div style="position: absolute; width: 100%; height: calc(100% - 30px); ">
                         <textarea id="campaignTemplateCode"></textarea>
                     </div>
                 </div>
@@ -107,104 +109,5 @@
             <div id="statusLog" style="overflow-y: auto; height:95%; border:1px solid rgb(223, 223, 223); background: #fff; padding: 5px; font-size: 12px;">Select log</div>
         </div>
     </div>
-
-    <script type="text/javascript">
-        var cm;
-        var gjs;
-        $(document).ready(
-            function () {
-            $.ajaxSetup({
-                cache: true
-            });
-            w2utils.locale('assets/w2ui/locale/ru-ru.json?{{.version}}');
-            w2utils.locale('assets/panel/locale/ru-ru.json?{{.version}}');
-                $.getScript('assets/panel/layout.js?{{.version}}', function() {
-                    $.getScript('assets/panel/template.js?{{.version}}', function () {
-                        cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateCode"), {
-                            lineNumbers: true,
-                            mode: {
-                                name: "htmlmixed",
-                                scriptTypes: [{matches: /\/x-handlebars-template|\/x-mustache/i,mode: null}]
-                            },
-                            selectionPointer: true,
-                            theme: "dracula"
-                        });
-
-                        gjs = grapesjs.init({
-                            container : '#campaignTemplateGrapesjs',
-                            storageManager: { type: null },
-                            plugins: ['gjs-preset-newsletter'],
-                            pluginsOpts: {
-                                'gjs-preset-newsletter': {
-                                    //modalTitleImport: 'Import template',
-                                }
-                            }
-                        });
-
-                        $.getScript('assets/panel/group.js?{{.version}}', function () {
-                            $.getScript('assets/panel/sender.js?{{.version}}');
-                            $.getScript('assets/panel/campaign.js?{{.version}}');
-                        });
-                        $.getScript('assets/panel/recipient.js?{{.version}}');
-                        $.getScript('assets/panel/profile.js?{{.version}}');
-                        $.getScript('assets/panel/users.js?{{.version}}');
-                    });
-                });
-            }
-        );
-
-        var ws = null;
-        var refreshNum;
-        function startStatusLog(file){
-            var logMaxRows = 200;
-            var statusData = [];
-            var statusLog = $("#statusLog");
-            var wsuri = window.location.protocol=="https:"?"wss://":"ws://";
-            wsuri += window.location.hostname;
-            wsuri += window.location.port==""?"":":"+window.location.port;
-            wsuri += "/status/ws/" + file;
-
-            if (ws == null) {
-                ws = new WebSocket(wsuri);
-            } else {
-                ws.close();
-                clearInterval(refreshNum);
-                setTimeout(function(){}, 2000);
-                ws = new WebSocket(wsuri);
-            }
-
-            statusLog.empty();
-
-            ws.onopen = function() {
-                console.log("websocket connected to " + wsuri);
-            };
-
-            ws.onclose = function(e) {
-                console.log("websocket connection to " + wsuri + " closed (" + e.code + ") clean = " + e.wasClean);
-            };
-
-            ws.onerror = function (e) {
-                console.log("websocket connection error " + e);
-            };
-
-            refreshNum = setInterval(function () {
-                if (statusLog.is(':visible') && (statusLog.prop("scrollTop") == statusLog.prop("scrollHeight")-statusLog.prop("clientHeight"))) {
-                    statusLog.empty();
-                    statusData.forEach(function(entry) {
-                        statusLog.append(entry+"<br/>");
-                    });
-                    statusLog.scrollTop(statusLog.prop("scrollHeight"));
-
-                }
-            }, logMaxRows);
-            ws.onmessage = function(e) {
-                statusData.push(e.data);
-                if (statusData.length > logMaxRows) {
-                    statusData = statusData.slice(statusData.length-logMaxRows, statusData.length);
-                }
-            };
-        }
-    </script>
-
 </body>
 </html>

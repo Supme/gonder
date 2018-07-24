@@ -101,7 +101,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		groupID    int64
 		start, end mysql.NullTime
 	)
-	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
+	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
 
 	err := query.Scan(
 		&groupID,
@@ -112,13 +112,14 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		&cData.Template,
 		&start,
 		&end,
+		&cData.CompressHTML,
 		&cData.SendUnsubscribe)
 
 	if err != nil {
 		return c, err
 	}
 	cData.Name = "[Clone] " + cData.Name
-	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
+	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
 		groupID,
 		cData.ProfileID,
 		cData.SenderID,
@@ -127,8 +128,9 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		cData.Template,
 		start,
 		end,
+		&cData.CompressHTML,
 		cData.SendUnsubscribe,
-		cData.Accepted,
+		false,
 	)
 	if err != nil {
 		return c, err
