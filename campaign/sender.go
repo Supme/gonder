@@ -32,6 +32,7 @@ func Run() {
 
 	Sending.campaigns = map[string]campaign{}
 
+	timer := time.NewTimer(10 * time.Second)
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
@@ -53,15 +54,13 @@ func Run() {
 			}()
 			continue
 		}
-		timer := time.NewTimer(10 * time.Second)
+
 		select {
 		case <-timer.C:
 			continue
 		}
 	}
 
-	camplog.Println("Stoped all campaign for exit")
-	os.Exit(0)
 }
 
 func (s *sending) add(c campaign) {
