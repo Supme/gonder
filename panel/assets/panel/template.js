@@ -89,7 +89,7 @@ $('#templateTabs').w2tabs({
         { id: 'preview', caption: w2utils.lang('Preview') },
         { id: 'code', caption: w2utils.lang('Code') },
         { id: 'help', caption: w2utils.lang('Help') },
-//        { id: 'grapesjs', caption: w2utils.lang('GrapesJs') }
+ //       { id: 'grapesjs', caption: w2utils.lang('GrapesJs') }
     ],
     onClick: function (event) {
         switch (event.target)
