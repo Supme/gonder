@@ -110,7 +110,7 @@ func InitEmailPool() error {
 	return nil
 }
 
-func (ep emailPool) Get(id string) (*smtpSender.Pipe, error) {
+func (ep *emailPool) Get(id string) (*smtpSender.Pipe, error) {
 	ep.RLock()
 	defer ep.RUnlock()
 
@@ -120,7 +120,7 @@ func (ep emailPool) Get(id string) (*smtpSender.Pipe, error) {
 	return nil, errors.New("don't have this pipe")
 }
 
-func (ep emailPool) Stop(id string) {
+func (ep *emailPool) Stop(id string) {
 	ep.Lock()
 	if _, ok := ep.storage[id]; ok {
 		ep.storage[id].pipe.Stop()
@@ -129,14 +129,14 @@ func (ep emailPool) Stop(id string) {
 	ep.Unlock()
 }
 
-func (ep emailPool) StopAll() {
+func (ep *emailPool) StopAll() {
 	p := ep.List()
 	for id := range p {
 		ep.Stop(id)
 	}
 }
 
-func (ep emailPool) List() map[string]string {
+func (ep *emailPool) List() map[string]string {
 	pools := map[string]string{}
 
 	ep.RLock()
