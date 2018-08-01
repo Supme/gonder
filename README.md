@@ -1,6 +1,7 @@
 Gonder
 ======
 [![Go Report Card](https://goreportcard.com/badge/github.com/Supme/gonder)](https://goreportcard.com/report/github.com/Supme/gonder)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FSupme%2Fgonder.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FSupme%2Fgonder?ref=badge_shield)
 
 Mass sender
 
@@ -31,3 +32,7 @@ Written on Golang
 License
 -------
 Distributed under MIT License, please see license file in code for more details.
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FSupme%2Fgonder.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FSupme%2Fgonder?ref=badge_large)
