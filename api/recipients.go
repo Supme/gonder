@@ -405,7 +405,12 @@ func getRecipients(req request) (recipsTable, error) {
 	defer query.Close()
 	for query.Next() {
 		r := recipTable{}
-		err = query.Scan(&r.ID, &r.Name, &r.Email, &r.Result, &r.Open)
+		var result sql.NullString
+		err = query.Scan(&r.ID, &r.Name, &r.Email, &result, &r.Open)
+		if err != nil {
+			return rs, err
+		}
+		r.Result = result.String
 		rs.Records = append(rs.Records, r)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{
@@ -431,6 +436,9 @@ func getRecipientParams(recipient int64) (recipParams, error) {
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&p.Key, &p.Value)
+		if err != nil {
+			return recipParams{}, err
+		}
 		ps.Records = append(ps.Records, p)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `parameter` WHERE `recipient_id`=?", recipient).Scan(&ps.Total)
@@ -444,7 +452,6 @@ func delRecipients(campaignID int64) error {
 
 func recipientCsv(campaignID int64, file string) error {
 	title := make(map[int]string)
-	data := make(map[string]string)
 	var email, name string
 
 	csvfile, err := os.Open(file)
@@ -487,7 +494,7 @@ func recipientCsv(campaignID int64, file string) error {
 		} else {
 			email = ""
 			name = ""
-			data = map[string]string{}
+			var data map[string]string
 			for i, t := range v {
 				if i == 0 {
 					email = strings.TrimSpace(t)
@@ -523,7 +530,7 @@ func recipientCsv(campaignID int64, file string) error {
 
 func recipientXlsx(campaignID int64, file string) error {
 	title := make(map[int]string)
-	data := make(map[string]string)
+
 	var email, name string
 
 	xlFile, err := xlsx.OpenFile(file)
@@ -564,7 +571,7 @@ func recipientXlsx(campaignID int64, file string) error {
 			} else {
 				email = ""
 				name = ""
-				data = map[string]string{}
+				data := make(map[string]string)
 				for i, cell := range v.Cells {
 					t := cell.String()
 					if i == 0 {

@@ -127,6 +127,9 @@ func getGroups(req request) (grps, error) {
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&g.ID, &g.Name)
+		if err != nil {
+			return grps{}, err
+		}
 		gs.Records = append(gs.Records, g)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)

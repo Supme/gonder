@@ -206,6 +206,9 @@ func getCampaigns(req request) (camps, error) {
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&c.ID, &c.Name)
+		if err != nil {
+			return camps{}, err
+		}
 		cs.Records = append(cs.Records, c)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)

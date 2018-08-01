@@ -27,7 +27,7 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 		tmp := bytes.NewBufferString("")
 		dataTmpl, err := template.New("url").Parse(data)
 		if err != nil {
-			data = fmt.Sprintf("Error parse data params: %v", err)
+			return fmt.Sprintf("Error parse data params: %s", err)
 		}
 		dataTmpl.Execute(tmp, params)
 		data = tmp.String()

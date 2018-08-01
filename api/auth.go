@@ -71,10 +71,7 @@ func (a *auth) GroupRight(group interface{}) bool {
 	}
 	if c == 0 {
 		r = false
-	} else {
-		r = true
 	}
-
 	return r
 }
 
@@ -82,7 +79,7 @@ func (a *auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
-	var r bool
+	var r = true
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=(SELECT `group_id` FROM `campaign` WHERE id=?)", a.userID, campaign).Scan(&c)
 	if err != nil {
@@ -90,10 +87,7 @@ func (a *auth) CampaignRight(campaign interface{}) bool {
 	}
 	if c == 0 {
 		r = false
-	} else {
-		r = true
 	}
-
 	return r
 }
 

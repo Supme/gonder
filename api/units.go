@@ -43,7 +43,9 @@ func units(req request) (js []byte, err error) {
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&id, &name)
-
+				if err != nil {
+					return nil, err
+				}
 				sl.Records = append(sl.Records, unitList{
 					ID:   id,
 					Name: name,
@@ -99,7 +101,9 @@ func units(req request) (js []byte, err error) {
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&name, &right)
-
+				if err != nil {
+					return nil, err
+				}
 				sl[name] = right
 			}
 			js, err = json.Marshal(sl)
@@ -136,6 +140,9 @@ func updateUnitRights(req request) error {
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&id, &name)
+		if err != nil {
+			return err
+		}
 		rights[name] = id
 	}
 

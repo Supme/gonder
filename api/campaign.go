@@ -7,8 +7,8 @@ import (
 	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
 	"html/template"
-		"strconv"
-		"time"
+	"strconv"
+	"time"
 )
 
 func campaign(req request) (js []byte, err error) {
@@ -55,7 +55,6 @@ func campaign(req request) (js []byte, err error) {
 			if accepted {
 				return js, errors.New("You can't save an accepted for send campaign.")
 			}
-
 
 			start := time.Unix(req.Content.StartDate, 0).Format(time.RFC3339)
 			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)

@@ -192,7 +192,9 @@ func startProcess(name string) error {
 
 func stopProcess(name string) error {
 	err := checkPid(name)
-
+	if err != nil {
+		return err
+	}
 	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err

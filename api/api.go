@@ -25,7 +25,7 @@ import (
 	minifyJSON "github.com/tdewolff/minify/json"
 	"html/template"
 	"io"
-		"log"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -114,7 +114,7 @@ func Run() {
 	// Assets static dirs
 	api.Handle("/assets/", apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600 * 24 * 7))
+			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
 			http.ServeFile(w, r, path.Join(models.FromRootDir("panel/"),
 				r.URL.Path))
 		}), false))

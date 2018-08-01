@@ -23,7 +23,9 @@ func senderList(req request) (js []byte, err error) {
 		defer query.Close()
 		for query.Next() {
 			err = query.Scan(&id, &name, &email)
-
+			if err != nil {
+				return nil, err
+			}
 			fs = append(fs, sndrList{
 				ID:   id,
 				Text: name + " (" + email + ")",

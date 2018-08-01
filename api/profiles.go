@@ -158,6 +158,9 @@ func getProfiles(req request) (profs, error) {
 
 	for query.Next() {
 		err = query.Scan(&p.ID, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
+		if err != nil {
+			return profs{}, err
+		}
 		ps.Records = append(ps.Records, p)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`"+partWhere, partParams...).Scan(&ps.Total)

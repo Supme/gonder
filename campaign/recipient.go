@@ -36,6 +36,9 @@ func GetRecipient(id string) (Recipient, error) {
 	for paramQuery.Next() {
 		var k, v string
 		err = paramQuery.Scan(&k, &v)
+		if err != nil {
+			return Recipient{}, err
+		}
 		recipient.Params[k] = v
 	}
 

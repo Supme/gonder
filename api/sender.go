@@ -37,11 +37,16 @@ func sender(req request) (js []byte, err error) {
 
 			for query.Next() {
 				err = query.Scan(&f.ID, &f.Email, &f.Name, &f.DkimSelector, &f.DkimKey, &f.DkimUse)
+				if err != nil {
+					return nil, err
+				}
 				fs.Records = append(fs.Records, f)
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", req.Group).Scan(&fs.Total)
-			js, err = json.Marshal(fs)
-			return js, err
+			if err != nil {
+				return nil, err
+			}
+			return json.Marshal(fs)
 		}
 		return js, errors.New("Forbidden get groups")
 
@@ -58,9 +63,8 @@ func sender(req request) (js []byte, err error) {
 					return js, err
 				}
 				return []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(req.ID, 10) + `}`), nil
-			} else {
-				return js, errors.New("Forbidden right to this group")
 			}
+			return js, errors.New("Forbidden right to this group")
 		}
 		return js, errors.New("Forbidden save groups")
 

@@ -175,7 +175,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			camplog.Printf("Stop signal for campaign %s recieved", c.ID)
+			camplog.Printf("Stop signal for campaign %s received", c.ID)
 			goto Done
 		default:
 			var rID string
@@ -263,7 +263,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			camplog.Printf("Stop signal for campaign %s recieved", c.ID)
+			camplog.Printf("Stop signal for campaign %s received", c.ID)
 			return
 		default:
 			var rID string

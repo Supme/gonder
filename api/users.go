@@ -48,6 +48,9 @@ func users(req request) (js []byte, err error) {
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&id, &unitid, &name)
+				if err != nil {
+					return nil, err
+				}
 				groupq, err := models.Db.Query("SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?", id)
 				if err != nil {
 					return nil, err
