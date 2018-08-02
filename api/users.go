@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/supme/gonder/models"
+	"log"
 )
 
 func users(req request) (js []byte, err error) {
@@ -39,26 +40,33 @@ func users(req request) (js []byte, err error) {
 			where = " WHERE 1=1 "
 			partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			query, err := models.Db.Query("SELECT `id`, `auth_unit_id`, `name` FROM `auth_user`"+partWhere, partParams...)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&id, &unitid, &name)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				groupq, err := models.Db.Query("SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?", id)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				defer groupq.Close()
 				groupsid := []int64{}
 				for groupq.Next() {
-					groupq.Scan(&grpid)
+					err = groupq.Scan(&grpid)
+					if err != nil {
+						log.Println(err)
+					}
 					groupsid = append(groupsid, grpid)
 				}
 				sl.Records = append(sl.Records, userList{
@@ -71,13 +79,17 @@ func users(req request) (js []byte, err error) {
 
 			partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 			if err != nil {
-				apilog.Print(err)
+				log.Println(err)
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user` "+partWhere, partParams...).Scan(&sl.Total)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			js, err = json.Marshal(sl)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 
 		case "save":
@@ -89,21 +101,25 @@ func users(req request) (js []byte, err error) {
 				shaPassword := hex.EncodeToString(md)
 				_, err = models.Db.Exec("UPDATE `auth_user` SET `password`=?, auth_unit_id=? WHERE `id`=?", shaPassword, req.Record.Unit.ID, req.Record.ID)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 			} else {
 				_, err = models.Db.Exec("UPDATE `auth_user` SET auth_unit_id=? WHERE `id`=?", req.Record.Unit.ID, req.Record.ID)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 			}
 			_, err = models.Db.Exec("DELETE FROM `auth_user_group` WHERE `auth_user_id`=?", req.Record.ID)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			for _, g := range req.Record.Group {
 				_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.ID, g.ID)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 			}
@@ -120,20 +136,26 @@ func users(req request) (js []byte, err error) {
 					return nil, errors.New("name can not be empty")
 				}
 				hash := sha256.New()
-				hash.Write([]byte(fmt.Sprint(req.Record.Password)))
+				_, err = hash.Write([]byte(fmt.Sprint(req.Record.Password)))
+				if err != nil {
+					log.Println(err)
+				}
 				md := hash.Sum(nil)
 				shaPassword := hex.EncodeToString(md)
 				s, err := models.Db.Exec("INSERT INTO `auth_user`(`auth_unit_id`, `name`, `password`) VALUES (?, ?, ?)", req.Record.Unit.ID, req.Record.Name, shaPassword)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				req.Record.ID, err = s.LastInsertId()
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				for _, g := range req.Record.Group {
 					_, err = models.Db.Exec("INSERT INTO `auth_user_group` (`auth_user_id`, `group_id`) VALUES (?, ?)", req.Record.ID, g.ID)
 					if err != nil {
+						log.Println(err)
 						return nil, err
 					}
 				}

@@ -10,6 +10,7 @@ import (
 	"github.com/supme/gonder/models"
 	"github.com/tealeg/xlsx"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -82,19 +83,23 @@ func recipients(req request) (js []byte, err error) {
 				var content []byte
 				content, err = base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
+					log.Println(err)
 					return js, err
 				}
 				file, err := ioutil.TempFile("", "gonder_recipient_load_")
 				if err != nil {
+					log.Println(err)
 					return js, err
 				}
 				_, err = file.Write(content)
 				if err != nil {
+					log.Println(err)
 					return js, err
 				}
 				filename := file.Name()
 				err = file.Close()
 				if err != nil {
+					log.Println(err)
 					return js, err
 				}
 				apilog.Print(user.name, " upload file ", req.FileName)
@@ -135,9 +140,12 @@ func recipients(req request) (js []byte, err error) {
 				}
 
 			} else {
-				err = errors.New("Forbidden upload recipients")
+				return js, errors.New("Forbidden upload recipients")
 			}
-			return js, err
+			if err != nil {
+				log.Println(err)
+				return js, err
+			}
 
 		case "progress":
 			if user.Right("upload-recipients") {
@@ -212,6 +220,9 @@ func recipients(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(ps)
+			if err != nil {
+				log.Println(err)
+			}
 
 		} else {
 			err = errors.New("Command not found")
@@ -234,6 +245,7 @@ func recipients(req request) (js []byte, err error) {
 func markUnavaibleRecentTime(campaignID int64) (cnt int64, err error) {
 	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.StatusUnavaibleRecentTime))
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	defer p.Close()
@@ -258,6 +270,7 @@ AND removed=0
 AND status IS NULL
 AND campaign_id=?`, campaignID)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	defer q.Close()
@@ -267,11 +280,13 @@ AND campaign_id=?`, campaignID)
 		var id int64
 		err = q.Scan(&id)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		// ToDo check q.NextResultSet() and batch update
 		_, err = p.Exec(id)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		cnt++
@@ -291,17 +306,20 @@ func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
 	`, campaignID, campaignID)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
 	tx, err := models.Db.Begin()
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	defer tx.Rollback()
 
 	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
 	if err != nil {
+		log.Println(err)
 		return
 	}
 	defer dupl.Close()
@@ -311,33 +329,41 @@ func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 		var id int64
 		err = q.Scan(&id)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		_, err = dupl.Exec(id)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		cnt = cnt + 1
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+	}
 	return
 }
 
 func addRecipients(campaignID int64, recipients recips) error {
 	tx, err := models.Db.Begin()
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer tx.Rollback()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer stRecipient.Close()
 	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer stParameter.Close()
@@ -345,34 +371,51 @@ func addRecipients(campaignID int64, recipients recips) error {
 	for r := range recipients {
 		res, err := stRecipient.Exec(campaignID, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		id, err := res.LastInsertId()
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		for _, p := range recipients[r].Params {
 			_, err := stParameter.Exec(id, p.Key, p.Value)
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 		}
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+	}
 	return err
 }
 
 func resendCampaign(campaignID int64) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
-	c, _ := res.RowsAffected()
+	if err != err {
+		log.Println(err)
+		return err
+	}
+	c, err := res.RowsAffected()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	apilog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", user.name, campaignID, c)
-	return err
+	return nil
 }
 
 func getRecipientCampaign(recipientID int64) (int64, error) {
 	var id int64
 	err := models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", recipientID).Scan(&id)
+	if err != nil {
+		log.Println(err)
+	}
 	return id, err
 }
 
@@ -394,12 +437,14 @@ func getRecipients(req request) (recipsTable, error) {
 		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, true)
 	if err != nil {
+		log.Println(err)
 		return rs, err
 	}
 
 	var query *sql.Rows
 	query, err = models.Db.Query("SELECT `id`, `name`, `email`, `status`, IF(COALESCE(`web_agent`,`client_agent`) IS NULL, 0, 1) as `open` FROM `recipient`"+partWhere, partParams...)
 	if err != nil {
+		log.Println(err)
 		return rs, err
 	}
 	defer query.Close()
@@ -408,6 +453,7 @@ func getRecipients(req request) (recipsTable, error) {
 		var result sql.NullString
 		err = query.Scan(&r.ID, &r.Name, &r.Email, &result, &r.Open)
 		if err != nil {
+			log.Println(err)
 			return rs, err
 		}
 		r.Result = result.String
@@ -417,9 +463,13 @@ func getRecipients(req request) (recipsTable, error) {
 		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, false)
 	if err != nil {
+		log.Println(err)
 		return rs, err
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `recipient`"+partWhere, partParams...).Scan(&rs.Total)
+	if err != nil {
+		log.Println(err)
+	}
 	return rs, err
 
 }
@@ -431,22 +481,30 @@ func getRecipientParams(recipient int64) (recipParams, error) {
 	ps.Records = []recipParam{}
 	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {
+		log.Println(err)
 		return ps, err
 	}
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&p.Key, &p.Value)
 		if err != nil {
+			log.Println(err)
 			return recipParams{}, err
 		}
 		ps.Records = append(ps.Records, p)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `parameter` WHERE `recipient_id`=?", recipient).Scan(&ps.Total)
+	if err != nil {
+		log.Println(err)
+	}
 	return ps, err
 }
 
 func delRecipients(campaignID int64) error {
 	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", campaignID)
+	if err != nil {
+		log.Println(err)
+	}
 	return err
 }
 
@@ -456,6 +514,7 @@ func recipientCsv(campaignID int64, file string) error {
 
 	csvfile, err := os.Open(file)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer csvfile.Close()
@@ -465,22 +524,26 @@ func recipientCsv(campaignID int64, file string) error {
 	reader.FieldsPerRecord = -1
 	rawCSVdata, err := reader.ReadAll()
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	tx, err := models.Db.Begin()
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer tx.Rollback()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer stRecipient.Close()
 	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer stParameter.Close()
@@ -507,15 +570,18 @@ func recipientCsv(campaignID int64, file string) error {
 
 			res, err := stRecipient.Exec(campaignID, email, name)
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 			id, err := res.LastInsertId()
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 			for i, t := range data {
 				_, err := stParameter.Exec(id, i, t)
 				if err != nil {
+					log.Println(err)
 					return err
 				}
 			}
@@ -525,7 +591,11 @@ func recipientCsv(campaignID int64, file string) error {
 		progress.Unlock()
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+	}
+	return err
 }
 
 func recipientXlsx(campaignID int64, file string) error {
@@ -535,6 +605,7 @@ func recipientXlsx(campaignID int64, file string) error {
 
 	xlFile, err := xlsx.OpenFile(file)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer os.Remove(file)
@@ -543,6 +614,7 @@ func recipientXlsx(campaignID int64, file string) error {
 		var tx *sql.Tx
 		tx, err = models.Db.Begin()
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		defer tx.Rollback()
@@ -550,6 +622,7 @@ func recipientXlsx(campaignID int64, file string) error {
 		var stRecipient *sql.Stmt
 		stRecipient, err = tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		defer stRecipient.Close()
@@ -557,6 +630,7 @@ func recipientXlsx(campaignID int64, file string) error {
 		var stParameter *sql.Stmt
 		stParameter, err = tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		defer stParameter.Close()
@@ -586,17 +660,20 @@ func recipientXlsx(campaignID int64, file string) error {
 				var res sql.Result
 				res, err = stRecipient.Exec(campaignID, email, name)
 				if err != nil {
+					log.Println(err)
 					return err
 				}
 
 				var id int64
 				id, err = res.LastInsertId()
 				if err != nil {
+					log.Println(err)
 					return err
 				}
 				for i, t := range data {
 					_, err = stParameter.Exec(id, i, t)
 					if err != nil {
+						log.Println(err)
 						return err
 					}
 				}
@@ -608,6 +685,7 @@ func recipientXlsx(campaignID int64, file string) error {
 		}
 		err = tx.Commit()
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	}

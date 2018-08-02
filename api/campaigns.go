@@ -3,9 +3,9 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/go-sql-driver/mysql"
+		"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
+	"log"
 )
 
 type camp struct {
@@ -116,10 +116,11 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		&cData.SendUnsubscribe)
 
 	if err != nil {
+		log.Println(err)
 		return c, err
 	}
 	cData.Name = "[Clone] " + cData.Name
-	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?)",
+	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`body`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 		groupID,
 		cData.ProfileID,
 		cData.SenderID,
@@ -128,20 +129,22 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		cData.Template,
 		start,
 		end,
-		&cData.CompressHTML,
+		cData.CompressHTML,
 		cData.SendUnsubscribe,
 		false,
 	)
 	if err != nil {
+		log.Println(err)
 		return c, err
 	}
 	c.ID, err = row.LastInsertId()
 	if err != nil {
+		log.Println(err)
 		return c, err
 	}
 	c.Name = cData.Name
 
-	return c, err
+	return c, nil
 }
 
 func addCampaign(groupID int64) (camp, error) {
@@ -149,19 +152,19 @@ func addCampaign(groupID int64) (camp, error) {
 	c.Name = "New campaign"
 	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupID, c.Name)
 	if err != nil {
+		log.Println(err)
 		return c, err
 	}
 	c.ID, err = row.LastInsertId()
 	if err != nil {
+		log.Println(err)
 		return c, err
 	}
 
 	return c, nil
 }
 
-func saveCampaigns(changes []map[string]interface{}) (err error) {
-	var e error
-	err = nil
+func saveCampaigns(changes []map[string]interface{}) error {
 	var where string
 
 	if user.IsAdmin() {
@@ -171,12 +174,13 @@ func saveCampaigns(changes []map[string]interface{}) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
-		if e != nil {
-			err = e
+		_, err := models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
 	}
-	return
+	return nil
 }
 
 func getCampaigns(req request) (camps, error) {
@@ -197,16 +201,18 @@ func getCampaigns(req request) (camps, error) {
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {
-		fmt.Println("Create SQL Part error:", err)
+		log.Println(err)
 	}
 	query, err := models.Db.Query("SELECT `id`, `name` FROM `campaign` WHERE "+partWhere, partParams...)
 	if err != nil {
+		log.Println(err)
 		return cs, err
 	}
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&c.ID, &c.Name)
 		if err != nil {
+			log.Println(err)
 			return camps{}, err
 		}
 		cs.Records = append(cs.Records, c)
@@ -216,5 +222,9 @@ func getCampaigns(req request) (camps, error) {
 		apilog.Print(err)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE "+partWhere, partParams...).Scan(&cs.Total)
-	return cs, err
+	if err != nil {
+		log.Println(err)
+		return cs, err
+	}
+	return cs, nil
 }

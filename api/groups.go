@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/supme/gonder/models"
+	"log"
 )
 
 type grp struct {
@@ -16,7 +17,6 @@ type grps struct {
 }
 
 func groups(req request) (js []byte, err error) {
-
 	var (
 		g  grp
 		gs grps
@@ -31,6 +31,9 @@ func groups(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(gs)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden get group")
@@ -46,6 +49,9 @@ func groups(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(gs)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden save groups")
@@ -57,6 +63,9 @@ func groups(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(g)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden add groups")
@@ -71,10 +80,12 @@ func addGroup() (grp, error) {
 	g.Name = "New group"
 	row, err := models.Db.Exec("INSERT INTO `group`(`name`) VALUES (?)", g.Name)
 	if err != nil {
+		log.Println(err)
 		return g, err
 	}
 	g.ID, err = row.LastInsertId()
 	if err != nil {
+		log.Println(err)
 		return g, err
 	}
 
@@ -82,9 +93,7 @@ func addGroup() (grp, error) {
 }
 
 func saveGroups(changes []map[string]interface{}) (err error) {
-	var e error
 	var where string
-	err = nil
 
 	if user.IsAdmin() {
 		where = "?"
@@ -93,9 +102,10 @@ func saveGroups(changes []map[string]interface{}) (err error) {
 	}
 
 	for _, change := range changes {
-		_, e = models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
-		if e != nil {
-			err = e
+		_, err := models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
 	}
 	return
@@ -118,24 +128,32 @@ func getGroups(req request) (grps, error) {
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
+		return gs, err
 	}
 	query, err := models.Db.Query("SELECT `id`, `name` FROM `group` "+partWhere, partParams...)
 	if err != nil {
+		log.Println(err)
 		return gs, err
 	}
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&g.ID, &g.Name)
 		if err != nil {
+			log.Println(err)
 			return grps{}, err
 		}
 		gs.Records = append(gs.Records, g)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
+		return gs, err
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `group` "+partWhere, partParams...).Scan(&gs.Total)
-	return gs, err
+	if err != nil {
+		log.Println(err)
+		return gs, err
+	}
+	return gs, nil
 }

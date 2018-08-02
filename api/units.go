@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/supme/gonder/models"
+	"log"
 	"strings"
 )
 
@@ -38,12 +39,14 @@ func units(req request) (js []byte, err error) {
 			}
 			query, err := models.Db.Query("SELECT `id`, `name` FROM `auth_unit`"+partWhere, partParams...)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&id, &name)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				sl.Records = append(sl.Records, unitList{
@@ -53,38 +56,46 @@ func units(req request) (js []byte, err error) {
 			}
 			partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 			if err != nil {
-				apilog.Print(err)
+				log.Println(err)
+				return nil, err
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `auth_unit` "+partWhere, partParams...).Scan(&sl.Total)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			js, err = json.Marshal(sl)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 
 		case "add":
 			res, err := models.Db.Exec("INSERT INTO `auth_unit`(`name`) VALUES (?)", req.Record.Name)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			req.Record.ID, err = res.LastInsertId()
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			err = updateUnitRights(req)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 
 		case "save":
 			_, err = models.Db.Exec("UPDATE `auth_unit` SET `name`=? WHERE `id`=?", req.Record.Name, req.Record.ID)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			err = updateUnitRights(req)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 
@@ -96,18 +107,21 @@ func units(req request) (js []byte, err error) {
 			sl := unitRight{}
 			query, err := models.Db.Query("SELECT auth_right.name AS name, IF (auth_unit_right.auth_unit_id IS NOT NULL, true, false) AS `right` FROM auth_right LEFT OUTER JOIN auth_unit_right ON auth_unit_right.auth_right_id=auth_right.id AND auth_unit_right.auth_unit_id=?", req.ID)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			defer query.Close()
 			for query.Next() {
 				err = query.Scan(&name, &right)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				sl[name] = right
 			}
 			js, err = json.Marshal(sl)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 
@@ -135,12 +149,14 @@ func updateUnitRights(req request) error {
 	rights := map[string]int64{}
 	query, err := models.Db.Query("SELECT `id`, `name` FROM `auth_right`")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer query.Close()
 	for query.Next() {
 		err = query.Scan(&id, &name)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		rights[name] = id
@@ -215,6 +231,7 @@ func updateUnitRights(req request) error {
 
 	_, err = models.Db.Exec("INSERT INTO `auth_unit_right`(`auth_unit_id`, `auth_right_id`) VALUES " + data)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 

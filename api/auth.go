@@ -67,6 +67,7 @@ func (a *auth) GroupRight(group interface{}) bool {
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=?", a.userID, group).Scan(&c)
 	if err != nil {
+		log.Println(err)
 		r = false
 	}
 	if c == 0 {
@@ -83,6 +84,7 @@ func (a *auth) CampaignRight(campaign interface{}) bool {
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=(SELECT `group_id` FROM `campaign` WHERE id=?)", a.userID, campaign).Scan(&c)
 	if err != nil {
+		log.Println(err)
 		r = false
 	}
 	if c == 0 {
@@ -100,6 +102,7 @@ func (a *auth) Right(right string) bool {
 
 	err := models.Db.QueryRow("SELECT COUNT(auth_right.id) user_right FROM `auth_user` JOIN `auth_unit_right` ON auth_user.auth_unit_id = auth_unit_right.auth_unit_id JOIN `auth_right` ON auth_unit_right.auth_right_id = auth_right.id WHERE auth_user.id = ? AND auth_right.name = ?", a.userID, right).Scan(&r)
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 
@@ -126,6 +129,7 @@ func check(user, password string) (int64, int64, bool) {
 
 	err := models.Db.QueryRow("SELECT `id`, `auth_unit_id`, `password` FROM `auth_user` WHERE `name`=?", user).Scan(&userID, &unitID, &passwordHash)
 	if err != nil {
+		log.Println(err)
 		l = false
 	}
 
@@ -145,7 +149,7 @@ func (a *auth) Logout(w http.ResponseWriter, r *http.Request) {
 func logging(r *http.Request) {
 	uri, err := url.QueryUnescape(r.RequestURI)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 	}
 	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), user.name, r.Method, uri)
 }

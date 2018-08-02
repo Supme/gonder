@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gorilla/websocket"
 	"github.com/gravitational/tail"
+	"log"
 	"net/http"
 	"os"
 )
@@ -51,7 +52,7 @@ var upgrader = websocket.Upgrader{
 func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		apilog.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -62,11 +63,11 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	offset.Whence = 2
 	fi, err := os.Open(file)
 	if err != nil {
-		apilog.Println(err)
+		log.Println(err)
 	}
 	f, err := fi.Stat()
 	if err != nil {
-		apilog.Println(err)
+		log.Println(err)
 	}
 	if f.Size() < 10000 {
 		offset.Offset = f.Size() * (-1)
@@ -91,12 +92,12 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	for line := range t.Lines {
 		if line.Err == nil {
 			if err = conn.WriteMessage(websocket.TextMessage, []byte(more+line.Text)); err != nil {
-				apilog.Println(err)
+				log.Println(err)
 				return
 			}
 			more = ""
 		} else {
-			apilog.Println(err)
+			log.Println(err)
 		}
 
 	}

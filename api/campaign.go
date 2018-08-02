@@ -7,6 +7,7 @@ import (
 	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
 	"html/template"
+	"log"
 	"strconv"
 	"time"
 )
@@ -30,6 +31,7 @@ func campaign(req request) (js []byte, err error) {
 				&req.Content.Accepted,
 			)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			req.Content.StartDate = start.Time.Unix()
@@ -37,6 +39,7 @@ func campaign(req request) (js []byte, err error) {
 
 			js, err = json.Marshal(req.Content)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 		} else {
@@ -49,6 +52,7 @@ func campaign(req request) (js []byte, err error) {
 			row := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", req.ID)
 			err = row.Scan(&accepted)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 
@@ -61,6 +65,7 @@ func campaign(req request) (js []byte, err error) {
 
 			_, err = template.New("check").Parse(req.Content.Template)
 			if err != nil {
+				// This only for user, nothing logging
 				return js, err
 			}
 
@@ -77,10 +82,14 @@ func campaign(req request) (js []byte, err error) {
 				req.ID,
 			)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 
 			js, err = json.Marshal(req.Content)
+			if err != nil {
+				log.Println(err)
+			}
 		} else {
 			return js, errors.New("Forbidden save campaign")
 		}
@@ -95,6 +104,7 @@ func campaign(req request) (js []byte, err error) {
 			}
 			_, err = models.Db.Exec("UPDATE campaign SET `accepted`=? WHERE id=?", accepted, req.ID)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			if accepted == 0 {

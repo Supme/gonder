@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/supme/gonder/models"
+	"log"
 )
 
 type sndrList struct {
@@ -18,12 +19,14 @@ func senderList(req request) (js []byte, err error) {
 		var fs = []sndrList{}
 		query, err := models.Db.Query("SELECT `id`, `name`, `email` FROM `sender` WHERE `group_id`=?", req.ID)
 		if err != nil {
+			log.Println(err)
 			return js, err
 		}
 		defer query.Close()
 		for query.Next() {
 			err = query.Scan(&id, &name, &email)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			fs = append(fs, sndrList{
@@ -32,6 +35,9 @@ func senderList(req request) (js []byte, err error) {
 			})
 		}
 		js, err = json.Marshal(fs)
+		if err != nil {
+			log.Println(err)
+		}
 		return js, err
 	}
 	return js, errors.New("Forbidden get from this group")

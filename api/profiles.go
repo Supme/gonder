@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/supme/gonder/models"
+	"log"
 	"strconv"
 )
 
@@ -38,6 +39,9 @@ func profiles(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(ps)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden get profiles")
@@ -49,6 +53,9 @@ func profiles(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(p)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden get profiles")
@@ -57,6 +64,9 @@ func profiles(req request) (js []byte, err error) {
 		if user.Right("delete-profiles") {
 			deleteProfiles(req.Selected)
 			js, err = json.Marshal(ps)
+			if err != nil {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden get profiles")
@@ -68,6 +78,9 @@ func profiles(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(ps)
+			if err != err {
+				log.Println(err)
+			}
 			return js, err
 		}
 		return js, errors.New("Forbidden get profiles")
@@ -77,18 +90,19 @@ func profiles(req request) (js []byte, err error) {
 	return js, errors.New("Command not found")
 }
 
-func saveProfiles(changes []map[string]interface{}) (err error) {
-	var e error
-	err = nil
+func saveProfiles(changes []map[string]interface{}) error {
+	var err error
 	var p prof
 	for c := range changes {
-		p.ID, e = strconv.ParseInt(fmt.Sprint(changes[c]["recid"]), 10, 64)
-		if e != nil {
-			err = e
+		p.ID, err = strconv.ParseInt(fmt.Sprint(changes[c]["recid"]), 10, 64)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
-		e = models.Db.QueryRow("SELECT `name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile` WHERE `id`=?", p.ID).Scan(&p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
-		if e != nil {
-			err = e
+		err = models.Db.QueryRow("SELECT `name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile` WHERE `id`=?", p.ID).Scan(&p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
 		for i := range changes[c] {
 			switch i {
@@ -106,17 +120,21 @@ func saveProfiles(changes []map[string]interface{}) (err error) {
 				p.ResendCount, _ = strconv.Atoi(fmt.Sprint(changes[c][i]))
 			}
 		}
-		_, e = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name, p.Iface, p.Host, p.Stream, p.ResendDelay, p.ResendCount, p.ID)
-		if e != nil {
-			err = e
+		_, err = models.Db.Exec("UPDATE `profile` SET `name`=?, `iface`=?, `host`=?, `stream`=?, `resend_delay`=?, `resend_count`=? WHERE id=?", p.Name, p.Iface, p.Host, p.Stream, p.ResendDelay, p.ResendCount, p.ID)
+		if err != nil {
+			log.Println(err)
+			return err
 		}
 	}
-	return
+	return nil
 }
 
 func deleteProfiles(selected []interface{}) {
 	for _, s := range selected {
-		models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", fmt.Sprintf("%d", s))
+		_, err := models.Db.Exec("DELETE FROM `profile` WHERE `id`=?", fmt.Sprintf("%d", s))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -124,10 +142,12 @@ func addProfile() (prof, error) {
 	var p prof
 	row, err := models.Db.Exec("INSERT INTO `profile` (`name`) VALUES ('')")
 	if err != nil {
+		log.Println(err)
 		return p, err
 	}
 	p.ID, err = row.LastInsertId()
 	if err != nil {
+		log.Println(err)
 		return p, err
 	}
 
@@ -148,10 +168,12 @@ func getProfiles(req request) (profs, error) {
 		"recid": "id", "name": "name", "iface": "iface", "host": "host", "stream": "stream", "resend_delay": "resend_delay", "resend_count": "resend_count",
 	}, true)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
+		return ps, err
 	}
 	query, err := models.Db.Query("SELECT `id`,`name`,`iface`,`host`,`stream`,`resend_delay`,`resend_count` FROM `profile`"+partWhere, partParams...)
 	if err != nil {
+		log.Println(err)
 		return ps, err
 	}
 	defer query.Close()
@@ -159,10 +181,14 @@ func getProfiles(req request) (profs, error) {
 	for query.Next() {
 		err = query.Scan(&p.ID, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)
 		if err != nil {
+			log.Println(err)
 			return profs{}, err
 		}
 		ps.Records = append(ps.Records, p)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `profile`"+partWhere, partParams...).Scan(&ps.Total)
+	if err != nil {
+		log.Println(err)
+	}
 	return ps, err
 }

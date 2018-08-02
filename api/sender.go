@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/supme/gonder/models"
+	"log"
 	"strconv"
 )
 
@@ -31,6 +32,7 @@ func sender(req request) (js []byte, err error) {
 			fs.Records = []sndr{}
 			query, err := models.Db.Query("SELECT `id`, `email`, `name`, `dkim_selector`, `dkim_key`, `dkim_use` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", req.ID, req.Limit, req.Offset)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			defer query.Close()
@@ -38,15 +40,21 @@ func sender(req request) (js []byte, err error) {
 			for query.Next() {
 				err = query.Scan(&f.ID, &f.Email, &f.Name, &f.DkimSelector, &f.DkimKey, &f.DkimUse)
 				if err != nil {
+					log.Println(err)
 					return nil, err
 				}
 				fs.Records = append(fs.Records, f)
 			}
 			err = models.Db.QueryRow("SELECT COUNT(*) FROM `sender` WHERE `group_id`=?", req.Group).Scan(&fs.Total)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
-			return json.Marshal(fs)
+			js, err = json.Marshal(fs)
+			if err != nil {
+				log.Println(err)
+			}
+			return js , err
 		}
 		return js, errors.New("Forbidden get groups")
 
@@ -55,11 +63,13 @@ func sender(req request) (js []byte, err error) {
 			var group int64
 			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.ID).Scan(&group)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			if user.GroupRight(group) {
 				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=?, `dkim_selector`=?, `dkim_key`=?, `dkim_use`=? WHERE `id`=?", req.Email, req.Name, req.DkimSelector, req.DkimKey, req.DkimUse, req.ID)
 				if err != nil {
+					log.Println(err)
 					return js, err
 				}
 				return []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(req.ID, 10) + `}`), nil
@@ -72,10 +82,12 @@ func sender(req request) (js []byte, err error) {
 		if user.Right("save-groups") && user.GroupRight(req.ID) {
 			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.DkimSelector, req.DkimKey, req.DkimUse)
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			recid, err := res.LastInsertId()
 			if err != nil {
+				log.Println(err)
 				return js, err
 			}
 			return []byte(`{"status": "success", "message": "", "recid": ` + strconv.FormatInt(recid, 10) + `}`), nil

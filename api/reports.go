@@ -6,6 +6,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	campSender "github.com/supme/gonder/campaign"
 	"github.com/supme/gonder/models"
+	"log"
 	"net/http"
 )
 
@@ -49,6 +50,7 @@ func reportJumpDetailedCount(w http.ResponseWriter, r *http.Request) {
 		}
 		js, err = json.Marshal(res)
 		if err != nil {
+			log.Println(err)
 			js = []byte(`{"status": "error", "message": "Get reports for this campaign"}`)
 		}
 	} else {
@@ -63,7 +65,9 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if (r.Form["group"] != nil && user.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0])) {
@@ -91,7 +95,9 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 
 		query, err := models.Db.Query(queryString, param)
 		if err != nil {
-			apilog.Print(err)
+			log.Println(err)
+			http.Error(w, "Query to database error", http.StatusInternalServerError)
+			return
 		}
 		defer query.Close()
 		for query.Next() {
@@ -114,17 +120,25 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 			for q.Next() {
 				err = q.Scan(&name, &value)
 				if err != nil {
-					apilog.Print(err)
+					log.Println(err)
+					http.Error(w, "Param error", http.StatusInternalServerError)
+					return
 				}
 				extra[name] = value
 				rs.Extra = append(rs.Extra, extra)
 			}
-			q.Close()
+			err = q.Close()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "Close request to database error", http.StatusInternalServerError)
+				return
+			}
 
 			res = append(res, rs)
 		}
 		js, err = json.Marshal(res)
 		if err != nil {
+			http.Error(w, "Param error", http.StatusInternalServerError)
 			js = []byte(`{"status": "error", "message": "Get reports"}`)
 		}
 	} else {
@@ -132,14 +146,19 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func report(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	if err = r.ParseForm(); err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var campaignID string
@@ -162,6 +181,7 @@ func report(w http.ResponseWriter, r *http.Request) {
 
 		js, err = json.Marshal(reports)
 		if err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -171,7 +191,10 @@ func report(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // Campaign info
@@ -181,7 +204,7 @@ func reportCampaignInfo(campaignID string) (map[string]interface{}, error) {
 	res := make(map[string]interface{})
 	err := models.Db.QueryRow("SELECT `name`, `start_time` FROM `campaign` WHERE `id`=?", campaignID).Scan(&name, &timestamp)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 		return res, err
 	}
 	res["name"] = name
@@ -194,7 +217,7 @@ func reportSendCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status` IS NOT NULL AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 	}
 	return count
 }
@@ -214,7 +237,7 @@ func reportUnsubscribeCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow("SELECT COUNT(DISTINCT `email`) FROM `unsubscribe` WHERE `campaign_id`=?", campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 	}
 	return count
 }
@@ -224,7 +247,7 @@ func reportOpenMailCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND (`client_agent` IS NOT NULL OR `web_agent` IS NOT NULL) AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 	}
 	return count
 }
@@ -234,7 +257,7 @@ func reportOpenWebVersionCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`campaign_id`=? AND `jumping`.`url`='%s' AND `recipient`.`removed`=0", models.WebVersion), campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 	}
 	return count
 }
@@ -243,40 +266,7 @@ func reportRecipientJumpCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow(fmt.Sprintf("SELECT COUNT(DISTINCT `recipient`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`removed`=0 AND `jumping`.`url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=?", models.OpenTrace, models.WebVersion, models.Unsubscribe), campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Println(err)
 	}
 	return count
 }
-
-/* ToDo add statistic
-
-SELECT DISTINCT
- lower(`recipient`.`email`) as `email`,
-   (CASE
-        WHEN `statusSmtpRules`.`transcript_id` =  9 THEN 1
-        WHEN `statusSmtpRules`.`transcript_id` = 10 THEN 1
-        WHEN `statusSmtpRules`.`transcript_id` = 20 THEN 2
-        WHEN `statusSmtpRules`.`transcript_id` = 11 THEN 3
-    END) AS `bounceTypeId`,
-   `recipient`.`date` AS `bounceDate`
-FROM `recipient`
-    LEFT JOIN `statusSmtpRules` ON `recipient`.`status` like concat('%',`statusSmtpRules`.`pattern`,'%')
-    JOIN `statusTranscript` ON `statusSmtpRules`.`transcript_id` = `statusTranscript`.`id` AND `statusTranscript`.`bounce_id` = 3
-WHERE
-	`recipient`.`date` >= DATE_SUB(NOW(), INTERVAL 1 DAY)
-    AND
-    (`recipient`.`status` <> 'Ok' OR `recipient`.`status` != NULL)
-    AND
-    `recipient`.`removed`=0
-
-
-
-SELECT DISTINCT
- lower(`recipient`.`email`) as `email`,
-   `recipient`.`date` AS `bounceDate`
-FROM `recipient`
-WHERE `recipient`.`date` >= DATE_SUB(NOW(), INTERVAL 1 DAY)
-	AND LOWER(`recipient`.`status`) REGEXP '^(5[0-9]{2}).+'
-    AND	`recipient`.`removed`=0
-
-*/
