@@ -557,7 +557,7 @@ func recipientCsv(campaignID int64, file string) error {
 		} else {
 			email = ""
 			name = ""
-			var data map[string]string
+			data := map[string]string{}
 			for i, t := range v {
 				if i == 0 {
 					email = strings.TrimSpace(t)
