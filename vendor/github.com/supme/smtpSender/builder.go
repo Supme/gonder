@@ -149,13 +149,16 @@ func (b *Builder) Email(id string, resultFunc func(Result)) Email {
 		buf := &bytes.Buffer{}
 		err = b.builder(buf)
 		if err != nil {
-			return nil
+			return err
 		}
 		e := buf.Bytes()
 		dkimSign(b.dkim, &e)
 		_, err = w.Write(e)
 		buf.Reset()
-		return err
+		if err != nil {
+			return err
+		}
+		return w.Close()
 	}
 	return *email
 }

@@ -47,6 +47,10 @@ type SMTPserver struct {
 
 // Send sending this email
 func (e *Email) Send(connect *Connect, server *SMTPserver) {
+	if connect == nil {
+		connect = &Connect{}
+	}
+
 	var (
 		client *smtp.Client
 		auth   smtp.Auth
@@ -71,11 +75,6 @@ func (e *Email) Send(connect *Connect, server *SMTPserver) {
 		e.ResultFunc(Result{ID: e.ID, Err: fmt.Errorf("421 %v", err), Duration: time.Now().Sub(start)})
 		return
 	}
-
-	defer func() {
-		client.Quit()
-		client.Close()
-	}()
 
 	err = e.send(auth, client)
 	e.ResultFunc(Result{ID: e.ID, Err: err, Duration: time.Now().Sub(start)})
@@ -115,14 +114,16 @@ func (e *Email) send(auth smtp.Auth, client *smtp.Client) error {
 	if err != nil {
 		return err
 	}
-
 	err = e.WriteCloser(w)
 	if err != nil {
 		return err
 	}
+	w.Close()
+	if err != nil {
+		return err
+	}
 
-	return err
-
+	return client.Close()
 }
 
 func (e *Email) from() string {

@@ -3,6 +3,7 @@ package campaign
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"github.com/supme/gonder/models"
 	"io"
 	"log"
@@ -32,35 +33,33 @@ func Run() {
 
 	Sending.campaigns = map[string]campaign{}
 
-	timer := time.NewTimer(10 * time.Second)
 	for {
+		fmt.Println("check new campaign")
 		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
 		}
-
+		fmt.Println("ready checked max campaign")
 		if Sending.Count() > 0 {
 			camp, err := Sending.checkExpired()
 			checkErr(err)
 			Sending.Stop(camp...)
 		}
-
+		fmt.Println("checked expired")
 		if id, err := Sending.checkNext(); err == nil {
+			fmt.Println("check next campaign for send id:", id)
 			camp, err := getCampaign(id)
 			checkErr(err)
 			Sending.add(camp)
-			go func() {
+			go func(id string) {
 				camp.send()
 				Sending.removeStarted(id)
-			}()
+			}(id)
+			fmt.Println("added campain id:", id)
 			continue
 		}
 
-		select {
-		case <-timer.C:
-			continue
-		}
+		time.Sleep(time.Second*10)
 	}
-
 }
 
 func (s *sending) add(c campaign) {
@@ -94,19 +93,19 @@ func (s *sending) StopAll() {
 
 func (s *sending) Count() int {
 	var count int
-	s.mu.Lock()
+	s.mu.RLock()
 	count = len(s.campaigns)
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	return count
 }
 
 func (s *sending) Started() []string {
 	started := []string{}
-	s.mu.Lock()
+	s.mu.RLock()
 	for id := range s.campaigns {
 		started = append(started, id)
 	}
-	s.mu.Unlock()
+	s.mu.RUnlock()
 	return started
 }
 
@@ -116,6 +115,7 @@ func (s *sending) checkExpired() ([]string, error) {
 		launched bytes.Buffer
 	)
 	i := 0
+	s.mu.RLock()
 	for id := range s.campaigns {
 		if i != 0 {
 			launched.WriteString(",")
@@ -123,6 +123,7 @@ func (s *sending) checkExpired() ([]string, error) {
 		launched.WriteString("'" + id + "'")
 		i++
 	}
+	s.mu.RUnlock()
 	if launched.String() != "" {
 		query, err := models.Db.Query("SELECT `id` FROM `campaign` WHERE `id` IN (" + launched.String() + ") AND NOW()>=`end_time`")
 		if err != nil {
@@ -143,6 +144,7 @@ func (s *sending) checkNext() (string, error) {
 	var launched bytes.Buffer
 
 	i := 0
+	s.mu.RLock()
 	for id := range s.campaigns {
 		if i != 0 {
 			launched.WriteString(",")
@@ -150,7 +152,7 @@ func (s *sending) checkNext() (string, error) {
 		launched.WriteString("'" + id + "'")
 		i++
 	}
-
+	s.mu.RUnlock()
 	var query bytes.Buffer
 	query.WriteString("SELECT t1.`id` FROM `campaign` t1 WHERE t1.`accepted`=1 AND (NOW() BETWEEN t1.`start_time` AND t1.`end_time`) AND (SELECT COUNT(*) FROM `recipient` WHERE campaign_id=t1.`id` AND removed=0 AND status IS NULL) > 0")
 	if launched.String() != "" {

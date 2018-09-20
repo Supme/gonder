@@ -1,4 +1,3 @@
-// Package html minifies HTML5 following the specifications at http://www.w3.org/TR/html5/syntax.html.
 package minifyEmail
 
 import (
@@ -85,23 +84,25 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
-			} else if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]"))) {
-				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
-				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
-				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) { // downlevel-hidden
-					begin := bytes.IndexByte(t.Data, '>') + 1
-					end := len(t.Data) - len("<![endif]-->")
-					if _, err := w.Write(t.Data[:begin]); err != nil {
+			} else {
+				if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]")) || bytes.Equal(t.Text, []byte("<![endif]"))) {
+					// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
+					// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
+					if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && len(t.Data) > len("<!--[if ]><![endif]-->") { // downlevel-hidden
+						begin := bytes.IndexByte(t.Data, '>') + 1
+						end := len(t.Data) - len("<![endif]-->")
+						if _, err := w.Write(t.Data[:begin]); err != nil {
+							return err
+						}
+						if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
+							return err
+						}
+						if _, err := w.Write(t.Data[end:]); err != nil {
+							return err
+						}
+					} else if _, err := w.Write(t.Data); err != nil { // downlevel-revealed or short downlevel-hidden
 						return err
 					}
-					if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
-						return err
-					}
-					if _, err := w.Write(t.Data[end:]); err != nil {
-						return err
-					}
-				} else if _, err := w.Write(t.Data); err != nil { // downlevel-revealed
-					return err
 				}
 			}
 		case html.SvgToken:
@@ -286,13 +287,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
-							content.AttrVal = minify.ContentType(content.AttrVal)
-							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
-								httpEquiv.Text = nil
-								content.Text = []byte("charset")
-								content.Hash = html.Charset
-								content.AttrVal = []byte("utf-8")
+							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
+								if bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+									httpEquiv.Text = nil
+									content.Text = []byte("charset")
+									content.Hash = html.Charset
+									content.AttrVal = []byte("utf-8")
+								}
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
 								defaultStyleType, defaultStyleParams = parse.Mediatype(content.AttrVal)
 								if defaultStyleParams != nil {
 									defaultInlineStyleParams = defaultStyleParams
@@ -301,6 +305,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 									defaultInlineStyleParams = map[string]string{"inline": "1"}
 								}
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
 								defaultScriptType, defaultScriptParams = parse.Mediatype(content.AttrVal)
 							}
 						}
@@ -370,7 +375,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if attr.Traits&caselessAttr != 0 {
 						val = parse.ToLower(val)
 						if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
-							val = minify.ContentType(val)
+							val = minify.Mediatype(val)
 						}
 					}
 					if rawTagHash != 0 && attr.Hash == html.Type {
@@ -442,30 +447,22 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 
-					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
-						if attr.Traits&urlAttr != 0 {
-							if _, err := w.Write(attr.Data); err != nil {
-								return err
-							}
-						} else {
-							if _, err := w.Write(spaceBytes); err != nil {
-								return err
-							}
-							if _, err := w.Write(attr.Text); err != nil {
-								return err
-							}
-							if _, err := w.Write(isBytes); err != nil {
-								return err
-							}
-							// no quotes if possible, else prefer single or double depending on which occurs more often in value
-							val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
-							if _, err := w.Write(val); err != nil {
-								return err
-							}
-						}
-
+					if _, err := w.Write(spaceBytes); err != nil {
+						return err
 					}
-
+					if _, err := w.Write(attr.Text); err != nil {
+						return err
+					}
+					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
+						if _, err := w.Write(isBytes); err != nil {
+							return err
+						}
+						// no quotes if possible, else prefer single or double depending on which occurs more often in value
+						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
+						if _, err := w.Write(val); err != nil {
+							return err
+						}
+					}
 				}
 			}
 			if _, err := w.Write(gtBytes); err != nil {
