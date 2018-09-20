@@ -151,7 +151,8 @@ func cloneCampaign(campaignID int64) (camp, error) {
 func addCampaign(groupID int64) (camp, error) {
 	c := camp{}
 	c.Name = "New campaign"
-	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`, `start_time`, `end_time`) VALUES (?, ?, ?, ?)", groupID, c.Name, time.Now(), time.Now())
+	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0,0,0,0, time.UTC)
+	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`, `start_time`, `end_time`) VALUES (?, ?, ?, ?)", groupID, c.Name, t, t)
 	if err != nil {
 		log.Println(err)
 		return c, err

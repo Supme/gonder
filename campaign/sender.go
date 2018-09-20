@@ -34,17 +34,14 @@ func Run() {
 	Sending.campaigns = map[string]campaign{}
 
 	for {
-		fmt.Println("check new campaign")
 		for Sending.Count() >= models.Config.MaxCampaingns {
 			time.Sleep(1 * time.Second)
 		}
-		fmt.Println("ready checked max campaign")
 		if Sending.Count() > 0 {
 			camp, err := Sending.checkExpired()
 			checkErr(err)
 			Sending.Stop(camp...)
 		}
-		fmt.Println("checked expired")
 		if id, err := Sending.checkNext(); err == nil {
 			fmt.Println("check next campaign for send id:", id)
 			camp, err := getCampaign(id)
@@ -54,10 +51,8 @@ func Run() {
 				camp.send()
 				Sending.removeStarted(id)
 			}(id)
-			fmt.Println("added campain id:", id)
 			continue
 		}
-
 		time.Sleep(time.Second*10)
 	}
 }
