@@ -6,6 +6,7 @@ import (
 		"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
 	"log"
+	"time"
 )
 
 type camp struct {
@@ -150,7 +151,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 func addCampaign(groupID int64) (camp, error) {
 	c := camp{}
 	c.Name = "New campaign"
-	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`) VALUES (?, ?)", groupID, c.Name)
+	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`, `start_time`, `end_time`) VALUES (?, ?, ?, ?)", groupID, c.Name, time.Now(), time.Now())
 	if err != nil {
 		log.Println(err)
 		return c, err
