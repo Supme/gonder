@@ -110,17 +110,22 @@ func (e *Email) send(auth smtp.Auth, client *smtp.Client) error {
 		return err
 	}
 
+	defer func() {
+		client.Quit()
+		client.Close()
+	}()
+
 	w, err := client.Data()
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+
 	err = e.WriteCloser(w)
 	if err != nil {
 		return err
 	}
 
-	return client.Quit()
+	return e.WriteCloser(w)
 }
 
 func (e *Email) from() string {

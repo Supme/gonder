@@ -69,7 +69,7 @@
   branch = "master"
   name = "github.com/supme/smtpSender"
   packages = ["."]
-  revision = "fe17598b14d8fb5df65ec934411ed138a1f19f04"
+  revision = "5aaa65f3cfc37692c4e1de8b70bc29478f95cef6"
 
 [[projects]]
   name = "github.com/tdewolff/minify"
@@ -117,13 +117,13 @@
     "internal/socks",
     "proxy"
   ]
-  revision = "2f5d2388922f370f4355f327fcf4cfe9f5583908"
+  revision = "f04abc6bdfa7a0171a8a0c9fd2ada9391044d056"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "d641721ec2dead6fe5ca284096fe4b1fcd49e427"
+  revision = "90868a75fefd03942536221d7c0e2f84ec62a668"
 
 [[projects]]
   name = "golang.org/x/text"
