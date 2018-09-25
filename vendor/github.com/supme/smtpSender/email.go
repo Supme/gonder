@@ -120,11 +120,6 @@ func (e *Email) send(auth smtp.Auth, client *smtp.Client) error {
 		return err
 	}
 
-	err = e.WriteCloser(w)
-	if err != nil {
-		return err
-	}
-
 	return e.WriteCloser(w)
 }
 
