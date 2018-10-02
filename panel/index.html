@@ -4,10 +4,15 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
 
-    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
-    <script type="application/javascript" src="assets/w2ui/w2ui.min.js?{{.version}}"></script>
+    <script type="application/javascript">
+        var version = {{.version}};
+    </script>
 
-    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.min.css?{{.version}}" />
+    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
+    <script type="application/javascript" src="assets/momentjs/moment.js?{{.version}}"></script>
+    <script type="application/javascript" src="assets/w2ui/w2ui.js?{{.version}}"></script>
+
+    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.css?{{.version}}" />
 
     <link rel="stylesheet" type="text/css" href="assets/codemirror/codemirror.css?{{.version}}" />
     <link rel="stylesheet" type="text/css" href="assets/codemirror/dracula.css?{{.version}}" />

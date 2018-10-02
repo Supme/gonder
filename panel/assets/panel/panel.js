@@ -4,19 +4,19 @@ $(document).ready(
         $.ajaxSetup({
             cache: true
         });
-        w2utils.locale('assets/w2ui/locale/ru-ru.json?{{.version}}');
-        w2utils.locale('assets/panel/locale/ru-ru.json?{{.version}}');
-        $.getScript('assets/panel/layout.js?{{.version}}', function() {
-            $.getScript('assets/panel/template.js?{{.version}}', function () {
+        w2utils.locale('assets/w2ui/locale/ru-ru.json?' + version);
+        w2utils.locale('assets/panel/locale/ru-ru.json?' + version);
+        $.getScript('assets/panel/layout.js?' + version, function() {
+            $.getScript('assets/panel/template.js?' + version, function () {
 
 
-                $.getScript('assets/panel/group.js?{{.version}}', function () {
-                    $.getScript('assets/panel/sender.js?{{.version}}');
-                    $.getScript('assets/panel/campaign.js?{{.version}}');
+                $.getScript('assets/panel/group.js?' + version, function () {
+                    $.getScript('assets/panel/sender.js?' + version);
+                    $.getScript('assets/panel/campaign.js?' + version);
                 });
-                $.getScript('assets/panel/recipient.js?{{.version}}');
-                $.getScript('assets/panel/profile.js?{{.version}}');
-                $.getScript('assets/panel/users.js?{{.version}}');
+                $.getScript('assets/panel/recipient.js?' + version);
+                $.getScript('assets/panel/profile.js?' + version);
+                $.getScript('assets/panel/users.js?' + version);
             });
         });
     }

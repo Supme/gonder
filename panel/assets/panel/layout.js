@@ -1,11 +1,5 @@
 function getDate(dateStr, timeStr) {
-    var d = new Date(w2utils.isDateTime(dateStr+' '+timeStr, 'd/m/yyyy | h24', true));
-/*
-    var offset = d.getTimezoneOffset() / 60;
-    var hours = d.getHours();
-    d.setHours(hours - offset);
-*/
-    return d.getTime()/1000;
+    return moment(dateStr+' '+timeStr, w2utils.settings.momentjsDateTime).unix();
 }
 
 // --- Config for layout ---
