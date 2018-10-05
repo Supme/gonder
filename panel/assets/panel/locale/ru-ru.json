@@ -1,7 +1,6 @@
 {
-  "dateFormat"     : "dd/mm/yyyy",
+  "dateFormat"     : "dd.mm.yyyy",
   "timeFormat"     : "h24:mm",
-  "datetimeFormat" : "dd/mm/yyyy|hh24:mm",
   "momentjsDateTime" : "DD-MM-YYYY HH:mm",
   "phrases" : {
     "Menu": "Меню",

@@ -1,5 +1,7 @@
 function getDate(dateStr, timeStr) {
-    return moment(dateStr+' '+timeStr, w2utils.settings.momentjsDateTime).unix();
+    //return moment(dateStr+' '+timeStr, w2utils.settings.momentjsDateTime).unix();
+    var d = new Date(w2utils.isDateTime(dateStr+' '+timeStr, w2utils.settings.dateFormat + '|h24:mm', true));
+    return d.getTime()/1000;
 }
 
 // --- Config for layout ---
@@ -133,10 +135,10 @@ $('#parameter').w2form({
         { name: 'campaignProfileId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
         { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40"' } },
         { name: 'campaignSenderId', type: 'list', html: { caption: w2utils.lang('Sender'), attr: 'size="40"' }, minLength: 0},
-        { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' } },
-        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: 'h24' } },
-        { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' } },
-        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: 'h24' } },
+        { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' }, options: {format: w2utils.settings.dateFormat} },
+        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: 'h24'} },
+        { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' }, options: {format: w2utils.settings.dateFormat} },
+        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: 'h24'}  },
         { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
         { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
         { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }
