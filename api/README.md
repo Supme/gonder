@@ -12,6 +12,8 @@ All request in /api route send as parameter "request". For example:
 
 or send JSON in body with Content-Type: application/json
 
+Method POST or GET
+
 Error response example:
 ```json
 {"status": "error", "message": "Something error text"}
@@ -26,12 +28,16 @@ Error response example:
 
 Target URI: ```/api/groups```
 
-- Get groups list
+##### Get groups list
 ```json
 {
   "cmd":"get",
   "offset":0,
-  "limit":100
+  "limit":100,
+  "sort":
+    [
+      {"field":"recid","direction":"DESC"}
+    ]
 }
 ```
  example response:
@@ -45,7 +51,7 @@ Target URI: ```/api/groups```
    ]
  }
 ```
-- Add group
+##### Add group
 
 ```json{
  "cmd":"add"
@@ -59,7 +65,7 @@ create new group with name "New group" and return added ID in response:
 }
 ```
 	
-- Save groups	
+##### Save groups	
 	 
 ```json
 {
@@ -97,13 +103,17 @@ response:
 
 Target URI: ```/api/campaigns```
 
-- Get campaigns list
+##### Get campaigns list
 ```json
 {
   "cmd":"get",
   "id":3,
   "limit":100,
-  "offset":0
+  "offset":0,
+  "sort":
+    [
+      {"field":"name","direction":"ASC"}
+    ]
 }
 ```
 response:
@@ -112,12 +122,12 @@ response:
   "total":2,
   "records":
     [
-      {"recid":2,"name":"Campaign 2"},
-      {"recid":1,"name":"Campaign 1"}
+      {"recid":1,"name":"A campaign"},
+      {"recid":2,"name":"B campaign"}
     ]
 }
 ```
-- Save campaigns name
+##### Save campaigns name
 ```json
 {
   "cmd":"save",
@@ -145,7 +155,8 @@ response:
 ### Campaign
 
 Target URI: ```/api/campaigns```
-- Get campaign parameters
+
+##### Get campaign parameters
 ```json
 {"cmd":"get","id":2}
 ```
@@ -165,8 +176,10 @@ response:
 }
 ```
     
-#####Recipients
+### Recipients
+
 Target URI: ```/api/recipients```
+
 ```json
 {
   "cmd":"get",
