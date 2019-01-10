@@ -67,9 +67,11 @@ response:
 ```
 ##### Add group
 
-```json{
+```json
+{
  "cmd":"add"
-}```
+}
+```
 
 create new group with name "New group" and return added ID in response:
 
@@ -182,7 +184,10 @@ Target URI: ```/api/campaigns```
 
 ##### Get campaign parameters
 ```json
-{"cmd":"get","id":2}
+{
+  "cmd":"get",
+  "id":2
+}
 ```
 response: 
 ```json
@@ -204,7 +209,7 @@ response:
 ##### Save campaign parameters
 ```json
 {
-  "cmd":"save"
+  "cmd":"save",
   "id":2,
   "content":
     {
