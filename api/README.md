@@ -23,10 +23,10 @@ and success response example:
 {"status": "success", "message": ""}
 ``` 
 
-- [groups](#Groups)
-- [campaigns](#Campaigns)
-- [campaign](#Campaign)
-
+- [Groups](#Groups)
+- [Campaigns](#Campaigns)
+- [Campaign](#Campaign)
+- [Recipients](#Recipients)
 
 ### Groups
 ___
