@@ -22,7 +22,7 @@ Error response example:
 - [campaign](#Campaign)
 
 
-#####Groups
+####Groups
 
 Target URI: ```/api/groups```
 
@@ -47,7 +47,9 @@ Target URI: ```/api/groups```
 ```
 - Add group
 
-`{"cmd":"add"}`
+```json{
+ "cmd":"add"
+}```
 
 create new group with name "New group" and return added ID in response:
 
@@ -91,7 +93,7 @@ response:
 }
 ```
 
-#####Campaigns
+###Campaigns
 
 Target URI: ```/api/campaigns```
 
