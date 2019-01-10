@@ -1,6 +1,6 @@
 
 Gonder API examples
-==
+===
 
 Target ```https://youhost.tld:apiport/```
 
@@ -25,10 +25,12 @@ Error response example:
 
 
 ### Groups
+___
 
 Target URI: ```/api/groups```
 
 ##### Get groups list
+
 ```json
 {
   "cmd":"get",
@@ -37,10 +39,18 @@ Target URI: ```/api/groups```
   "sort":
     [
       {"field":"recid","direction":"DESC"}
-    ]
+    ],
+    "search":
+      [
+        {
+        "field":"recid",
+        "operator":"begins",
+        "value":"12"
+        }
+      ]
 }
 ```
- example response:
+response:
 ```json 
 {
  "total":2,
@@ -100,6 +110,7 @@ response:
 ```
 
 ### Campaigns
+___
 
 Target URI: ```/api/campaigns```
 
@@ -110,6 +121,14 @@ Target URI: ```/api/campaigns```
   "id":3,
   "limit":100,
   "offset":0,
+    "search":
+      [
+        {
+        "field":"name",
+        "operator":"begins",
+        "value":"Best"
+        }
+      ],
   "sort":
     [
       {"field":"name","direction":"ASC"}
@@ -122,8 +141,8 @@ response:
   "total":2,
   "records":
     [
-      {"recid":1,"name":"A campaign"},
-      {"recid":2,"name":"B campaign"}
+      {"recid":16,"name":"Best A campaign"},
+      {"recid":7,"name":"Best B campaign"}
     ]
 }
 ```
@@ -153,6 +172,7 @@ response:
 ```
 
 ### Campaign
+___
 
 Target URI: ```/api/campaigns```
 
@@ -177,20 +197,196 @@ response:
 ```
     
 ### Recipients
+___
 
 Target URI: ```/api/recipients```
 
+##### Get recipients list
 ```json
 {
   "cmd":"get",
   "campaign":1,
   "limit":100,
-  "offset":0
+  "offset":0,
+  "sort":
+    [
+      {"field":"email","direction":"asc"}
+    ],
+  "search":
+    [
+      {
+        "field":"email",
+        "operator":"contains",
+        "value":"mail.ru"
+      }
+    ]
 }
 ```
-   response:
-    {"total":2,"records":[{"recid":2,"name":"Bob","email":"bob@email.com","result":"Ok"},{"recid":1,"name":"Alice","email":"alice@email.com","result":""}]}
-    - {"cmd":"get","limit":100,"offset":0,"recipient":2}
-    response: 
-     {"total":2,"records":[{"key":"Reference","value":"Bob Sinclair"}, {"key":"Gender","value":"Man"}]}
-    - {"cmd":"upload","campaign":2,"fileName":"gosender.xlsx","fileContent":"base64 coded file content"}
+response:
+```json
+{
+  "total":2,
+  "records":
+    [
+      {
+        "recid":2,
+        "name":"Bob",
+        "email":"bob@email.com",
+        "open": true,
+        "result":"Ok"
+      },{
+         "recid":1,
+         "name":"Alice",
+         "email":"alice@email.com",
+         "open": false,
+         "result":""
+      }
+    ]
+}
+```
+
+##### Get recipient parameters
+```json
+{
+  "cmd":"get",
+  "recipient":2
+}
+```
+response: 
+```json
+{
+ "total":2,
+ "records":
+   [
+     {"key":"Reference","value":"Bob Sinclair"},
+     {"key":"Gender","value":"Man"}
+   ]
+}
+```     
+
+##### Add recipients to campaign
+```json
+{
+  "cmd":"add",
+  "campaign":2,
+  "recipients":
+    [
+      {
+        "name":"Bob",
+        "email":"bob@email.tld",
+        "params": 
+         [
+           {
+             "key":"Age",
+             "value":"25"
+           },
+           {
+             "key":"Gender",
+             "value":"male"
+           }
+         ]
+      },
+      {
+        "name":"Alice",
+        "email":"alice@email.tld",
+        "params": 
+          [
+            {
+              "key":"Age",
+              "value":"21"
+            },
+            {
+              "key":"Gender",
+              "value":"female"
+            }
+          ]
+       }
+    ]
+}
+```
+response
+```json
+{"status": "success", "message": ""}
+```
+or error
+```json
+{"status": "error", "message": "Something error text"}
+```
+
+##### Upload recipients file list
+```json
+{
+  "cmd":"upload",
+  "campaign":2,
+  "fileName":"my_subscribers.xlsx",
+  "fileContent":"base64 coded file content"
+}
+```
+response:
+```json
+{
+  "status": "success",
+  "message": "/tmp/gonder_recipient_load_763792762"
+}
+```
+
+##### Upload recipients file progress
+```json
+{
+  "cmd":"progress",
+  "name":"/tmp/gonder_recipient_load_763792762"
+}
+```
+response progress in percent:
+```json
+{
+  "status": "success",
+  "message": 45
+}
+```
+response finish (progress not found)
+```json
+{
+  "status": "error",
+  "message": "not found"
+}
+```
+
+##### Clear all recipients from campaign
+```json
+{
+  "cmd":"clear",
+  "campaign":21
+}
+```
+response standard json error or success 
+
+
+##### Mark recipients with result code 4XX (safe bounce) for resend
+```json
+{
+  "cmd":"resend4xx",
+  "campaign":31
+}
+```
+response standard json error or success
+
+
+##### Remove duplicated recipients email list
+```json
+{
+  "cmd":"deduplicate",
+  "campaign":38
+}
+```
+response standard json success with message as count removed recipients or standard error json
+
+
+##### Mark unavaible latest 30 days recipients email (by response smtp response) list
+```json
+{
+  "cmd":"unavaible",
+  "campaign":22
+}
+```
+response standard json success with message as count marked recipients or standard error json
