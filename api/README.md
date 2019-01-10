@@ -22,7 +22,7 @@ Error response example:
 - [campaign](#Campaign)
 
 
-####Groups
+#### Groups
 
 Target URI: ```/api/groups```
 
@@ -93,7 +93,7 @@ response:
 }
 ```
 
-###Campaigns
+### Campaigns
 
 Target URI: ```/api/campaigns```
 
@@ -142,7 +142,7 @@ response:
 }
 ```
 
-#####Campaign
+##### Campaign
 Target URI: ```/api/campaigns```
 - Get campaign parameters
 ```json
