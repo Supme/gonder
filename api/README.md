@@ -14,9 +14,13 @@ or send JSON in body with Content-Type: application/json
 
 Method POST or GET
 
-Error response example:
+Standard error response example:
 ```json
 {"status": "error", "message": "Something error text"}
+``` 
+and success response example:
+```json
+{"status": "success", "message": ""}
 ``` 
 
 - [groups](#Groups)
@@ -192,10 +196,43 @@ response:
   "endDate":1480100400,
   "sendUnsubscribe":true,
   "accepted":true,
+  "compressHTML": false,
   "template":"<h1>My cool mail template<h1>"
 }
 ```
-    
+
+##### Save campaign parameters
+```json
+{
+  "cmd":"save"
+  "id":2,
+  "content":
+    {
+      "name":"My campaign with id 2",
+      "profileId":1,
+      "subject":"Hello from Gonder",
+      "senderId":1,
+      "startDate":1479808800,
+      "endDate":1480100400,
+      "sendUnsubscribe":true,
+      "accepted":true,
+      "compressHTML": false,
+      "template":"<h1>My cool mail template<h1>"
+    }
+}
+```
+
+##### Set campaign accept status
+```json
+{
+  "cmd":"accept",
+  "campaign":31,
+  "select": true
+}
+```
+response standard json error or success
+ 
+
 ### Recipients
 ___
 
