@@ -23,9 +23,12 @@ and success response example:
 {"status": "success", "message": ""}
 ``` 
 
+
+## Contents
 - [Groups](#Groups)
 - [Campaigns](#Campaigns)
 - [Campaign](#Campaign)
+- [Helpers](#Helpers)
 - [Recipients](#Recipients)
 
 ### Groups
@@ -253,6 +256,41 @@ response:
 ```
 response standard json error or success
  
+### Helpers
+___
+
+##### Profile list
+Target URI: ```/api/profilelist```
+```json
+{
+  "cmd":"get"
+}
+```
+response
+```json
+[
+  {"id":1,"text":"Default"},
+  {"id":2,"text":"Second IP"},
+  {"id":3,"text":"Group from all IP"}
+]
+```
+
+##### Sender list
+Target URI: ```/api/profilelist```
+```json
+{
+  "cmd":"get",
+  "id":2
+}
+```
+response
+```json
+[
+  {"id":1,"text":"Gonder (gonder@email.tld)"},
+  {"id":4,"text":"Go Sender (gonder@email.tld)"}
+]
+```
+
 
 ### Recipients
 ___
