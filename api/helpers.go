@@ -92,9 +92,9 @@ type request struct {
 	} `json:"record,omitempty"`
 }
 
-func parseRequest(js string) (request, error) {
+func parseRequest(js []byte) (request, error) {
 	var req request
-	err := json.Unmarshal([]byte(js), &req)
+	err := json.Unmarshal(js, &req)
 	return req, err
 }
 

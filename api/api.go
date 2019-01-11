@@ -25,12 +25,14 @@ import (
 	minifyJSON "github.com/tdewolff/minify/json"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -47,6 +49,9 @@ const (
 	useMinifyHTML = true
 	useMinifyJS   = true
 	useMinifyJSON = true
+
+	panelRoot   = "/panel2"
+	panelLocale = "de-de"
 )
 
 func init() {
@@ -190,20 +195,71 @@ func Run() {
 	api.HandleFunc("/status/ws/utm.log", user.Check(utmLog))
 	api.HandleFunc("/status/ws/main.log", user.Check(mainLog))
 
+	//*******************************************
+
+	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println(r.RequestURI)
+			tmpl := template.Must(template.ParseFiles(models.FromRootDir("panel2/index.html")))
+			if err != nil {
+				log.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			err = tmpl.Execute(w, map[string]string{
+				"version": models.Config.Version,
+				"locale":  panelLocale,
+				"root":    panelRoot,
+			})
+			if err != nil {
+				log.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}), true))
+
+	// Assets static dirs
+	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			apilog.Printf("Get %s", r.URL.Path)
+			if strings.HasSuffix(r.URL.Path, "/") {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
+			http.ServeFile(w, r, path.Join(models.FromRootDir("panel2/"), r.URL.Path))
+		}), true)))
+
+	//*******************************************
+
 	apilog.Println("API listening on port " + models.Config.APIPort + "...")
 	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
-	var js []byte
-	if r.FormValue("request") == "" {
+	var (
+		js      []byte
+		request []byte
+		err     error
+	)
+	if r.FormValue("request") != "" {
+		request = []byte(r.FormValue("request"))
+	} else {
+		request, err = ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if len(request) == 0 {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	req, err := parseRequest(r.FormValue("request"))
+	req, err := parseRequest(request)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": %s}`, strconv.Quote(err.Error()))))
