@@ -493,9 +493,7 @@ response standard json success with message as count marked recipients or standa
 ### Reports
 ___
 
-Target URI: ```/api/report```
-___
-request example ```/api/report/status```
+request example ```/report/status```
 
 response show id's running campaigns
 ```json
@@ -503,7 +501,7 @@ response show id's running campaigns
 ```
 ___
 
-request example ```/api/report?campaign=2318```
+request example ```/report?campaign=2318```
 
 response
 ```json
@@ -522,7 +520,7 @@ response
 ```
 ___
 
-request example ```report/jump?campaign=2318```
+request example ```/report/jump?campaign=2318```
 
 response show count jumping to links
 ```json
@@ -537,11 +535,11 @@ ___
 
 request example show unsubscribe from campaign
 
-```report/unsubscribed?campaign=3317```
+```/report/unsubscribed?campaign=3317```
 
 or from group
 
-```report/unsubscribed?group=7```
+```/report/unsubscribed?group=7```
 
 ```json
 [
