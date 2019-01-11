@@ -30,6 +30,7 @@ and success response example:
 - [Campaign](#Campaign)
 - [Helpers](#Helpers)
 - [Recipients](#Recipients)
+- [Reports](#Reports)
 
 ### Groups
 ___
@@ -486,3 +487,89 @@ response standard json success with message as count removed recipients or stand
 }
 ```
 response standard json success with message as count marked recipients or standard error json
+
+
+
+### Reports
+___
+
+Target URI: ```/api/report```
+___
+request example ```/api/report/status```
+
+response show id's running campaigns
+```json
+{"started":["22","43","56"]}
+```
+___
+
+request example ```/api/report?campaign=2318```
+
+response
+```json
+{
+  "Campaign": {
+    "Start": 1522945800,
+    "name": "My best campaign"
+  },
+  "OpenMailCount": 4234,
+  "OpenWebVersionCount": 41,
+  "RecipientJumpCount": 152,
+  "SendCount": 26153,
+  "SuccessSendCount": 25660,
+  "UnsubscribeCount": 3
+}
+```
+___
+
+request example ```report/jump?campaign=2318```
+
+response show count jumping to links
+```json
+{
+  "[Соц.сеть/Facebook]http://www.facebook.com/JaguarRussia/": 68,
+  "[Соц.сеть/Instagram]http://instagram.com/jaguarrussia": 32,
+  "[Соц.сеть/Twitter]https://twitter.com/JaguarRussia": 26,
+  "[Соц.сеть/YouTube]http://www.youtube.com/user/JaguarRussia": 19
+}
+```
+___
+
+request example show unsubscribe from campaign
+
+```report/unsubscribed?campaign=3317```
+
+or from group
+
+```report/unsubscribed?group=7```
+
+```json
+[
+  {
+    "email": "Alice@mail.tld",
+    "date": 1545908606,
+    "extra": [
+          {
+            "Unsubscribed": "from header link"
+          }
+        ]
+  },
+  {
+    "email": "bob@mail.tld",
+    "date": 1545908621
+  },
+  {
+    "email": "stive@mail.tld",
+    "date": 1545908632,
+    "extra": [
+          {
+            "why": "No time to read"
+          }
+        ]
+  },
+  {
+    "email": "ivan@mail.tld",
+    "date": 1545908634
+  }
+]
+```
