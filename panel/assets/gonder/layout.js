@@ -1,6 +1,5 @@
 function getDate(dateStr, timeStr) {
-    //return moment(dateStr+' '+timeStr, w2utils.settings.momentjsDateTime).unix();
-    var d = new Date(w2utils.isDateTime(dateStr+' '+timeStr, w2utils.settings.dateFormat + '|h24:mm', true));
+    var d = new Date(w2utils.isDateTime(dateStr + ' ' + timeStr, w2utils.settings.datetimeFormat, true));
     return d.getTime()/1000;
 }
 
@@ -111,19 +110,25 @@ var config = {
 // --- /Config for layout ---
 
 // --- Layout ---
-//var pstyle = 'border: 1px solid #dfdfdf; padding: 2px;';
 $('#layout').w2layout({
     name: 'layout',
     panels: [
-        { type: 'top', size: 32,  content: "<div style='text-align: center; vertical-align: middle'><img style='vertical-align: middle;' src='/assets/img/logo.png' height='20px' border='0px'/><span style='font-size: 20px;'> Mass email sender</span></div>" },
+        // { type: 'top', size: 32,  content: "<div style='text-align: center; vertical-align: middle'><img style='vertical-align: middle;' src='/assets/img/logo.png' height='20px' border='0px'/><span style='font-size: 20px;'> Mass email sender</span></div>" },
         { type: 'left', size: 200, resizable: true },
         { type: 'main', hidden: true},
         { type: 'bottom', size: 250, resizable: true }
     ]
 });
+
 w2ui.layout.content('left', $().w2sidebar(config.sidebar));
 w2ui.layout.content('main', $('#formbox').html());
-w2ui.layout.content('bottom', $('#bottom').html());
+w2ui.layout.content('bottom', $().w2layout({
+    name: 'bottom',
+    panels: [
+        { type: 'left', size: '35%', resizable: true },
+        { type: 'main',  size: '65%', resizable: true }
+    ]
+}));
 
 // --- Parameters form ---
 $('#parameter').w2form({
@@ -136,9 +141,9 @@ $('#parameter').w2form({
         { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40"' } },
         { name: 'campaignSenderId', type: 'list', html: { caption: w2utils.lang('Sender'), attr: 'size="40"' }, minLength: 0},
         { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10"' }, options: {format: w2utils.settings.dateFormat} },
-        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: 'h24'} },
+        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10"'}, options: {format: w2utils.settings.timeFormat} },
         { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10"' }, options: {format: w2utils.settings.dateFormat} },
-        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: 'h24'}  },
+        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10"' }, options: {format: w2utils.settings.timeFormat} },
         { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
         { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
         { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }

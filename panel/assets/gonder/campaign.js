@@ -1,5 +1,5 @@
 // --- Campaign table ---
-$('#campaign').w2grid({
+w2ui['bottom'].content('main', $().w2grid({
     name: 'campaign',
     header: w2utils.lang('Campaign'),
     keyboard : false,
@@ -45,7 +45,7 @@ $('#campaign').w2grid({
     onSave: function(event) {
         //console.log(event);
     }
-});
+}));
 // --- /Campaign table ---
 
 function cloneCampaign(campaignId) {

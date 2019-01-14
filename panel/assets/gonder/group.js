@@ -1,5 +1,5 @@
 // --- Group table ---
-$('#group').w2grid({
+w2ui['bottom'].content('left', $().w2grid({
     name: 'group',
     header: w2utils.lang('Group'),
     keyboard : false,
@@ -74,5 +74,5 @@ $('#group').w2grid({
             }
         }
     }
-});
+}));
 // --- /Group table ---
