@@ -184,7 +184,7 @@ response:
 ### Campaign
 ___
 
-Target URI: ```/api/campaigns```
+Target URI: ```/api/campaign```
 
 ##### Get campaign parameters
 ```json
