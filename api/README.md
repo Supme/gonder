@@ -499,13 +499,16 @@ response standard json success with message as count marked recipients or standa
 ### Reports
 ___
 
+##### Started campaigns
 request example ```/report/status```
 
 response show id's running campaigns
 ```json
 {"started":["22","43","56"]}
 ```
-___
+
+
+##### Campaign summary
 
 request example ```/report?campaign=2318```
 
@@ -524,7 +527,9 @@ response
   "UnsubscribeCount": 3
 }
 ```
-___
+
+
+##### Campaign link clicks
 
 request example ```/report/jump?campaign=2318```
 
@@ -537,7 +542,8 @@ response show count jumping to links
   "[Соц.сеть/YouTube]http://www.youtube.com/user/JaguarRussia": 19
 }
 ```
-___
+
+##### Campaign or group unsubscribed
 
 request example show unsubscribe from campaign
 
