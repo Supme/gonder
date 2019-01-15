@@ -115,6 +115,8 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 			searchLogic = " OR "
 		} else if strings.ToUpper(req.SearchLogic) == "AND" {
 			searchLogic = " AND "
+		} else {
+			searchLogic = " OR "
 		}
 		for _, s := range req.Search {
 			if filed, ok := mapping[s.Field]; ok {

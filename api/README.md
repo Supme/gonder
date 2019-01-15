@@ -315,8 +315,14 @@ Target URI: ```/api/recipients```
         "field":"email",
         "operator":"contains",
         "value":"mail.ru"
+      },
+      {
+        "field":"result",
+        "operator":"is",
+        "value":"Ok"
       }
-    ]
+    ],
+    "searchLogic":"AND"
 }
 ```
 response:
