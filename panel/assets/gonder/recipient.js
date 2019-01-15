@@ -1,9 +1,7 @@
 // --- Recipients table ---
 $('#campaignRecipient').w2grid({
-    header: w2utils.lang("Recipients"),
     name: 'recipient',
     show: {
-        header: true,
         toolbar: true,
         footer: true
     },

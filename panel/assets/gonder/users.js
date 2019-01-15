@@ -116,9 +116,6 @@ $().w2form({
     }
 });
 
-
-
-
 $().w2grid({
     name: 'unitList',
     header: w2utils.lang('Units'),

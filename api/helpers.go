@@ -95,6 +95,10 @@ type request struct {
 func parseRequest(js []byte) (request, error) {
 	var req request
 	err := json.Unmarshal(js, &req)
+	if err != nil {
+		apilog.Print(err)
+		err = fmt.Errorf("parse request %s", err)
+	}
 	return req, err
 }
 
