@@ -36,8 +36,8 @@
                 $.ajaxSetup({
                     cache: true
                 });
-                w2utils.locale('{{.root}}/assets/w2ui/locale/{{.locale}}.json?{{.version}}');
-                w2utils.locale('{{.root}}/assets/gonder/locale/{{.locale}}.json?{{.version}}');
+                w2utils.locale('{{.root}}/assets/w2ui/locale/' + locale + '.json?{{.version}}');
+                w2utils.locale('{{.root}}/assets/gonder/locale/' + locale + '.json?{{.version}}');
                 $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
                     $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
                         $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
