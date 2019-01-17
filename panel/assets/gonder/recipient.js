@@ -1,9 +1,7 @@
 // --- Recipients table ---
 $('#campaignRecipient').w2grid({
-    header: w2utils.lang("Recipients"),
     name: 'recipient',
     show: {
-        header: true,
         toolbar: true,
         footer: true
     },
@@ -35,10 +33,10 @@ $('#campaignRecipient').w2grid({
                 }
             }
         },
-        { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '15%', resizable: true },
-        { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '15%', resizable: true },
-        { field: 'open', caption: w2utils.lang('Opened'), sortable: true, size: '60px', resizable: false, style: 'text-align: center' },
-        { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '60%', resizable: true }
+        { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '150px', resizable: true },
+        { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '150px', resizable: true },
+        { field: 'open', caption: w2utils.lang('Opened'), sortable: true, size: '65px', resizable: false, render: 'toggle', style: 'text-align: center' },
+        { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '100%', resizable: true }
     ],
     multiSelect: false,
     method: 'GET',
@@ -134,7 +132,7 @@ $('#recipientUploadButton').click(
                                     w2ui.layout.unlock('main');
                                 };
                             });
-                        }, 2000);
+                        }, 500);
                     }
                 });
             });

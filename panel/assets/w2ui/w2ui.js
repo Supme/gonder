@@ -5,6 +5,7 @@ var w2obj = w2obj || {}; // expose object to be able to overwrite default functi
 //NodeJS wrapper
 if (typeof module!='undefined' && module.exports) {
     var navigator = require('navigator');
+    var fs = require('fs');
     
     var jsdom = require('jsdom');
     const { JSDOM } = jsdom;
@@ -200,7 +201,8 @@ var w2utils = (function ($) {
             year  = val.getUTCFullYear();
             month = val.getUTCMonth() + 1;
             day   = val.getUTCDate();
-		} else if (String(new Date(val)) != 'Invalid Date') {
+        //ac2e968e7fc40733c95ee2dc978e2d3bb2e1cf66: this condition disables format handling! so i commented out (dd/mm/yyyy can be parsed as mm/dd/yyyy)
+		} /*else if (String(new Date(val)) != 'Invalid Date') {
             val = new Date(val);
             if (retDate !== true) return true;
             return val;
@@ -208,7 +210,7 @@ var w2utils = (function ($) {
             year  = val.getUTCFullYear();
             month = val.getUTCMonth() + 1;
             day   = val.getUTCDate();
-        } else {
+        }*/ else {
             val = String(val);
             // convert month formats
             if (new RegExp('mon', 'ig').test(format)) {
@@ -303,11 +305,12 @@ var w2utils = (function ($) {
             return val;
         } else if (parseInt(val) === val && parseInt(val) < 0) {
             return false;
-		} else if (String(new Date(val)) != 'Invalid Date') {
+        //ac2e968e7fc40733c95ee2dc978e2d3bb2e1cf66: this condition disables format handling! so i commented out (dd/mm/yyyy can be parsed as mm/dd/yyyy)
+		} /*else if (String(new Date(val)) != 'Invalid Date') {
             val = new Date(val);
             if (retDate !== true) return true;
             return val;
-        } else {
+        }*/ else {
             var tmp = String(val).indexOf(' ');
             var values  = [val.substr(0, tmp), val.substr(tmp).trim()];
             formats[0] = formats[0].trim();
@@ -1271,12 +1274,12 @@ var w2utils = (function ($) {
             '<div class="w2ui-lock"></div>'+
             '<div class="w2ui-lock-msg"></div>'
         );
-        var $lock = $(box).find('.w2ui-lock');
-        var mess = $(box).find('.w2ui-lock-msg');
+        var $lock = $(box).children('.w2ui-lock');
+        var mess = $(box).children('.w2ui-lock-msg');
         if (!options.msg) mess.css({ 'background-color': 'transparent', 'border': '0px' });
         if (options.spinner === true) options.msg = '<div class="w2ui-spinner" '+ (!options.msg ? 'style="width: 35px; height: 35px"' : '') +'></div>' + options.msg;
         if (options.opacity != null) $lock.css('opacity', options.opacity);
-        if (typeof $lock.fadeIn === 'function') {
+        if (typeof $lock.fadeIn === 'function' && options.fade !== false) {
             $lock.fadeIn(200);
             mess.html(options.msg).fadeIn(200);
         } else {
@@ -1287,14 +1290,14 @@ var w2utils = (function ($) {
 
     function unlock (box, speed) {
         if (isInt(speed)) {
-            $(box).find('.w2ui-lock').fadeOut(speed);
+            $(box).children('.w2ui-lock').fadeOut(speed);
             setTimeout(function () {
-                $(box).find('.w2ui-lock').remove();
-                $(box).find('.w2ui-lock-msg').remove();
+                $(box).children('.w2ui-lock').remove();
+                $(box).children('.w2ui-lock-msg').remove();
             }, speed);
         } else {
-            $(box).find('.w2ui-lock').remove();
-            $(box).find('.w2ui-lock-msg').remove();
+            $(box).children('.w2ui-lock').remove();
+            $(box).children('.w2ui-lock-msg').remove();
         }
     }
 
@@ -3599,7 +3602,8 @@ w2utils.event = {
         this.textSearch      = 'begins'; // default search type for text
         this.useFieldDot     = true;     // use field name containing dots as separator to look into object
         this.selectDuplicates = false;   // select duplicated recids
-        this.expandAllOnLoad = false; // expand all expandable records on load
+        this.expandAllOnLoad = false;    // expand all expandable records on load
+        this.multiEdit       = false;    // edit button is enabled when multiple records is selected
 
         this.total   = 0;     // server total
         this.limit   = 100;
@@ -11090,7 +11094,8 @@ w2utils.event = {
                 }
                 $('#grid_'+ this.name +'_footer .w2ui-footer-left').html(msgLeft);
                 // toolbar
-                if (sel.length == 1) this.toolbar.enable('w2ui-edit'); else this.toolbar.disable('w2ui-edit');
+                if (sel.length == 1 || (this.multiEdit && sel.length > 1)) this.toolbar.enable('w2ui-edit'); 
+                else this.toolbar.disable('w2ui-edit');
                 if (sel.length >= 1) this.toolbar.enable('w2ui-delete'); else this.toolbar.disable('w2ui-delete');
             }
         },
@@ -13174,10 +13179,10 @@ var w2popup = {};
             // remove message
             if ($.trim(options.html) === '' && $.trim(options.body) === '' && $.trim(options.buttons) === '') {
                 var $msg = $('#w2ui-popup #w2ui-message'+ (msgCount-1));
-                var options = $msg.data('options') || {};
+                var eloptions = $msg.data('options') || {};
                 $msg.css(w2utils.cssPrefix({
                     'transition': '0.15s',
-                    'transform': 'translateY(-' + options.height + 'px)'
+                    'transform': 'translateY(-' + eloptions.height + 'px)'
                 }));
                 if (msgCount == 1) {
                     w2popup.unlock(150);
@@ -13193,11 +13198,13 @@ var w2popup = {};
                         obj.focus();
                     }
                     if (typeof options.onClose == 'function') options.onClose({options: options});
+                    if (typeof eloptions.onClose == 'function') eloptions.onClose({options: eloptions});
                 }, 150);
             } else {
-                if ($.trim(options.body) !== '' || $.trim(options.buttons) !== '') {
-                    options.html = '<div class="w2ui-message-body"' + (options.style ? (' style="' + options.style) + '"' : '') + '>'+ options.body +'</div>'+
-                        '<div class="w2ui-message-buttons">'+ options.buttons +'</div>';
+                if ($.trim(options.body) !== '') {
+                    options.html = '<div class="w2ui-message-body"' + (options.style ? (' style="' + options.style) + '"' : '') + '>'+ options.body +'</div>';
+                    if ($.trim(options.buttons) !== '')
+                        options.html += '<div class="w2ui-message-buttons">'+ options.buttons +'</div>';
                 }
                 // hide previous messages
                 $('#w2ui-popup .w2ui-message').css('z-index', 1390);

@@ -25,12 +25,14 @@ import (
 	minifyJSON "github.com/tdewolff/minify/json"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -42,11 +44,14 @@ var (
 const (
 	useGZIP = true
 
-	useMinify     = false
+	useMinify     = true
 	useMinifyCSS  = true
 	useMinifyHTML = true
 	useMinifyJS   = true
 	useMinifyJSON = true
+
+	panelRoot   = "/panel"
+	panelLocale = "ru-ru"
 )
 
 func init() {
@@ -102,7 +107,6 @@ func Run() {
 	})
 
 	// API
-	//api.HandleFunc("/api/", user.Check(apiRequest))
 	api.Handle("/api/", apiHandler(apiRequest, true))
 
 	// Reports
@@ -113,14 +117,6 @@ func Run() {
 
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
-
-	// Assets static dirs
-	api.Handle("/assets/", apiHandler(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
-			http.ServeFile(w, r, path.Join(models.FromRootDir("panel/"),
-				r.URL.Path))
-		}), false))
 
 	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
 
@@ -142,47 +138,6 @@ func Run() {
 		}
 	})
 
-	api.Handle("/panel", user.Check(func(w http.ResponseWriter, r *http.Request) {
-		if pusher, ok := w.(http.Pusher); ok {
-			// Push is supported.
-			for _, p := range []string{
-				"/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
-				"/assets/w2ui/w2ui.min.js?" + models.Config.Version,
-				"/assets/w2ui/w2ui.min.css?" + models.Config.Version,
-				"/assets/w2ui/locale/ru-ru.json?" + models.Config.Version,
-				"/assets/panel/locale/ru-ru.json?" + models.Config.Version,
-				"/assets/panel/layout.js?" + models.Config.Version,
-				"/assets/panel/group.js?" + models.Config.Version,
-				"/assets/panel/sender.js?" + models.Config.Version,
-				"/assets/panel/campaign.js?" + models.Config.Version,
-				"/assets/panel/recipient.js?" + models.Config.Version,
-				"/assets/panel/profile.js?" + models.Config.Version,
-				"/assets/panel/users.js?" + models.Config.Version,
-				"/assets/panel/template.js?" + models.Config.Version,
-			} {
-				if err := pusher.Push(p, nil); err != nil {
-					apilog.Printf("Failed to push: %v", err)
-				}
-			}
-		} else {
-			apilog.Println("Push not supported")
-		}
-
-		tmpl := template.Must(template.ParseFiles(models.FromRootDir("panel/index.html")))
-		if err != nil {
-			log.Print(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		err = tmpl.Execute(w, map[string]string{
-			"version": models.Config.Version,
-		})
-		if err != nil {
-			log.Print(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}))
-
 	api.HandleFunc("/logout", user.Logout)
 
 	api.HandleFunc("/status/ws/campaign.log", user.Check(campaignLog))
@@ -190,20 +145,88 @@ func Run() {
 	api.HandleFunc("/status/ws/utm.log", user.Check(utmLog))
 	api.HandleFunc("/status/ws/main.log", user.Check(mainLog))
 
+	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if pusher, ok := w.(http.Pusher); ok {
+				// Push is supported.
+				for _, p := range []string{
+					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Config.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Config.Version,
+					panelRoot + "/assets/panel/layout.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/group.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/sender.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/campaign.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/recipient.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/profile.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/users.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/template.js?" + models.Config.Version,
+				} {
+					if err := pusher.Push(p, nil); err != nil {
+						apilog.Printf("Failed to push: %v", err)
+					}
+				}
+			} else {
+				apilog.Println("Push not supported")
+			}
+
+			tmpl := template.Must(template.ParseFiles(models.FromRootDir("panel/index.html")))
+			if err != nil {
+				log.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			err = tmpl.Execute(w, map[string]string{
+				"version": models.Config.Version,
+				"locale":  panelLocale,
+				"root":    panelRoot,
+			})
+			if err != nil {
+				log.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}), true))
+
+	// Assets static dirs
+	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/") {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
+			http.ServeFile(w, r, path.Join(models.FromRootDir("panel/"), r.URL.Path))
+		}), true)))
+
 	apilog.Println("API listening on port " + models.Config.APIPort + "...")
 	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
-	var js []byte
-	if r.FormValue("request") == "" {
+	var (
+		js      []byte
+		request []byte
+		err     error
+	)
+	if r.FormValue("request") != "" {
+		request = []byte(r.FormValue("request"))
+	} else {
+		request, err = ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if len(request) == 0 {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	req, err := parseRequest(r.FormValue("request"))
+	req, err := parseRequest(request)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": %s}`, strconv.Quote(err.Error()))))

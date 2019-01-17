@@ -1,8 +1,4 @@
 {
-  "dateFormat"     : "dd/mm/yyyy",
-  "timeFormat"     : "h24:mm",
-  "datetimeFormat" : "dd/mm/yyyy|hh24:mm",
-  "momentjsDateTime" : "DD-MM-YYYY HH:mm",
   "phrases" : {
     "Menu": "Меню",
     "Parameter": "Параметр",
@@ -16,6 +12,8 @@
     "Group": "Группа",
     "Campaign": "Кампания",
     "Name": "Имя",
+    "Email": "Email",
+    "Opened": "Открыто",
     "Profile": "Профиль",
     "Profiles": "Профили",
     "Subject": "Тема",

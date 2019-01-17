@@ -92,9 +92,13 @@ type request struct {
 	} `json:"record,omitempty"`
 }
 
-func parseRequest(js string) (request, error) {
+func parseRequest(js []byte) (request, error) {
 	var req request
-	err := json.Unmarshal([]byte(js), &req)
+	err := json.Unmarshal(js, &req)
+	if err != nil {
+		apilog.Print(err)
+		err = fmt.Errorf("parse request %s", err)
+	}
 	return req, err
 }
 
@@ -111,6 +115,8 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 			searchLogic = " OR "
 		} else if strings.ToUpper(req.SearchLogic) == "AND" {
 			searchLogic = " AND "
+		} else {
+			searchLogic = " OR "
 		}
 		for _, s := range req.Search {
 			if filed, ok := mapping[s.Field]; ok {

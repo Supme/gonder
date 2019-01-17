@@ -4,48 +4,70 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
 
+    <script type="application/javascript" src="{{.root}}/assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
+    <script type="application/javascript" src="{{.root}}/assets/w2ui/w2ui.js?{{.version}}"></script>
+
+    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/w2ui/w2ui.css?{{.version}}" />
+
+    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/codemirror/codemirror.css?{{.version}}" />
+    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/codemirror/dracula.css?{{.version}}" />
+    <script src="{{.root}}/assets/codemirror/codemirror.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/codemirror/selection-pointer.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/codemirror/xml.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/codemirror/javascript.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/codemirror/css.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/codemirror/htmlmixed.js?{{.version}}"></script>
+
+
+    <link href="{{.root}}/assets/grapesjs/grapes.min.css?{{.version}}" rel="stylesheet"/>
+    <link href="{{.root}}/assets/grapesjs/grapesjs-preset-newsletter.css?{{.version}}" rel="stylesheet"/>
+
+    <script src="{{.root}}/assets/grapesjs/grapes.min.js?{{.version}}"></script>
+    <script src="{{.root}}/assets/grapesjs/grapesjs-preset-newsletter.min.js?{{.version}}"></script>
+
+    <script src="{{.root}}/assets/gonder/panel.js?{{.version}}"></script>
     <script type="application/javascript">
-        var version = {{.version}};
+        var root = "{{.root}}";
+        var locale = "{{.locale}}";
+        var version ="{{.version}}";
+
+        $(document).ready(
+            function () {
+                $.ajaxSetup({
+                    cache: true
+                });
+                w2utils.locale('{{.root}}/assets/w2ui/locale/' + locale + '.json?{{.version}}');
+                w2utils.locale('{{.root}}/assets/gonder/locale/' + locale + '.json?{{.version}}');
+                $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
+                    $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
+                        $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
+                            $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
+                            $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
+                        });
+                        $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
+                        $.getScript('{{.root}}/assets/gonder/profile.js?{{.version}}');
+                        $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
+                        w2utils.settings.dateFormat = "dd.mm.yyyy";
+                        w2utils.settings.timeFormat = "h24:mm";
+                        w2utils.settings.datetimeFormat = "dd.mm.yyyy | h24:mm";
+                    });
+                });
+            }
+        );
     </script>
-
-    <script type="application/javascript" src="assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
-    <script type="application/javascript" src="assets/momentjs/moment.js?{{.version}}"></script>
-    <script type="application/javascript" src="assets/w2ui/w2ui.js?{{.version}}"></script>
-
-    <link rel="stylesheet" type="text/css" href="assets/w2ui/w2ui.css?{{.version}}" />
-
-    <link rel="stylesheet" type="text/css" href="assets/codemirror/codemirror.css?{{.version}}" />
-    <link rel="stylesheet" type="text/css" href="assets/codemirror/dracula.css?{{.version}}" />
-    <script src="assets/codemirror/codemirror.js?{{.version}}"></script>
-    <script src="assets/codemirror/selection-pointer.js?{{.version}}"></script>
-    <script src="assets/codemirror/xml.js?{{.version}}"></script>
-    <script src="assets/codemirror/javascript.js?{{.version}}"></script>
-    <script src="assets/codemirror/css.js?{{.version}}"></script>
-    <script src="assets/codemirror/htmlmixed.js?{{.version}}"></script>
-
-
-    <link href="assets/grapesjs/grapes.min.css?{{.version}}" rel="stylesheet"/>
-    <link href="assets/grapesjs/grapesjs-preset-newsletter.css?{{.version}}" rel="stylesheet"/>
-
-    <script src="assets/grapesjs/grapes.min.js?{{.version}}"></script>
-    <script src="assets/grapesjs/grapesjs-preset-newsletter.min.js?{{.version}}"></script>
-
-    <script src="assets/panel/panel.js?{{.version}}"></script>
     <style>
         .CodeMirror {
             border: 1px solid #eee;
             height: 100%;
+        }
+        #tb_toolbar_item_acceptSend .checked {
+            background-color: #b6d5ff;
         }
     </style>
 </head>
 <body>
 
     <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
-
-    <div id="bottom" style="visibility: hidden">
-        <div id="group" style="position: absolute; left: 0; width: 39.9%; height: 99%;"></div>
-        <div id="campaign" style="position: absolute; right: 0; width: 59.9%; height: 99%;"></div>
-    </div>
 
     <div id="formbox" style="visibility: hidden;">
         <div id="parameter" style="display: none"></div>

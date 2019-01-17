@@ -1,5 +1,5 @@
 // --- Campaign table ---
-$('#campaign').w2grid({
+w2ui['bottom'].content('main', $().w2grid({
     name: 'campaign',
     header: w2utils.lang('Campaign'),
     keyboard : false,
@@ -45,7 +45,7 @@ $('#campaign').w2grid({
     onSave: function(event) {
         //console.log(event);
     }
-});
+}));
 // --- /Campaign table ---
 
 function cloneCampaign(campaignId) {
@@ -110,9 +110,11 @@ function getCampaign(recid, name) {
         dataType: 'json',
         data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(recid)})}
     }).done(function(data) {
+
         zone = new Date().getTimezoneOffset() * 60;
         refreshProfilesList(data["profileId"]);
         refreshSenderList(data["senderId"]);
+
         $('#campaignId').val(recid);
         $('#campaignName').val(name);
         $("#campaignSubject").val(data["subject"]);
@@ -123,19 +125,21 @@ function getCampaign(recid, name) {
         $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"]);
         $("#campaignCompressHTML").prop("checked", data["compressHTML"]);
         $("#campaignTemplate").val(data["template"]);
-        $('#campaignAcceptSend').prop('checked', data["accepted"]);
+
+        setAcceptSend(data["accepted"]);
 
         cm.setValue(data["template"]);
 
         w2ui['recipient'].postData["campaign"] = parseInt(recid);
         w2ui.layout.unlock('main');
-        w2ui['sidebar'].click('parameter');
+
+        w2ui['toolbar'].click('parametersButton');
     });
 }
 
 // ---Save campaign data ---
 function saveCampaign() {
-    if ($('#campaignAcceptSend').is(':checked')) {
+    if (w2ui['toolbar'].get('acceptSend').checked) {
         w2alert(w2utils.lang("You can't save an accepted for send campaign."), w2utils.lang('Error'));
     } else {
         w2confirm(w2utils.lang('Save changes in campaign?'), function (btn) {
@@ -169,11 +173,10 @@ function saveCampaign() {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     } else {
                         w2ui.layout.lock('main', w2utils.lang('Saved'), false);
-                        w2ui['sidebar'].click('parameter');
                     }
                     setTimeout(function(){
                         w2ui.layout.unlock('main');
-                    }, 1500);
+                    }, 1000);
                 });
             }
         });
