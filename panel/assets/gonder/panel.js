@@ -1,4 +1,3 @@
-
 var ws = null;
 var refreshNum;
 function startStatusLog(file){

@@ -63,6 +63,7 @@
     "You can't save an accepted for send campaign.": "Вы не можете сохранить допущенную к отправке кампанию.",
     "Export to code": "Экспортировать в код",
     "Import from code": "Импортировать из кода",
-    "Clear GrapesJs template?": "Очистить GrapesJs шаблон?"
+    "Clear GrapesJs template?": "Очистить GrapesJs шаблон?",
+    "Get this as csv file": "Получить это в виде csv файла"
   }
 }

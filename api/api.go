@@ -114,6 +114,7 @@ func Run() {
 	api.Handle("/report/status", apiHandler(reportCampaignStatus, true))
 	api.Handle("/report/jump", apiHandler(reportJumpDetailedCount, true))
 	api.Handle("/report/unsubscribed", apiHandler(reportUnsubscribed, true))
+	api.Handle("/report/recipients", apiHandler(reportRecipientsCsv, true))
 
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
@@ -185,7 +186,7 @@ func Run() {
 				log.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-		}), true))
+		}), false))
 
 	// Assets static dirs
 	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(

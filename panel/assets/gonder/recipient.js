@@ -40,40 +40,37 @@ $('#campaignRecipient').w2grid({
     ],
     multiSelect: false,
     method: 'GET',
-/*
-    onExpand: function (event) {
-        if (w2ui.hasOwnProperty('subgrid-' + event.recid)) w2ui['subgrid-' + event.recid].destroy();
-        $('#'+ event.box_id).css({ margin: '0px', padding: '0px', width: '100%' }).animate({ height: '100px' }, 100);
-        setTimeout(function () {
-            $('#'+ event.box_id).w2grid({
-                name: 'subgrid-' + event.recid,
-                fixedBody: true,
-                columns: [
-                    { field: 'key', caption: w2utils.lang('Parameter'), size: '30%' },
-                    { field: 'value', caption: w2utils.lang('Value'), size: '70%' }
-                ],
-                multiSelect: false,
-                postData: { "recipient": parseInt(event.recid) },
-                url: '/api/recipients', //?content=parameters&recipient='+event.recid,
-                method: 'GET'
-            });
-            w2ui['subgrid-' + event.recid].resize();
-        }, 300);
-    },
-*/
+
     onDblClick: function (event) {
-        /*w2popup.load({
-         title: 'Mail preview',
-         url: '/preview?id='+event.recid,
-         showMax: true
-         });*/
         preview = window.open(
             "/preview?id="+event.recid,
             "Preview mail"+event.recid,
             "width=800,height=600,resizable=yes,scrollbars=yes,status=yes"
         );
         preview.focus();
+    },
+
+    toolbar: {
+        items: [
+            {id: 'csv', type: 'button', caption: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
+        ],
+        onClick: function (event) {
+            if (event.target == "csv") {
+                var url = '/report/recipients?' +
+                    'campaign=' + w2ui.campaign.getSelection()[0] + '&' +
+                    'params=' + JSON.stringify({
+                        sort: w2ui['recipient'].sortData,
+                        search: w2ui['recipient'].searchData,
+                        searchLogic: w2ui.recipient.last.logic
+                    });
+                var link=document.createElement('a');
+                document.body.appendChild(link);
+                link.href=url;
+                link.click();
+            }
+        }
     }
+
 });
 // --- /Recipients table ---
 

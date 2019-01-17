@@ -166,8 +166,7 @@ function saveCampaign() {
                                     "template": cm.getValue()
                                 }
                             }
-                        )},
-                    dataType: "json"
+                        )}
                 }).done(function(data) {
                     if (data['status'] == 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));

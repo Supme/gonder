@@ -9,7 +9,7 @@ w2ui['bottom'].content('left', $().w2grid({
         footer: true,
         toolbarSave: true,
         toolbarAdd:true,
-        toolbarSearch: false,
+        toolbarSearch: false
     },
     columns: [
         { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
