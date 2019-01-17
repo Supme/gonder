@@ -1,7 +1,7 @@
 package models
 
 const (
-	version = "0.11.2"
+	version = "0.11.3"
 
 	OpenTrace   = "open_trace"
 	WebVersion  = "web_version"

@@ -27,7 +27,7 @@ w2ui.layout.content('top', $().w2toolbar({
         { type: 'spacer' },
         { type: 'radio', id: 'statusButton', group: '1', text: w2utils.lang('Status'), img: 'w2ui-icon-info' },
         { type: 'radio', id: 'usersButton', group: '1', text: w2utils.lang('Users'), img: 'w2ui-icon-columns' },
-        { type: 'radio', id: 'profilesButton', group: '1', text: w2utils.lang('Profiles'), img: 'icon-page' },
+        { type: 'radio', id: 'profilesButton', group: '1', text: w2utils.lang('Profiles'), img: 'w2ui-icon-settings' },
         { type: 'break' }
     ],
     onClick: function (event) {
