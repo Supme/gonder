@@ -69,7 +69,8 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 
 	for query.Next() {
 		var (
-			id, email, name, openedStr, result string
+			id, email, name, openedStr string
+			result sql.NullString
 			opened bool
 		)
 		err = query.Scan(&id, &name, &email, &result, &opened)
@@ -82,7 +83,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 		} else {
 			openedStr = "false"
 		}
-		err = csvWriter.Write([]string{id, email, name, openedStr, result})
+		err = csvWriter.Write([]string{id, email, name, openedStr, result.String})
 		if err != nil {
 			log.Println(err)
 			return

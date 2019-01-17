@@ -52,7 +52,7 @@ $('#campaignRecipient').w2grid({
 
     toolbar: {
         items: [
-            {id: 'csv', type: 'button', caption: w2utils.lang('CSV'), icon: 'w2ui-icon-columns'}
+            {id: 'csv', type: 'button', caption: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
         ],
         onClick: function (event) {
             if (event.target == "csv") {
