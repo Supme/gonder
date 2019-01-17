@@ -40,8 +40,6 @@
                 w2utils.locale('{{.root}}/assets/gonder/locale/{{.locale}}.json?{{.version}}');
                 $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
                     $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
-
-
                         $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
                             $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
                             $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
@@ -49,6 +47,9 @@
                         $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
                         $.getScript('{{.root}}/assets/gonder/profile.js?{{.version}}');
                         $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
+                        w2utils.settings.dateFormat = "dd.mm.yyyy";
+                        w2utils.settings.timeFormat = "h24:mm";
+                        w2utils.settings.datetimeFormat = "dd.mm.yyyy | h24:mm";
                     });
                 });
             }
@@ -59,16 +60,14 @@
             border: 1px solid #eee;
             height: 100%;
         }
+        #tb_toolbar_item_acceptSend .checked {
+            background-color: #b6d5ff;
+        }
     </style>
 </head>
 <body>
 
     <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
-
-    {{/*<div id="bottom" style="visibility: hidden">*/}}
-        {{/*<div id="group" style="position: absolute; left: 0; width: 39.9%; height: 99%;"></div>*/}}
-        {{/*<div id="campaign" style="position: absolute; right: 0; width: 59.9%; height: 99%;"></div>*/}}
-    {{/*</div>*/}}
 
     <div id="formbox" style="visibility: hidden;">
         <div id="parameter" style="display: none"></div>

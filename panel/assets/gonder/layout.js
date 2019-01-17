@@ -15,6 +15,7 @@ $('#layout').w2layout({
 
 w2ui.layout.content('top', $().w2toolbar({
     name: 'toolbar',
+    right : 'v' + version,
     items: [
         { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'icon-page' },
         { type: 'radio', id: 'editorButton', group: '1', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil' },
@@ -22,11 +23,12 @@ w2ui.layout.content('top', $().w2toolbar({
         { type: 'break' },
         { type: 'button', id: 'saveButton', text: w2utils.lang('Save'), img: 'w2ui-icon-check'},
         { type: 'break' },
-        { type: 'check', id: 'acceptSend', group: '1', text: w2utils.lang('Accept send') },
+        { type: 'check', id: 'acceptSend', group: '1', text: w2utils.lang('Accept send'), style: '.checked {background: #ddff00}' },
         { type: 'spacer' },
         { type: 'radio', id: 'statusButton', group: '1', text: w2utils.lang('Status'), img: 'w2ui-icon-info' },
         { type: 'radio', id: 'usersButton', group: '1', text: w2utils.lang('Users'), img: 'w2ui-icon-columns' },
-        { type: 'radio', id: 'profilesButton', group: '1', text: w2utils.lang('Profiles'), img: 'icon-page' }
+        { type: 'radio', id: 'profilesButton', group: '1', text: w2utils.lang('Profiles'), img: 'icon-page' },
+        { type: 'break' }
     ],
     onClick: function (event) {
         // console.log('Target: '+ event.target, event);
@@ -79,8 +81,8 @@ w2ui.layout.content('main', $('#formbox').html());
 w2ui.layout.content('bottom', $().w2layout({
     name: 'bottom',
     panels: [
-        { type: 'left', size: '35%', resizable: true },
-        { type: 'main',  size: '65%', resizable: true }
+        { type: 'left', size: '50%', resizable: true },
+        { type: 'main',  size: '50%', resizable: true }
     ]
 }));
 

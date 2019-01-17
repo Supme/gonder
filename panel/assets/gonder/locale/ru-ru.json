@@ -1,7 +1,4 @@
 {
-  "dateFormat"     : "dd.mm.yyyy",
-  "timeFormat"     : "h24:mm",
-  "datetimeFormat" : "dd.mm.yyyy | h24:mm",
   "phrases" : {
     "Menu": "Меню",
     "Parameter": "Параметр",

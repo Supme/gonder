@@ -132,7 +132,7 @@ $('#recipientUploadButton').click(
                                     w2ui.layout.unlock('main');
                                 };
                             });
-                        }, 2000);
+                        }, 500);
                     }
                 });
             });
