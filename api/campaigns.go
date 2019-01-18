@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
-		"github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/supme/gonder/models"
 	"log"
 	"time"
@@ -151,7 +151,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 func addCampaign(groupID int64) (camp, error) {
 	c := camp{}
 	c.Name = "New campaign"
-	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0,0,0,0, time.UTC)
+	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`, `start_time`, `end_time`) VALUES (?, ?, ?, ?)", groupID, c.Name, t, t)
 	if err != nil {
 		log.Println(err)

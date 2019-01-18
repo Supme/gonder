@@ -39,6 +39,7 @@ var (
 	user   auth
 	apilog *log.Logger
 	min    *minify.M
+	lang   *languages
 )
 
 const (
@@ -90,10 +91,18 @@ func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
 func Run() {
 	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("error opening api log file: %v", err)
+		log.Printf("error opening api log file: %s", err)
 	}
 	defer l.Close()
 	apilog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+
+	lang, err = newLang(
+		models.FromRootDir("panel/assets/w2ui/locale/*.json"),
+		models.FromRootDir("panel/assets/gonder/locale/*.json"),
+	)
+	if err != nil {
+		apilog.Printf("error loading languages: %s", err)
+	}
 
 	api := http.NewServeMux()
 
