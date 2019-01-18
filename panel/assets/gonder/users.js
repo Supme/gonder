@@ -34,6 +34,7 @@ function userEditorPopup(event){
     if (event.type == 'add'){}
 
     w2popup.open({
+        name: "userEditor",
         width   : 400,
         height  : 480,
         title   : event.type == 'add'?'New user':"Edit user",
@@ -50,14 +51,10 @@ function userEditorPopup(event){
 
     var unit = [];
     $.each(w2ui.unitList.records, function(k, v){
-        unit[k] = {id:v.recid, text:v.name}
+            unit[k] = {id: v.recid, text: v.name}
     });
     w2ui.userEditor.set('unit', {options: {items: unit}});
-    if (event.type == 'dblClick') {
-        setTimeout(function () {
-            $('#userEditor #unit').w2field().setIndex(findRecId(unit, record.unitid));
-        }, 500);
-    }
+    w2ui['userEditor'].record['unit'] = record.unitid;
 
     var groups = [];
     $.ajax({
@@ -74,14 +71,26 @@ function userEditorPopup(event){
     if (event.type == 'dblClick') {
         setTimeout(function() {
             $.each(record.groupsid, function (k, v) {
-                $('#userEditor #group').w2field().setIndex(findRecId(groups, v), true);
+                $('#userEditor #group').w2field().setIndex(findKeyRecId(groups, v), true);
             })
         }, 500);
     }
-    w2ui.userEditor.refresh();
+    w2ui['userEditor'].refresh();
 }
 
-function findRecId(data, id) {
+function findValRecId(data, id) {
+    var i = false;
+    $.each(data, function (k, v) {
+        if(v.id == id) {
+            i = v.id;
+        }
+    });
+    console.log(i);
+    return i;
+}
+
+
+function findKeyRecId(data, id) {
     var i = false;
     $.each(data, function (k, v) {
         if(v.id == id) {
