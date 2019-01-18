@@ -38,7 +38,7 @@ var (
 
 // Run start utm server
 func Run() {
-	l, err := os.OpenFile(models.FromRootDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.WorkDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Printf("error opening utm log file: %v", err)
 	}
@@ -68,7 +68,7 @@ func Run() {
 	})
 
 	// folder files
-	utm.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
+	utm.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.WorkDir("files/")))))
 
 	// unsubscribe
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {

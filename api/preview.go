@@ -47,18 +47,18 @@ func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
 		if tmpl == "" {
 			tmpl = "default"
 		} else {
-			if _, err = os.Stat(models.FromRootDir("templates/" + tmpl + "/accept.html")); err != nil {
+			if _, err = os.Stat(models.WorkDir("templates/" + tmpl + "/accept.html")); err != nil {
 				tmpl = "default"
 			}
-			if _, err = os.Stat(models.FromRootDir("templates/" + tmpl + "/success.html")); err != nil {
+			if _, err = os.Stat(models.WorkDir("templates/" + tmpl + "/success.html")); err != nil {
 				tmpl = "default"
 			}
 		}
 
 		if r.Method == "GET" {
-			content, _ = ioutil.ReadFile(models.FromRootDir("templates/" + tmpl + "/accept.html"))
+			content, _ = ioutil.ReadFile(models.WorkDir("templates/" + tmpl + "/accept.html"))
 		} else {
-			content, _ = ioutil.ReadFile(models.FromRootDir("templates/" + tmpl + "/success.html"))
+			content, _ = ioutil.ReadFile(models.WorkDir("templates/" + tmpl + "/success.html"))
 		}
 
 		t := template.New("unsubscribe")

@@ -37,7 +37,9 @@ ___
 
 Target URI: ```/api/groups```
 
-##### Get groups list
+<details> 
+
+<summary>Get groups list</summary>
 
 ```json
 {
@@ -69,7 +71,13 @@ response:
    ]
  }
 ```
-##### Add group
+
+</details>
+
+
+<details> 
+
+<summary>Add group</summary>
 
 ```json
 {
@@ -84,8 +92,13 @@ create new group with name "New group" and return added ID in response:
   "recid":3
 }
 ```
+
+</details>
+
 	
-##### Save groups	
+<details> 
+
+<summary>Save groups</summary>	
 	 
 ```json
 {
@@ -119,12 +132,18 @@ response:
 }
 ```
 
+</details>
+
+
 ### Campaigns
 ___
 
 Target URI: ```/api/campaigns```
 
-##### Get campaigns list
+<details> 
+
+<summary>Get campaigns list</summary>
+
 ```json
 {
   "cmd":"get",
@@ -156,7 +175,14 @@ response:
     ]
 }
 ```
-##### Save campaigns name
+
+</details>
+
+
+<details> 
+
+<summary>Save campaigns name</summary>
+
 ```json
 {
   "cmd":"save",
@@ -181,12 +207,18 @@ response:
 }
 ```
 
+</details>
+
+
 ### Campaign
 ___
 
 Target URI: ```/api/campaign```
 
-##### Get campaign parameters
+<details> 
+
+<summary>Get campaign parameters</summary>
+
 ```json
 {
   "cmd":"get",
@@ -210,7 +242,13 @@ response:
 }
 ```
 
-##### Save campaign parameters
+</details>
+
+
+<details> 
+
+<summary>Save campaign parameters</summary>
+
 ```json
 {
   "cmd":"save",
@@ -247,7 +285,13 @@ response:
 }
 ```
 
-##### Set campaign accept status
+</details>
+
+
+<details> 
+
+<summary>Set campaign accept status</summary>
+
 ```json
 {
   "cmd":"accept",
@@ -256,11 +300,16 @@ response:
 }
 ```
 response standard json error or success
+
+</details>
  
 ### Helpers
 ___
 
-##### Profile list
+<details> 
+
+<summary>Profile list</summary>
+
 Target URI: ```/api/profilelist```
 ```json
 {
@@ -276,7 +325,13 @@ response
 ]
 ```
 
-##### Sender list
+</details>
+
+
+<details> 
+
+<summary>Sender list</summary>
+
 Target URI: ```/api/profilelist```
 ```json
 {
@@ -292,13 +347,18 @@ response
 ]
 ```
 
+</details>
+
 
 ### Recipients
 ___
 
 Target URI: ```/api/recipients```
 
-##### Get recipients list
+<details> 
+
+<summary>Get recipients list</summary>
+
 ```json
 {
   "cmd":"get",
@@ -348,7 +408,13 @@ response:
 }
 ```
 
-##### Get recipient parameters
+</details>
+
+
+<details> 
+
+<summary>Get recipient parameters</summary>
+
 ```json
 {
   "cmd":"get",
@@ -367,7 +433,13 @@ response:
 }
 ```     
 
-##### Add recipients to campaign
+</details>
+
+
+<details> 
+
+<summary>Add recipients to campaign</summary>
+
 ```json
 {
   "cmd":"add",
@@ -416,7 +488,13 @@ or error
 {"status": "error", "message": "Something error text"}
 ```
 
-##### Upload recipients file list
+</details>
+
+
+<details> 
+
+<summary>Upload recipients file list</summary>
+
 ```json
 {
   "cmd":"upload",
@@ -433,7 +511,13 @@ response:
 }
 ```
 
-##### Upload recipients file progress
+</details>
+
+
+<details> 
+
+<summary>Upload recipients file progress</summary>
+
 ```json
 {
   "cmd":"progress",
@@ -455,7 +539,13 @@ response finish (progress not found)
 }
 ```
 
-##### Clear all recipients from campaign
+</details>
+
+
+<details> 
+
+<summary>Clear all recipients from campaign</summary>
+
 ```json
 {
   "cmd":"clear",
@@ -464,8 +554,13 @@ response finish (progress not found)
 ```
 response standard json error or success 
 
+</details>
 
-##### Mark recipients with result code 4XX (safe bounce) for resend
+
+<details> 
+
+<summary>Mark recipients with result code 4XX (safe bounce) for resend</summary>
+
 ```json
 {
   "cmd":"resend4xx",
@@ -474,8 +569,13 @@ response standard json error or success
 ```
 response standard json error or success
 
+</details>
 
-##### Remove duplicated recipients email list
+
+<details> 
+
+<summary>Remove duplicated recipients email list</summary>
+
 ```json
 {
   "cmd":"deduplicate",
@@ -484,8 +584,13 @@ response standard json error or success
 ```
 response standard json success with message as count removed recipients or standard error json
 
+</details>
 
-##### Mark unavaible latest 30 days recipients email (by response smtp response) list
+
+<details> 
+
+<summary>Mark unavaible latest 30 days recipients email (by latest smtp response) list</summary>
+
 ```json
 {
   "cmd":"unavaible",
@@ -494,12 +599,15 @@ response standard json success with message as count removed recipients or stand
 ```
 response standard json success with message as count marked recipients or standard error json
 
-
+</details>
 
 ### Reports
 ___
 
-##### Started campaigns
+<details> 
+
+<summary>Started campaigns</summary>
+
 request example ```/report/status```
 
 response show id's running campaigns
@@ -507,8 +615,11 @@ response show id's running campaigns
 {"started":["22","43","56"]}
 ```
 
+</details>
 
-##### Campaign summary
+<details> 
+
+<summary>Campaign summary</summary>
 
 request example ```/report?campaign=2318```
 
@@ -528,8 +639,12 @@ response
 }
 ```
 
+</details>
 
-##### Campaign link clicks
+
+<details> 
+
+<summary>Campaign link clicks</summary>
 
 request example ```/report/jump?campaign=2318```
 
@@ -543,7 +658,12 @@ response show count jumping to links
 }
 ```
 
-##### Campaign or group unsubscribed
+</details>
+
+
+<details> 
+
+<summary>Campaign or group unsubscribed</summary>
 
 request example show unsubscribe from campaign
 
@@ -583,3 +703,5 @@ or from group
   }
 ]
 ```
+
+</details>

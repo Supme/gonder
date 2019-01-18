@@ -53,13 +53,13 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 	if name == "" {
 		name = "default"
 	} else {
-		if _, err := os.Stat(FromRootDir("templates/" + name + "/accept.html")); err != nil {
+		if _, err := os.Stat(WorkDir("templates/" + name + "/accept.html")); err != nil {
 			name = "default"
 		}
-		if _, err := os.Stat(FromRootDir("templates/" + name + "/success.html")); err != nil {
+		if _, err := os.Stat(WorkDir("templates/" + name + "/success.html")); err != nil {
 			name = "default"
 		}
 	}
-	name = FromRootDir("templates/" + name)
+	name = WorkDir("templates/" + name)
 	return
 }

@@ -54,7 +54,7 @@ func sender(req request) (js []byte, err error) {
 			if err != nil {
 				log.Println(err)
 			}
-			return js , err
+			return js, err
 		}
 		return js, errors.New("Forbidden get groups")
 

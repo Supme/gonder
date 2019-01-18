@@ -15,7 +15,7 @@ import (
 
 func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	var (
-		req request
+		req                request
 		partWhere, where   string
 		partParams, params []interface{}
 	)
@@ -54,14 +54,14 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	}
 	defer query.Close()
 
-	w.Header().Set("Content-Disposition", "attachment; filename=recipients_" + strconv.FormatInt(campaign, 10) + ".csv")
+	w.Header().Set("Content-Disposition", "attachment; filename=recipients_"+strconv.FormatInt(campaign, 10)+".csv")
 	w.Header().Set("Content-Type", "text/csv")
 
 	csvWriter := csv.NewWriter(w)
 	csvWriter.Comma = ';'
 	csvWriter.UseCRLF = true
 
-	err = csvWriter.Write([]string{"Id", "Email", "Name", "Opened", "Result"})
+	err = csvWriter.Write([]string{lang.tr(panelLocale, "Id"), lang.tr(panelLocale,"Email"), lang.tr(panelLocale,"Name"), lang.tr(panelLocale,"Opened"), lang.tr(panelLocale,"Result")})
 	if err != nil {
 		log.Println(err)
 		return
@@ -70,8 +70,8 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	for query.Next() {
 		var (
 			id, email, name, openedStr string
-			result sql.NullString
-			opened bool
+			result                     sql.NullString
+			opened                     bool
 		)
 		err = query.Scan(&id, &name, &email, &result, &opened)
 		if err != nil {
@@ -79,9 +79,9 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if opened {
-			openedStr = "true"
+			openedStr = lang.tr(panelLocale,"Yes")
 		} else {
-			openedStr = "false"
+			openedStr = lang.tr(panelLocale,"No")
 		}
 		err = csvWriter.Write([]string{id, email, name, openedStr, result.String})
 		if err != nil {

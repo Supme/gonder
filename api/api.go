@@ -39,6 +39,7 @@ var (
 	user   auth
 	apilog *log.Logger
 	min    *minify.M
+	lang   *languages
 )
 
 const (
@@ -88,12 +89,20 @@ func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
 
 // Run start api server
 func Run() {
-	l, err := os.OpenFile(models.FromRootDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.WorkDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("error opening api log file: %v", err)
+		log.Printf("error opening api log file: %s", err)
 	}
 	defer l.Close()
 	apilog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+
+	lang, err = newLang(
+		models.WorkDir("/panel/assets/w2ui/locale/*.json"),
+		models.WorkDir("/panel/assets/gonder/locale/*.json"),
+	)
+	if err != nil {
+		apilog.Printf("error loading languages: %s", err)
+	}
 
 	api := http.NewServeMux()
 
@@ -119,7 +128,7 @@ func Run() {
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
 
-	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.FromRootDir("files/")))))
+	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.WorkDir("files/")))))
 
 	api.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/x-icon")
@@ -171,7 +180,7 @@ func Run() {
 				apilog.Println("Push not supported")
 			}
 
-			tmpl := template.Must(template.ParseFiles(models.FromRootDir("panel/index.html")))
+			tmpl := template.Must(template.ParseFiles(models.WorkDir("panel/index.html")))
 			if err != nil {
 				log.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -196,11 +205,11 @@ func Run() {
 				return
 			}
 			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
-			http.ServeFile(w, r, path.Join(models.FromRootDir("panel/"), r.URL.Path))
+			http.ServeFile(w, r, path.Join(models.WorkDir("panel/"), r.URL.Path))
 		}), true)))
 
 	apilog.Println("API listening on port " + models.Config.APIPort + "...")
-	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.FromRootDir("/cert/server.pem"), models.FromRootDir("/cert/server.key"), api))
+	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.WorkDir("/cert/server.pem"), models.WorkDir("/cert/server.key"), api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
