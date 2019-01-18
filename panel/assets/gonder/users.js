@@ -51,9 +51,9 @@ function userEditorPopup(event){
 
     var unit = [];
     $.each(w2ui.unitList.records, function(k, v){
-            unit[k] = {id: v.recid, text: v.name}
+        unit[k] = {id: v.recid, text: v.name}
     });
-    w2ui.userEditor.set('unit', {options: {items: unit}});
+    w2ui['userEditor'].set('unit', {options: {items: unit}});
     w2ui['userEditor'].record['unit'] = record.unitid;
 
     var groups = [];
@@ -71,26 +71,14 @@ function userEditorPopup(event){
     if (event.type == 'dblClick') {
         setTimeout(function() {
             $.each(record.groupsid, function (k, v) {
-                $('#userEditor #group').w2field().setIndex(findKeyRecId(groups, v), true);
+                $('#userEditor #group').w2field().setIndex(findKey(groups, v), true);
             })
         }, 500);
     }
     w2ui['userEditor'].refresh();
 }
 
-function findValRecId(data, id) {
-    var i = false;
-    $.each(data, function (k, v) {
-        if(v.id == id) {
-            i = v.id;
-        }
-    });
-    console.log(i);
-    return i;
-}
-
-
-function findKeyRecId(data, id) {
+function findKey(data, id) {
     var i = false;
     $.each(data, function (k, v) {
         if(v.id == id) {
