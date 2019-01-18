@@ -54,12 +54,6 @@
   version = "v1.0.1"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/kardianos/osext"
-  packages = ["."]
-  revision = "ae77be60afb1dcacde03767a8c37337fad28ac14"
-
-[[projects]]
   name = "github.com/supme/directEmail"
   packages = ["."]
   revision = "ac5a15cab9ac3dab9b10612840f7f28736004af6"
@@ -161,6 +155,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4abf84b5f1a31e080268cd7ea6feba1bb4347bc58949504169ce7ad468318426"
+  inputs-digest = "8c10a6785f5c825680aa975cae6e71735c958dda48829521aad58e44d12e889a"
   solver-name = "gps-cdcl"
   solver-version = 1

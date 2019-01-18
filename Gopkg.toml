@@ -50,10 +50,6 @@
   version = "1.0.1"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/kardianos/osext"
-
-[[constraint]]
   name = "github.com/supme/directEmail"
   version = "0.2.0"
 
