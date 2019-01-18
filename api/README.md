@@ -499,7 +499,10 @@ response standard json success with message as count marked recipients or standa
 ### Reports
 ___
 
-##### Started campaigns
+<details> 
+
+<summary>Started campaigns</summary>
+
 request example ```/report/status```
 
 response show id's running campaigns
@@ -507,8 +510,11 @@ response show id's running campaigns
 {"started":["22","43","56"]}
 ```
 
+</details>
 
-##### Campaign summary
+<details> 
+
+<summary>Campaign summary</summary>
 
 request example ```/report?campaign=2318```
 
@@ -528,8 +534,12 @@ response
 }
 ```
 
+</details>
 
-##### Campaign link clicks
+
+<details> 
+
+<summary>Campaign link clicks</summary>
 
 request example ```/report/jump?campaign=2318```
 
@@ -543,7 +553,12 @@ response show count jumping to links
 }
 ```
 
-##### Campaign or group unsubscribed
+</details>
+
+
+<details> 
+
+<summary>Campaign or group unsubscribed</summary>
 
 request example show unsubscribe from campaign
 
@@ -583,3 +598,5 @@ or from group
   }
 ]
 ```
+
+</details>
