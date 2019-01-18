@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	l, err := os.OpenFile(models.FromRootDir("log/main.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	l, err := os.OpenFile(models.WorkDir("log/main.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Printf("error opening log file: %v", err)
 	}

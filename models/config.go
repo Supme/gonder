@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/alyu/configparser"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/kardianos/osext"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -16,7 +16,6 @@ import (
 type config struct {
 	dbType, dbString string
 	dbConnections    int
-	RootPath         string
 	Version          string
 	URL              string
 	APIPort          string
@@ -80,13 +79,7 @@ func createDb() error {
 func (c *config) Update() {
 	var err error
 
-	c.RootPath, err = osext.ExecutableFolder()
-	checkErr(err)
-	if strings.Contains(c.RootPath, "go-build") {
-		c.RootPath = "."
-	}
-
-	config, err := configparser.Read(FromRootDir("config.ini"))
+	config, err := configparser.Read(WorkDir("config.ini"))
 	checkErr(err)
 
 	mainConfig, err := config.Section("Main")
@@ -136,8 +129,10 @@ func (c *config) Update() {
 	c.Version = version
 }
 
-func FromRootDir(path string) string {
-	return filepath.Join(Config.RootPath, path)
+func WorkDir(path string) string {
+	wd, err := os.Getwd()
+	checkErr(err)
+	return filepath.Join(wd, path)
 }
 
 func checkErr(err error) {

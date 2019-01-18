@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/supme/gonder/models"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,7 +25,7 @@ func newLang(paths ...string) (*languages, error) {
 	)
 
 	for _, path := range paths {
-		fi, err = filepath.Glob(models.FromRootDir(path))
+		fi, err = filepath.Glob(path)
 		if err != nil {
 			return l, err
 		}

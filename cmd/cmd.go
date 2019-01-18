@@ -195,7 +195,7 @@ func stopProcess(name string) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
+	file, err := os.Open(models.WorkDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func stopProcess(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, _ := os.FindProcess(p)
 	if err != nil {
-		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+		os.Remove(models.WorkDir("pid/" + name + ".pid"))
 		return errFailedFindProcess
 	}
 	// ToDo wait
@@ -215,7 +215,7 @@ func stopProcess(name string) error {
 	if err != nil {
 		return err
 	}
-	os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+	os.Remove(models.WorkDir("pid/" + name + ".pid"))
 
 	fmt.Println("Process " + name + " stoped")
 	return nil
@@ -223,7 +223,7 @@ func stopProcess(name string) error {
 
 func setPid(name string, pid int) error {
 	p := strconv.Itoa(pid)
-	file, err := os.Create(models.FromRootDir("pid/" + name + ".pid"))
+	file, err := os.Create(models.WorkDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func setPid(name string, pid int) error {
 }
 
 func checkPid(name string) error {
-	file, err := os.Open(models.FromRootDir("pid/" + name + ".pid"))
+	file, err := os.Open(models.WorkDir("pid/" + name + ".pid"))
 	if err != nil {
 		return err
 	}
@@ -249,12 +249,12 @@ func checkPid(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+		os.Remove(models.WorkDir("pid/" + name + ".pid"))
 		return errFailedFindProcess
 	}
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		os.Remove(models.FromRootDir("pid/" + name + ".pid"))
+		os.Remove(models.WorkDir("pid/" + name + ".pid"))
 		return errProcessNotResponse
 	}
 
