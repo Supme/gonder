@@ -98,7 +98,7 @@ create new group with name "New group" and return added ID in response:
 	
 <details> 
 
-<summary>Save groups</summary>	
+<summary>Save groups name</summary>	
 	 
 ```json
 {
@@ -181,6 +181,27 @@ response:
 
 <details> 
 
+<summary>Add campaign</summary>
+
+```json
+{
+ "cmd":"add"
+}
+```
+
+create new campaign with name "New campaign" and return added ID in response:
+
+```json
+{
+  "recid":3
+}
+```
+
+</details>
+
+
+<details> 
+
 <summary>Save campaigns name</summary>
 
 ```json
@@ -204,6 +225,28 @@ response:
       {"recid":1,"name":"Campaign 1"},
       {"recid":4,"name":"My campaign 4"}
     ]
+}
+```
+
+</details>
+
+<details> 
+
+<summary>Clone campaign</summary>
+
+```json
+{
+  "cmd":"clone",
+  "id":23
+}
+```
+
+clone campaign in new campaign this name "[Clone] Original campaign name" and return added ID in response:
+
+```json
+{
+  "recid":32,
+  "name": "[Clone] Original campaign name"
 }
 ```
 
