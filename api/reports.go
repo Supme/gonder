@@ -168,7 +168,7 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Printf("%v\r\n", r.Form["recipient"])
+
 	var campaign string
 	if len(r.Form["recipient"]) == 1 {
 		err = models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", r.Form["recipient"][0]).Scan(&campaign)
