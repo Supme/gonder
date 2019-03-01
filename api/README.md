@@ -717,14 +717,16 @@ response show count clicks to links
     "email":"Alice@mail.tld",
     "name":"Alice",
     "date":1524505276,
-    "open":true,"status":"Ok",
+    "open":true,
+    "status":"Ok"
   },
   {
     "id":1726191,
     "email":"bob@mail.tld",
     "name":"Bob",
     "date":1524505275,
-    "open":false,"status":"Ok",
+    "open":false,
+    "status":"Ok"
   }
 ]
 ```
