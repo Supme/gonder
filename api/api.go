@@ -119,11 +119,13 @@ func Run() {
 	api.Handle("/api/", apiHandler(apiRequest, true))
 
 	// Reports
-	api.Handle("/report", apiHandler(report, true))
-	api.Handle("/report/status", apiHandler(reportCampaignStatus, true))
-	api.Handle("/report/jump", apiHandler(reportJumpDetailedCount, true))
+	api.Handle("/report/started", apiHandler(reportStartedCampaign, true))
+	api.Handle("/report/summary", apiHandler(reportSummary, true))
+	api.Handle("/report/clickcount", apiHandler(reportClickCount, true))
+	api.Handle("/report/recipients", apiHandler(reportRecipientsList, true))
+	api.Handle("/report/clicks", apiHandler(reportRecipientClicks, true))
 	api.Handle("/report/unsubscribed", apiHandler(reportUnsubscribed, true))
-	api.Handle("/report/recipients", apiHandler(reportRecipientsCsv, true))
+	api.Handle("/report/recipients_csv", apiHandler(reportRecipientsCsv, true))
 
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))

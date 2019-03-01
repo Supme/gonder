@@ -651,7 +651,7 @@ ___
 
 <summary>Started campaigns</summary>
 
-request example ```/report/status```
+request example ```/report/started```
 
 response show id's running campaigns
 ```json
@@ -664,7 +664,7 @@ response show id's running campaigns
 
 <summary>Campaign summary</summary>
 
-request example ```/report?campaign=2318```
+request example ```/report/summary?campaign=2318```
 
 response
 ```json
@@ -687,11 +687,11 @@ response
 
 <details> 
 
-<summary>Campaign link clicks</summary>
+<summary>Campaign clicks count</summary>
 
-request example ```/report/jump?campaign=2318```
+request example ```/report/clickcount?campaign=2318```
 
-response show count jumping to links
+response show count clicks to links
 ```json
 {
   "[Соц.сеть/Facebook]http://www.facebook.com/JaguarRussia/": 68,
@@ -703,6 +703,58 @@ response show count jumping to links
 
 </details>
 
+<details> 
+
+<summary>Campaign recipients list</summary>
+
+request example ```/report/recipients?campaign=2318```
+
+response show count clicks to links
+```json
+[
+  {
+    "id":1726190,
+    "email":"Alice@mail.tld",
+    "name":"Alice",
+    "date":1524505276,
+    "open":true,"status":"Ok",
+  },
+  {
+    "id":1726191,
+    "email":"bob@mail.tld",
+    "name":"Bob",
+    "date":1524505275,
+    "open":false,"status":"Ok",
+  }
+]
+```
+
+</details>
+
+<details> 
+
+<summary>Recipient clicks</summary>
+
+request example ```/report/clicks?recipient=1726190```
+
+response show count clicks to links
+```json
+[
+  {
+    "url":"web_version",
+    "date":1524505287,
+  },
+  {
+    "url":"open_trace",
+    "date":1524505288,
+  },
+  {
+    "url": "[Pikabu]https://pikabu.ru/"
+  }
+]
+```
+
+</details>
 
 <details> 
 
