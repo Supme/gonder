@@ -744,11 +744,11 @@ response show count clicks to links
 [
   {
     "url":"web_version",
-    "date":1524505287,
+    "date":1524505287
   },
   {
     "url":"open_trace",
-    "date":1524505288,
+    "date":1524505288
   },
   {
     "url": "[Pikabu]https://pikabu.ru/",
