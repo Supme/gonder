@@ -56,7 +56,7 @@ $('#campaignRecipient').w2grid({
         ],
         onClick: function (event) {
             if (event.target == "csv") {
-                var url = '/report/recipients_csv?' +
+                var url = '/report/file/recipients?' +
                     'campaign=' + w2ui.campaign.getSelection()[0] + '&' +
                     'params=' + JSON.stringify({
                         sort: w2ui['recipient'].sortData,
