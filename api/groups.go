@@ -25,7 +25,7 @@ func groups(req request) (js []byte, err error) {
 	switch req.Cmd {
 
 	case "get":
-		if user.Right("get-groups") {
+		if req.auth.Right("get-groups") {
 			gs, err = getGroups(req)
 			if err != nil {
 				return js, err
@@ -39,8 +39,8 @@ func groups(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden get group")
 
 	case "save":
-		if user.Right("save-groups") {
-			err = saveGroups(req.Changes)
+		if req.auth.Right("save-groups") {
+			err = saveGroups(req.Changes, req.auth)
 			if err != nil {
 				return js, err
 			}
@@ -57,7 +57,7 @@ func groups(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden save groups")
 
 	case "add":
-		if user.Right("add-groups") {
+		if req.auth.Right("add-groups") {
 			g, err = addGroup()
 			if err != nil {
 				return js, err
@@ -92,7 +92,7 @@ func addGroup() (grp, error) {
 	return g, nil
 }
 
-func saveGroups(changes []map[string]interface{}) (err error) {
+func saveGroups(changes []map[string]interface{}, user *Auth) (err error) {
 	var where string
 
 	if user.IsAdmin() {
@@ -120,9 +120,9 @@ func getGroups(req request) (grps, error) {
 		err                error
 	)
 	gs.Records = []grp{}
-	if !user.IsAdmin() {
+	if !req.auth.IsAdmin() {
 		where = "WHERE id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
-		params = append(params, user.userID)
+		params = append(params, req.auth.userID)
 	} else {
 		where = "WHERE 1=1"
 	}

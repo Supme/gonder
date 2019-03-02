@@ -9,6 +9,7 @@ import (
 )
 
 func campaignLog(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-campaign") {
 		logHandler(w, r, "./log/campaign.log")
 	} else {
@@ -18,6 +19,7 @@ func campaignLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiLog(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-api") {
 		logHandler(w, r, "./log/api.log")
 	} else {
@@ -27,6 +29,7 @@ func apiLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func utmLog(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-utm") {
 		logHandler(w, r, "./log/utm.log")
 	} else {
@@ -36,6 +39,7 @@ func utmLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func mainLog(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-main") {
 		logHandler(w, r, "./log/main.log")
 	} else {

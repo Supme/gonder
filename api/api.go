@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	user   auth
+	//user   Auth
 	apilog *log.Logger
 	min    *minify.M
 	lang   *languages
@@ -74,7 +74,7 @@ func init() {
 func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
 	var handler http.Handler
 	if checkAuth {
-		handler = user.Check(fn)
+		handler = CheckAuth(fn)
 	} else {
 		handler = fn
 	}
@@ -150,12 +150,12 @@ func Run() {
 		}
 	})
 
-	api.HandleFunc("/logout", user.Logout)
+	api.HandleFunc("/logout", Logout)
 
-	api.HandleFunc("/status/ws/campaign.log", user.Check(campaignLog))
-	api.HandleFunc("/status/ws/api.log", user.Check(apiLog))
-	api.HandleFunc("/status/ws/utm.log", user.Check(utmLog))
-	api.HandleFunc("/status/ws/main.log", user.Check(mainLog))
+	api.HandleFunc("/status/ws/campaign.log", CheckAuth(campaignLog))
+	api.HandleFunc("/status/ws/api.log", CheckAuth(apiLog))
+	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmLog))
+	api.HandleFunc("/status/ws/main.log", CheckAuth(mainLog))
 
 	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -247,6 +247,8 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	req.auth = r.Context().Value("Auth").(*Auth)
 
 	switch r.URL.Path {
 	case "/api/users":

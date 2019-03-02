@@ -13,7 +13,7 @@ type sndrList struct {
 }
 
 func senderList(req request) (js []byte, err error) {
-	if user.Right("get-groups") && user.GroupRight(req.ID) {
+	if req.auth.Right("get-groups") && req.auth.GroupRight(req.ID) {
 		var id int64
 		var email, name string
 		var fs = []sndrList{}

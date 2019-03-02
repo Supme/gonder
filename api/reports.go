@@ -40,6 +40,7 @@ func reportSummary(w http.ResponseWriter, r *http.Request) {
 	if len(r.Form["campaign"]) > 0 {
 		campaignID = r.Form["campaign"][0]
 	}
+	user := r.Context().Value("Auth").(*Auth)
 	if user.CampaignRight(campaignID) {
 		reports := make(map[string]interface{})
 		reports["Campaign"], err = _reportCampaignInfo(campaignID)
@@ -79,6 +80,7 @@ func reportClickCount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user := r.Context().Value("Auth").(*Auth)
 	if r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0]) {
 		var url string
 		var count int
@@ -114,6 +116,7 @@ func reportRecipientsList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user := r.Context().Value("Auth").(*Auth)
 	if r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0]) && user.Right("get-recipient-parameters") {
 		type rcptLineType struct {
 			Id     int64  `json:"id"`
@@ -183,10 +186,11 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := r.Context().Value("Auth").(*Auth)
 	if err == nil && user.CampaignRight(campaign) && user.Right("get-recipient-parameters") {
 		type clickType struct {
 			URL  string `json:"url"`
-			Date   int64 `json:"date"`
+			Date int64  `json:"date"`
 		}
 
 		query, err := models.Db.Query("SELECT `url`, `date` FROM `jumping` WHERE `recipient_id`=?", r.Form["recipient"][0])
@@ -226,7 +230,6 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status": "error", "message": "Forbidden get reports for this recipient"}`))
 }
 
-
 func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
@@ -236,6 +239,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := r.Context().Value("Auth").(*Auth)
 	if (r.Form["group"] != nil && user.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0])) {
 		var (
 			id                 int64

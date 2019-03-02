@@ -33,7 +33,7 @@ func profiles(req request) (js []byte, err error) {
 	switch req.Cmd {
 
 	case "get":
-		if user.Right("get-profiles") {
+		if req.auth.Right("get-profiles") {
 			ps, err = getProfiles(req)
 			if err != nil {
 				return js, err
@@ -47,7 +47,7 @@ func profiles(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden get profiles")
 
 	case "add":
-		if user.Right("add-profiles") {
+		if req.auth.Right("add-profiles") {
 			p, err = addProfile()
 			if err != nil {
 				return js, err
@@ -61,7 +61,7 @@ func profiles(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden get profiles")
 
 	case "delete":
-		if user.Right("delete-profiles") {
+		if req.auth.Right("delete-profiles") {
 			deleteProfiles(req.Selected)
 			js, err = json.Marshal(ps)
 			if err != nil {
@@ -72,7 +72,7 @@ func profiles(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden get profiles")
 
 	case "save":
-		if user.Right("save-profiles") {
+		if req.auth.Right("save-profiles") {
 			err = saveProfiles(req.Changes)
 			if err != nil {
 				return js, err

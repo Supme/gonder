@@ -15,7 +15,7 @@ import (
 func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
 	case "get":
-		if user.Right("get-campaign") && user.CampaignRight(req.ID) {
+		if req.auth.Right("get-campaign") && req.auth.CampaignRight(req.ID) {
 			var start, end mysql.NullTime
 			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`body`,`accepted` FROM campaign WHERE id=?", req.ID).Scan(
 				&req.Content.ID,
@@ -47,7 +47,7 @@ func campaign(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if user.Right("save-campaign") && user.CampaignRight(req.ID) {
+		if req.auth.Right("save-campaign") && req.auth.CampaignRight(req.ID) {
 			var accepted bool
 			row := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", req.ID)
 			err = row.Scan(&accepted)
@@ -95,7 +95,7 @@ func campaign(req request) (js []byte, err error) {
 		}
 
 	case "accept":
-		if user.Right("accept-campaign") && user.CampaignRight(req.ID) {
+		if req.auth.Right("accept-campaign") && req.auth.CampaignRight(req.ID) {
 			var accepted int
 			if req.Select {
 				accepted = 1

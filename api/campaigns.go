@@ -25,7 +25,7 @@ func campaigns(req request) (js []byte, err error) {
 	switch req.Cmd {
 
 	case "get":
-		if user.Right("get-campaigns") {
+		if req.auth.Right("get-campaigns") {
 			cs, err = getCampaigns(req)
 			if err != nil {
 				return js, err
@@ -39,8 +39,8 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if user.Right("save-campaigns") {
-			err = saveCampaigns(req.Changes)
+		if req.auth.Right("save-campaigns") {
+			err = saveCampaigns(req.Changes, req.auth)
 			if err != nil {
 				return js, err
 			}
@@ -57,7 +57,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "add":
-		if user.Right("add-campaigns") {
+		if req.auth.Right("add-campaigns") {
 			var c camp
 			c, err = addCampaign(req.ID)
 			if err != nil {
@@ -72,7 +72,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "clone":
-		if user.Right("add-campaigns") {
+		if req.auth.Right("add-campaigns") {
 			var c camp
 			c, err := cloneCampaign(req.ID)
 			if err != nil {
@@ -166,7 +166,7 @@ func addCampaign(groupID int64) (camp, error) {
 	return c, nil
 }
 
-func saveCampaigns(changes []map[string]interface{}) error {
+func saveCampaigns(changes []map[string]interface{}, user *Auth) error {
 	var where string
 
 	if user.IsAdmin() {
@@ -195,11 +195,11 @@ func getCampaigns(req request) (camps, error) {
 	)
 	cs.Records = []camp{}
 	params = append(params, req.ID)
-	if user.IsAdmin() {
+	if req.auth.IsAdmin() {
 		where = "`group_id`=?"
 	} else {
 		where = "`group_id`=? AND `group_id` IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
-		params = append(params, user.userID)
+		params = append(params, req.auth.userID)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {

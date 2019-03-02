@@ -26,7 +26,7 @@ func sender(req request) (js []byte, err error) {
 	switch req.Cmd {
 
 	case "get":
-		if user.Right("get-groups") && user.GroupRight(req.ID) {
+		if req.auth.Right("get-groups") && req.auth.GroupRight(req.ID) {
 			var f sndr
 			var fs sndrs
 			fs.Records = []sndr{}
@@ -59,14 +59,14 @@ func sender(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden get groups")
 
 	case "save":
-		if user.Right("save-groups") && user.GroupRight(req.ID) {
+		if req.auth.Right("save-groups") && req.auth.GroupRight(req.ID) {
 			var group int64
 			err = models.Db.QueryRow("SELECT `group_id` FROM `sender` WHERE `id`=?", req.ID).Scan(&group)
 			if err != nil {
 				log.Println(err)
 				return js, err
 			}
-			if user.GroupRight(group) {
+			if req.auth.GroupRight(group) {
 				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=?, `dkim_selector`=?, `dkim_key`=?, `dkim_use`=? WHERE `id`=?", req.Email, req.Name, req.DkimSelector, req.DkimKey, req.DkimUse, req.ID)
 				if err != nil {
 					log.Println(err)
@@ -79,7 +79,7 @@ func sender(req request) (js []byte, err error) {
 		return js, errors.New("Forbidden save groups")
 
 	case "add":
-		if user.Right("save-groups") && user.GroupRight(req.ID) {
+		if req.auth.Right("save-groups") && req.auth.GroupRight(req.ID) {
 			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.DkimSelector, req.DkimKey, req.DkimUse)
 			if err != nil {
 				log.Println(err)

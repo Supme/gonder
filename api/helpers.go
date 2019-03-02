@@ -22,6 +22,8 @@ type campaignData struct {
 }
 
 type request struct {
+	auth *Auth
+
 	Cmd      string        `json:"cmd"`
 	Selected []interface{} `json:"selected,omitempty"`
 	Limit    int64         `json:"limit"`

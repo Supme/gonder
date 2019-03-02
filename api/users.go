@@ -25,7 +25,7 @@ func users(req request) (js []byte, err error) {
 		Records []userList `json:"records"`
 	}
 
-	if user.IsAdmin() {
+	if req.auth.IsAdmin() {
 		switch req.Cmd {
 		case "get":
 			var (

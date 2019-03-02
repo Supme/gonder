@@ -23,6 +23,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := r.Context().Value("Auth").(*Auth)
 	if !user.Right("get-recipients") && !user.CampaignRight(campaign) {
 		apilog.Println(err)
 		w.WriteHeader(http.StatusForbidden)

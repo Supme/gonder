@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"github.com/supme/directEmail"
@@ -10,17 +11,18 @@ import (
 	"net/url"
 )
 
-type auth struct {
+type Auth struct {
 	name   string
 	userID int64
 	unitID int64
 }
 
-func (a *auth) Check(fn http.HandlerFunc) http.HandlerFunc {
+func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
+	auth := new(Auth)
 	return func(w http.ResponseWriter, r *http.Request) {
 		var authorize bool
 		user, password, _ := r.BasicAuth()
-		a.userID, a.unitID, authorize = check(user, password)
+		auth.userID, auth.unitID, authorize = check(user, password)
 		if !authorize {
 			if user != "" {
 				ip := models.GetIP(r)
@@ -44,19 +46,20 @@ func (a *auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(401)
 			return
 		}
-		a.name = user
+		auth.name = user
 
 		uri, err := url.QueryUnescape(r.RequestURI)
 		if err != nil {
 			log.Println(err)
 		}
-		apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), a.name, r.Method, uri)
+		apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.name, r.Method, uri)
 
-		fn(w, r)
+		ctx := context.WithValue(r.Context(), "Auth", auth)
+		fn(w, r.WithContext(ctx))
 	}
 }
 
-func (a *auth) GroupRight(group interface{}) bool {
+func (a *Auth) GroupRight(group interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
@@ -74,7 +77,7 @@ func (a *auth) GroupRight(group interface{}) bool {
 	return r
 }
 
-func (a *auth) CampaignRight(campaign interface{}) bool {
+func (a *Auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
@@ -92,7 +95,7 @@ func (a *auth) CampaignRight(campaign interface{}) bool {
 	return r
 }
 
-func (a *auth) Right(right string) bool {
+func (a *Auth) Right(right string) bool {
 	var r bool
 
 	if a.IsAdmin() {
@@ -108,7 +111,7 @@ func (a *auth) Right(right string) bool {
 	return r
 }
 
-func (a *auth) IsAdmin() bool {
+func (a *Auth) IsAdmin() bool {
 	// admins has group 0
 	if a.unitID == 0 {
 		return true
@@ -140,7 +143,7 @@ func check(user, password string) (int64, int64, bool) {
 }
 
 //ToDo
-func (a *auth) Logout(w http.ResponseWriter, r *http.Request) {
+func Logout(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("Authorization", "Basic")
 	http.Error(w, "Logout. Bye!", 401)
 }

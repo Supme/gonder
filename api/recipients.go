@@ -59,7 +59,7 @@ func recipients(req request) (js []byte, err error) {
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
-			if !user.Right("get-recipients") && !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("get-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden get recipients")
 			}
 			var rs recipsTable
@@ -70,7 +70,7 @@ func recipients(req request) (js []byte, err error) {
 			js, err = json.Marshal(rs)
 
 		case "add":
-			if !user.Right("upload-recipients") && !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("upload-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden add recipients")
 			}
 			err = addRecipients(req.Campaign, req.Recipients)
@@ -79,7 +79,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "upload":
-			if user.Right("upload-recipients") && user.CampaignRight(req.Campaign) {
+			if req.auth.Right("upload-recipients") && req.auth.CampaignRight(req.Campaign) {
 				var content []byte
 				content, err = base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {
@@ -102,7 +102,7 @@ func recipients(req request) (js []byte, err error) {
 					log.Println(err)
 					return js, err
 				}
-				apilog.Print(user.name, " upload file ", req.FileName)
+				apilog.Print(req.auth.name, " upload file ", req.FileName)
 
 				switch path.Ext(req.FileName) {
 				case ".csv":
@@ -148,7 +148,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "progress":
-			if user.Right("upload-recipients") {
+			if req.auth.Right("upload-recipients") {
 				progress.RLock()
 				if val, ok := progress.cnt[req.Name]; ok {
 					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
@@ -159,7 +159,7 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "clear":
-			if !user.Right("delete-recipients") || !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("delete-recipients") || !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
 			}
 			err = delRecipients(req.Campaign)
@@ -168,16 +168,16 @@ func recipients(req request) (js []byte, err error) {
 			}
 
 		case "resend4xx":
-			if !user.Right("accept-campaign") && !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("accept-campaign") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden resend campaign")
 			}
-			err = resendCampaign(req.Campaign)
+			err = resendCampaign(req.Campaign, req.auth)
 			if err != nil {
 				return js, errors.New("Can't resend")
 			}
 
 		case "deduplicate":
-			if !user.Right("delete-recipients") && !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("delete-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
 			}
 			var cnt int64
@@ -189,7 +189,7 @@ func recipients(req request) (js []byte, err error) {
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
 		case "unavaible":
-			if !user.Right("delete-recipients") && !user.CampaignRight(req.Campaign) {
+			if !req.auth.Right("delete-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden mark unavaible recipients")
 			}
 			var cnt int64
@@ -211,7 +211,7 @@ func recipients(req request) (js []byte, err error) {
 			if err != nil {
 				return js, err
 			}
-			if !user.Right("get-recipient-parameters") || !user.CampaignRight(rID) {
+			if !req.auth.Right("get-recipient-parameters") || !req.auth.CampaignRight(rID) {
 				return js, errors.New("Forbidden get recipient parameters")
 			}
 			var ps recipParams
@@ -395,7 +395,7 @@ func addRecipients(campaignID int64, recipients recips) error {
 	return err
 }
 
-func resendCampaign(campaignID int64) error {
+func resendCampaign(campaignID int64, user *Auth) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
 	if err != err {
 		log.Println(err)

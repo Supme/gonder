@@ -20,7 +20,7 @@ func units(req request) (js []byte, err error) {
 	}
 	type unitRight map[string]bool
 
-	if user.IsAdmin() {
+	if req.auth.IsAdmin() {
 		switch req.Cmd {
 
 		case "get":

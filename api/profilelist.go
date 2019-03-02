@@ -13,7 +13,7 @@ type pList struct {
 }
 
 func profilesList(req request) (js []byte, err error) {
-	if user.Right("get-campaign") {
+	if req.auth.Right("get-campaign") {
 		psl, err := getProfilesList()
 		if err != nil {
 			return js, err
