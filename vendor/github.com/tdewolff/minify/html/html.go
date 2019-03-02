@@ -16,7 +16,7 @@ var (
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
 	doctypeBytes    = []byte("<!doctype html>")
-	jsMimeBytes     = []byte("text/javascript")
+	jsMimeBytes     = []byte("application/javascript")
 	cssMimeBytes    = []byte("text/css")
 	htmlMimeBytes   = []byte("text/html")
 	svgMimeBytes    = []byte("image/svg+xml")
@@ -24,6 +24,7 @@ var (
 	dataSchemeBytes = []byte("data:")
 	jsSchemeBytes   = []byte("javascript:")
 	httpBytes       = []byte("http")
+	inlineParams    = map[string]string{"inline": "1"}
 )
 
 ////////////////////////////////////////////////////////////////
@@ -53,12 +54,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	omitSpace := true // if true the next leading space is omitted
 	inPre := false
 
-	defaultScriptType := jsMimeBytes
-	defaultScriptParams := map[string]string(nil)
-	defaultStyleType := cssMimeBytes
-	defaultStyleParams := map[string]string(nil)
-	defaultInlineStyleParams := map[string]string{"inline": "1"}
-
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
@@ -80,10 +75,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case html.CommentToken:
-			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]")) || bytes.Equal(t.Text, []byte("<![endif]"))) {
+			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
-				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && len(t.Data) > len("<!--[if ]><![endif]-->") { // downlevel-hidden
+				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden
 					begin := bytes.IndexByte(t.Data, '>') + 1
 					end := len(t.Data) - len("<![endif]-->")
 					if _, err := w.Write(t.Data[:begin]); err != nil {
@@ -126,11 +121,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					} else if len(rawTagMediatype) > 0 {
 						mimetype, params = parse.Mediatype(rawTagMediatype)
 					} else if rawTagHash == html.Script {
-						mimetype = defaultScriptType
-						params = defaultScriptParams
+						mimetype = jsMimeBytes
 					} else if rawTagHash == html.Style {
-						mimetype = defaultStyleType
-						params = defaultStyleParams
+						mimetype = cssMimeBytes
 					}
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
@@ -289,18 +282,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 									content.Hash = html.Charset
 									content.AttrVal = []byte("utf-8")
 								}
-							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
-								content.AttrVal = minify.Mediatype(content.AttrVal)
-								defaultStyleType, defaultStyleParams = parse.Mediatype(content.AttrVal)
-								if defaultStyleParams != nil {
-									defaultInlineStyleParams = defaultStyleParams
-									defaultInlineStyleParams["inline"] = "1"
-								} else {
-									defaultInlineStyleParams = map[string]string{"inline": "1"}
-								}
-							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
-								content.AttrVal = minify.Mediatype(content.AttrVal)
-								defaultScriptType, defaultScriptParams = parse.Mediatype(content.AttrVal)
 							}
 						}
 						if name := attrs[3]; name != nil {
@@ -330,6 +311,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					attrs := tb.Attributes(html.Src, html.Charset)
 					if attrs[0] != nil && attrs[1] != nil {
 						attrs[1].Text = nil
+					}
+				} else if t.Hash == html.Input {
+					attrs := tb.Attributes(html.Type, html.Value)
+					if t, value := attrs[0], attrs[1]; t != nil && value != nil {
+						isRadio := parse.EqualFold(t.AttrVal, []byte("radio"))
+						if !isRadio && len(value.AttrVal) == 0 {
+							value.Text = nil
+						} else if isRadio && parse.EqualFold(value.AttrVal, []byte("on")) {
+							value.Text = nil
+						}
 					}
 				}
 
@@ -362,8 +353,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						attr.Hash == html.Lang ||
 						attr.Hash == html.Name ||
 						attr.Hash == html.Title ||
-						attr.Hash == html.Action && t.Hash == html.Form ||
-						attr.Hash == html.Value && t.Hash == html.Input) {
+						attr.Hash == html.Action && t.Hash == html.Form) {
 						continue // omit empty attribute values
 					}
 					if attr.Traits&caselessAttr != 0 {
@@ -377,7 +367,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					// default attribute values can be omitted
-					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && bytes.Equal(val, []byte("text/javascript")) ||
+					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && jsMimetypes[string(val)] ||
 						t.Hash == html.Style && bytes.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Link && bytes.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Input && bytes.Equal(val, []byte("text")) ||
@@ -400,7 +390,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if err := m.MinifyMimetype(defaultStyleType, attrMinifyBuffer, buffer.NewReader(val), defaultInlineStyleParams); err == nil {
+						if err := m.MinifyMimetype(cssMimeBytes, attrMinifyBuffer, buffer.NewReader(val), inlineParams); err == nil {
 							val = attrMinifyBuffer.Bytes()
 						} else if err != minify.ErrNotExist {
 							return err
@@ -413,7 +403,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							val = val[11:]
 						}
 						attrMinifyBuffer.Reset()
-						if err := m.MinifyMimetype(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val), defaultScriptParams); err == nil {
+						if err := m.MinifyMimetype(jsMimeBytes, attrMinifyBuffer, buffer.NewReader(val), nil); err == nil {
 							val = attrMinifyBuffer.Bytes()
 						} else if err != minify.ErrNotExist {
 							return err

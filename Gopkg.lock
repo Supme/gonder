@@ -2,82 +2,103 @@
 
 
 [[projects]]
+  digest = "1:0803645e1f57fb5271a6edc7570b9ea59bac2e5de67957075a43f3d74c8dbd97"
   name = "github.com/NYTimes/gziphandler"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2600fb119af974220d3916a5916d6e31176aac1b"
   version = "v1.0.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:cdc6f15d203b9e290cfa83085db22b484001626105cab1d539e5c57274974ec1"
   name = "github.com/alyu/configparser"
   packages = ["."]
+  pruneopts = "UT"
   revision = "c505e6011694d3c8c1accccea3c9f57eef22afb1"
 
 [[projects]]
+  digest = "1:7b94d37d65c0445053c6f3e73090e3966c1c29127035492c349e14f25c440359"
   name = "github.com/boombuler/barcode"
   packages = [
     ".",
     "qr",
-    "utils"
+    "utils",
   ]
+  pruneopts = "UT"
   revision = "3cfea5ab600ae37946be2b763b8ec2c1cf2d272d"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
+  pruneopts = "UT"
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
 
 [[projects]]
+  digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
-  revision = "d523deb1b23d913de5bdada721a6071e71283618"
-  version = "v1.4.0"
+  pruneopts = "UT"
+  revision = "72cd26f257d44c1114970e19afddcd812016007e"
+  version = "v1.4.1"
 
 [[projects]]
+  digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
+  pruneopts = "UT"
   revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
   version = "v1.4.0"
 
 [[projects]]
+  digest = "1:49f6abbce9ade5f43508429e4af1adcce55d27adcd62719fea049decc766a7c9"
   name = "github.com/gravitational/tail"
   packages = [
     ".",
     "ratelimiter",
     "util",
     "watch",
-    "winfile"
+    "winfile",
   ]
+  pruneopts = "UT"
   revision = "f50ab22a2454512d7bb89dc1d675a07e2c26b059"
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:177c01fe6f6eb9695736edf7e55cb16ee57fe4df63c537928d2d24f1083be417"
   name = "github.com/supme/directEmail"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ac5a15cab9ac3dab9b10612840f7f28736004af6"
   version = "0.2"
 
 [[projects]]
   branch = "master"
+  digest = "1:775b2b8c973da217ae5874a7842fb4b0e06ffe2ba3c14dbef43a4ae00a6e5e6d"
   name = "github.com/supme/smtpSender"
   packages = ["."]
+  pruneopts = "UT"
   revision = "488f38aec0d1bbb2c76e3290677cf82120662f28"
 
 [[projects]]
+  digest = "1:29cb31843aeb4b290ace841e9c78a0b2927600e35c4302ff109e3a78fa80573a"
   name = "github.com/tdewolff/minify"
   packages = [
     ".",
     "css",
     "html",
     "js",
-    "json"
+    "json",
   ]
-  revision = "8d72a4127ae33b755e95bffede9b92e396267ce2"
-  version = "v2.3.5"
+  pruneopts = "UT"
+  revision = "c86dd764169e70ab04e3b0d5fd5e478657a6c83d"
+  version = "v2.3.6"
 
 [[projects]]
+  digest = "1:e9eaf252d78ce203d2f22631428f4e233013aabd8840baead4019e903003bb66"
   name = "github.com/tdewolff/parse"
   packages = [
     ".",
@@ -86,40 +107,50 @@
     "html",
     "js",
     "json",
-    "strconv"
+    "strconv",
   ]
-  revision = "d739d6fccb0971177e06352fea02d3552625efb1"
-  version = "v2.3.3"
+  pruneopts = "UT"
+  revision = "1b0354dccc7aceb4528eb638fbfec60d20338a29"
+  version = "v2.3.4"
 
 [[projects]]
+  digest = "1:e60f2f1cd2e8dfdea48c2440c303d103266e754ab1d8b75796a4e4caddb7a68c"
   name = "github.com/tealeg/xlsx"
   packages = ["."]
+  pruneopts = "UT"
   revision = "8be35264fa75a1bbe954ce51eba04f273e2c59e5"
   version = "v1.0.3"
 
 [[projects]]
   branch = "master"
+  digest = "1:626151ac73c7ed5a6f6570c4d22d2cf5c12f8ce70539011e2a98a39904864a64"
   name = "github.com/toorop/go-dkim"
   packages = ["."]
+  pruneopts = "UT"
   revision = "83672023c79e6b352bf9d4908e6c060c7a24323c"
 
 [[projects]]
   branch = "master"
+  digest = "1:18409f5d48d9755b5fc989a891344b5cfbc482156a9899a1223ff07619d65654"
   name = "golang.org/x/net"
   packages = [
     "idna",
     "internal/socks",
-    "proxy"
+    "proxy",
   ]
-  revision = "f04abc6bdfa7a0171a8a0c9fd2ada9391044d056"
+  pruneopts = "UT"
+  revision = "915654e7eabcea33ae277abbecf52f0d8b7a9fdc"
 
 [[projects]]
   branch = "master"
+  digest = "1:f6f6d9d6f80c9e32acc0f4f3b904e0b9f5b18a7757c2ef941121bd79a10e7bdf"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "b09afc3d579e346c4a7e4705953acaf6f9e551bd"
+  pruneopts = "UT"
+  revision = "11f53e03133963fb11ae0588e08b5e0b85be8be5"
 
 [[projects]]
+  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -135,26 +166,50 @@
     "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
-    "unicode/rangetable"
+    "unicode/rangetable",
   ]
+  pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
   name = "google.golang.org/appengine"
   packages = ["cloudsql"]
-  revision = "ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06"
-  version = "v1.2.0"
+  pruneopts = "UT"
+  revision = "e9657d882bb81064595ca3b56cbe2546bbabf7b1"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "v1"
+  digest = "1:0caa92e17bc0b65a98c63e5bc76a9e844cd5e56493f8fdbb28fad101a16254d9"
   name = "gopkg.in/tomb.v1"
   packages = ["."]
+  pruneopts = "UT"
   revision = "dd632973f1e7218eb1089048e0798ec9ae7dceb8"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8c10a6785f5c825680aa975cae6e71735c958dda48829521aad58e44d12e889a"
+  input-imports = [
+    "github.com/NYTimes/gziphandler",
+    "github.com/alyu/configparser",
+    "github.com/boombuler/barcode",
+    "github.com/boombuler/barcode/qr",
+    "github.com/go-sql-driver/mysql",
+    "github.com/gorilla/websocket",
+    "github.com/gravitational/tail",
+    "github.com/supme/directEmail",
+    "github.com/supme/smtpSender",
+    "github.com/tdewolff/minify",
+    "github.com/tdewolff/minify/css",
+    "github.com/tdewolff/minify/html",
+    "github.com/tdewolff/minify/js",
+    "github.com/tdewolff/minify/json",
+    "github.com/tdewolff/parse",
+    "github.com/tdewolff/parse/buffer",
+    "github.com/tdewolff/parse/html",
+    "github.com/tealeg/xlsx",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

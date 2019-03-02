@@ -1,6 +1,6 @@
 # Minify <a name="minify"></a> [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Coverage Status](https://coveralls.io/repos/github/tdewolff/minify/badge.svg?branch=master)](https://coveralls.io/github/tdewolff/minify?branch=master) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**[Online demo](http://go.tacodewolff.nl/minify) if you need to minify files *now*.**
+**[Online demo](https://go.tacodewolff.nl/minify) if you need to minify files *now*.**
 
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
 
@@ -72,7 +72,7 @@ This minifier proves to be that fast and extensive minifier that can handle HTML
 ## Installation
 Run the following command
 
-	go get github.com/tdewolff/minify
+	go get -u github.com/tdewolff/minify
 
 or add the following imports and run the project with `go get`
 ``` go
@@ -168,7 +168,7 @@ The HTML5 minifier uses these minifications:
 Options:
 
 - `KeepConditionalComments` preserve all IE conditional comments such as `<!--[if IE 6]><![endif]-->` and `<![if IE 6]><![endif]>`, see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
-- `KeepDefaultAttrVals` preserve default attribute values such as `<script type="text/javascript">`
+- `KeepDefaultAttrVals` preserve default attribute values such as `<script type="application/javascript">`
 - `KeepDocumentTags` preserve `html`, `head` and `body` tags
 - `KeepEndTags` preserve all end tags
 - `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
@@ -184,25 +184,27 @@ Make sure your HTML doesn't depend on whitespace between `block` elements that h
 
 ## CSS
 
-Minification typically shaves off about 10%-15%.
+Minification typically shaves off about 10%-15%. This CSS minifier will _not_ do structural changes to your stylesheets. Although this could result in smaller files, the complexity is quite high and the risk of breaking website is high too.
 
 The CSS minifier will only use safe minifications:
 
-- remove comments and unnecessary whitespace
+- remove comments and unnecessary whitespace (but keep `/*! ... */` which usually contains the license)
 - remove trailing semicolons
 - optimize `margin`, `padding` and `border-width` number of sides
 - shorten numbers by removing unnecessary `+` and zeros and rewriting with/without exponent
 - remove dimension and percentage for zero values
 - remove quotes for URLs
 - remove quotes for font families and make lowercase
-- rewrite hex colors to/from color names, or to 3 digit hex
+- rewrite hex colors to/from color names, or to three digit hex
 - rewrite `rgb(`, `rgba(`, `hsl(` and `hsla(` colors to hex or name
+- use four digit hex for alpha values (`transparent` &#8594; `#0000`)
 - replace `normal` and `bold` by numbers for `font-weight` and `font`
 - replace `none` &#8594; `0` for `border`, `background` and `outline`
 - lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
 - shorten MS alpha function
 - rewrite data URIs with base64 or ASCII whichever is shorter
 - calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached
+- shorten aggregate declarations such as `background` and `font`
 
 It does purposely not use the following techniques:
 
@@ -215,11 +217,12 @@ It does purposely not use the following techniques:
 - rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 - put space after pseudo-selectors (IE6 is old, move on!)
 
-It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
+There are a couple of comparison tables online, such as [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). Comparing speed between each, this minifier will usually be between 10x-300x faster than existing implementations, and even rank among the top for minification ratios. It falls short with the purposely not implemented and often unsafe techniques.
 
 Options:
 
 - `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+- `KeepCSS2` prohibits using CSS3 syntax (such as exponents in numbers, or `rgba(` &#8594; `rgb(`), might be incomplete
 
 ## JS
 
@@ -288,8 +291,8 @@ The following loads all provided minifiers.
 m := minify.New()
 m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/html", html.Minify)
-m.AddFunc("text/javascript", js.Minify)
 m.AddFunc("image/svg+xml", svg.Minify)
+m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
@@ -420,13 +423,13 @@ func main() {
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	// Or use the following for better minification of JS but lower speed:
-	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
+	// m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		panic(err)
@@ -486,8 +489,8 @@ func main() {
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
