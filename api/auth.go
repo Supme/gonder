@@ -8,18 +8,21 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 )
 
 type auth struct {
 	name   string
 	userID int64
 	unitID int64
+	sync.RWMutex
 }
 
 func (a *auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var authorize bool
 		user, password, _ := r.BasicAuth()
+		a.Lock()
 		a.userID, a.unitID, authorize = check(user, password)
 		if !authorize {
 			if user != "" {
@@ -45,15 +48,15 @@ func (a *auth) Check(fn http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		a.name = user
-		logging(r)
 
-		fn(w, r)
-	}
-}
+		uri, err := url.QueryUnescape(r.RequestURI)
+		if err != nil {
+			log.Println(err)
+		}
+		apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), a.name, r.Method, uri)
 
-func (a *auth) Log(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logging(r)
+		a.Unlock()
+
 		fn(w, r)
 	}
 }
@@ -62,6 +65,9 @@ func (a *auth) GroupRight(group interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
+
+	a.RLock()
+	defer a.RUnlock()
 
 	var r = true
 	var c int
@@ -80,6 +86,10 @@ func (a *auth) CampaignRight(campaign interface{}) bool {
 	if a.IsAdmin() {
 		return true
 	}
+
+	a.RLock()
+	defer a.RUnlock()
+
 	var r = true
 	var c int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `auth_user_group` WHERE `auth_user_id`=? AND `group_id`=(SELECT `group_id` FROM `campaign` WHERE id=?)", a.userID, campaign).Scan(&c)
@@ -100,6 +110,9 @@ func (a *auth) Right(right string) bool {
 		return true
 	}
 
+	a.RLock()
+	defer a.Unlock()
+
 	err := models.Db.QueryRow("SELECT COUNT(auth_right.id) user_right FROM `auth_user` JOIN `auth_unit_right` ON auth_user.auth_unit_id = auth_unit_right.auth_unit_id JOIN `auth_right` ON auth_unit_right.auth_right_id = auth_right.id WHERE auth_user.id = ? AND auth_right.name = ?", a.userID, right).Scan(&r)
 	if err != nil {
 		log.Println(err)
@@ -110,6 +123,8 @@ func (a *auth) Right(right string) bool {
 }
 
 func (a *auth) IsAdmin() bool {
+	a.RLock()
+	defer a.RUnlock()
 	// admins has group 0
 	if a.unitID == 0 {
 		return true
@@ -144,12 +159,4 @@ func check(user, password string) (int64, int64, bool) {
 func (a *auth) Logout(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("Authorization", "Basic")
 	http.Error(w, "Logout. Bye!", 401)
-}
-
-func logging(r *http.Request) {
-	uri, err := url.QueryUnescape(r.RequestURI)
-	if err != nil {
-		log.Println(err)
-	}
-	apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), user.name, r.Method, uri)
 }
