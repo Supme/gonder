@@ -214,32 +214,5 @@ $('#campaignSendUnsubscribe').click(function(data) {
     }
 });
 
-// $('#campaignAcceptSend').click(function() {
-//     var confirm;
-//     if ($('#campaignAcceptSend').is(':checked')) {
-//         confirm = 'Are you sure to activate campaign?';
-//     } else {
-//         confirm = w2utils.lang('Are you sure to deactivate campaign?');
-//     }
-//     w2confirm(w2utils.lang(confirm), function (btn) {
-//         if (btn == 'Yes') {
-//             $.ajax({
-//                 type: "POST",
-//                 url: '/api/campaign',
-//                 dataType: "json",
-//                 data: {"request": JSON.stringify({"cmd": "accept", "id": parseInt($('#campaignId').val()), "select": $('#campaignAcceptSend').is(':checked')})}
-//             }).done(function (data) {
-//                 if (data['status'] == 'error') {
-//                     w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-//                     $('#campaignAcceptSend').prop('checked', !$('#campaignAcceptSend').is(':checked'));
-//                 }
-//             })
-//         } else {
-//             $('#campaignAcceptSend').prop('checked', !$('#campaignAcceptSend').is(':checked'));
-//
-//         }
-//     });
-// });
-
 // --- /Parameters form ---
 

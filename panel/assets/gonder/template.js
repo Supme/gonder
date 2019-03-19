@@ -36,7 +36,6 @@ $('#templateTabs').w2tabs({
 function templateShowCode() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
-    $("#campaignTemplateGrapesjsContainer").hide();
     $("#campaignTemplateCodeContainer").show();
     cm.refresh();
 }
@@ -44,7 +43,6 @@ function templateShowCode() {
 function templateShowPreview() {
     $("#campaignTemplateCodeContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
-    $("#campaignTemplateGrapesjsContainer").hide();
     $('#campaignTemplatePreview').html(cm.getValue());
     $("#campaignTemplatePreviewContainer").show();
 }
@@ -52,6 +50,5 @@ function templateShowPreview() {
 function templateShowHelp() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateCodeContainer").hide();
-    $("#campaignTemplateGrapesjsContainer").hide();
     $("#campaignTemplateHelpContainer").show();
 }
