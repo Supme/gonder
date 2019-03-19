@@ -430,9 +430,9 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 	// add StatPng if not exist
 	if strings.Index(tmp, "{{.StatPng}}") == -1 {
 		if strings.Index(tmp, "</body>") == -1 {
-			tmp = tmp + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/>"
+			tmp = tmp + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/>"
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<img src='{{.StatPng}}' border='0px' width='10px' height='10px'/></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "<img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/></body>", -1)
 		}
 	}
 
