@@ -1,4 +1,4 @@
-var cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateCode"), {
+var cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateHTML"), {
     lineNumbers: true,
     mode: {
         name: "htmlmixed",
@@ -15,7 +15,8 @@ $('#templateTabs').w2tabs({
     tabs: [
         { id: 'preview', caption: w2utils.lang('Preview') },
         { id: 'code', caption: w2utils.lang('Code') },
-        { id: 'help', caption: w2utils.lang('Help') },
+        { id: 'text', caption: w2utils.lang('Text') },
+        { id: 'help', caption: w2utils.lang('Help') }
     ],
     onClick: function (event) {
         switch (event.target)
@@ -24,7 +25,10 @@ $('#templateTabs').w2tabs({
                 templateShowPreview();
                 break;
             case "code":
-                templateShowCode();
+                templateShowHTML();
+                break;
+            case "text":
+                templateShowText();
                 break;
             case "help":
                 templateShowHelp();
@@ -33,22 +37,41 @@ $('#templateTabs').w2tabs({
     }
 });
 
-function templateShowCode() {
+function templateShowText() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
-    $("#campaignTemplateCodeContainer").show();
+    $("#campaignTemplateHTMLContainer").hide();
+    $("#campaignTemplateTextContainer").show();
+    cm.refresh();
+}
+
+function templateShowHTML() {
+    $("#campaignTemplatePreviewContainer").hide();
+    $("#campaignTemplateHelpContainer").hide();
+    $("#campaignTemplateTextContainer").hide();
+    $("#campaignTemplateHTMLContainer").show();
     cm.refresh();
 }
 
 function templateShowPreview() {
-    $("#campaignTemplateCodeContainer").hide();
+    $("#campaignTemplateHTMLContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
+    $("#campaignTemplateTextContainer").hide();
     $('#campaignTemplatePreview').html(cm.getValue());
     $("#campaignTemplatePreviewContainer").show();
+
 }
 
 function templateShowHelp() {
     $("#campaignTemplatePreviewContainer").hide();
-    $("#campaignTemplateCodeContainer").hide();
+    $("#campaignTemplateHTMLContainer").hide();
+    $("#campaignTemplateTextContainer").hide();
     $("#campaignTemplateHelpContainer").show();
+}
+
+function MakeTextFromHTML() {
+    $("#campaignTemplateText").val(
+        htmlToPlainText(cm.getValue().replace(/(?=<!--)([\s\S]*?)-->/g, ''), {
+            headingStyle: "hashify"
+        }));
 }

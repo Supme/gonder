@@ -18,6 +18,8 @@
     <script src="{{.root}}/assets/codemirror/css.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/htmlmixed.js?{{.version}}"></script>
 
+    <script src="{{.root}}/assets/textversionjs/textversion.js?{{.version}}"></script>
+
     <script src="{{.root}}/assets/gonder/panel.js?{{.version}}"></script>
     <script type="application/javascript">
         var root = "{{.root}}";
@@ -68,7 +70,7 @@
             <div id="templateTabs"></div>
             <div id="templateContent">
                 <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
-                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 20px">
+                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 20px;">
                         <button onclick="$('#campaignTemplatePreview').width(360)">360px</button>
                         <button onclick="$('#campaignTemplatePreview').width(420)">420px</button>
                         <button onclick="$('#campaignTemplatePreview').width(768)">768px</button>
@@ -77,9 +79,17 @@
                     </div>
                     <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid #333; width: 768px; height: calc(100% - 60px); overflow-y: scroll;"></div>
                 </div>
-                <div id="campaignTemplateCodeContainer" style="display: none;">
+                <div id="campaignTemplateHTMLContainer" style="display: none;">
                     <div style="position: absolute; width: 100%; height: calc(100% - 30px); ">
-                        <textarea id="campaignTemplateCode"></textarea>
+                        <textarea id="campaignTemplateHTML"></textarea>
+                    </div>
+                </div>
+                <div id="campaignTemplateTextContainer" style="display: none;">
+                    <div id="campaignTemplateTextButton" style="margin: 5px; height: 20px;">
+                        <button onclick="MakeTextFromHTML();">Make from HTML</button>
+                    </div>
+                    <div style="position: absolute; width: 100%; height: calc(100% - 65px); ">
+                        <textarea id="campaignTemplateText" style="width:100%;height:100%;resize: none;"></textarea>
                     </div>
                 </div>
                 <div id="campaignTemplateHelpContainer" style="display: none;">
@@ -95,7 +105,7 @@
                         </ul>
                         Functions:
                         <ul>
-                            <li>&#123;&#123;RedirectUrl "[You URL comment]https://you-url.to/site-page.html"&#125;&#125;</li>
+                            <li>&#123;&#123;RedirectUrl "[You URL comment] https://you-url.to/site-page.html"&#125;&#125;</li>
                         </ul>
                     </div>
                 </div>

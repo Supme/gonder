@@ -124,11 +124,12 @@ function getCampaign(recid, name) {
         $("#campaignEndTime").val(w2utils.formatTime((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.timeFormat));
         $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"]);
         $("#campaignCompressHTML").prop("checked", data["compressHTML"]);
-        $("#campaignTemplate").val(data["template"]);
+        $("#campaignTemplateHTML").val(data["templateHTML"]);
+        $("#campaignTemplateText").val(data["templateText"]);
 
         setAcceptSend(data["accepted"]);
 
-        cm.setValue(data["template"]);
+        cm.setValue(data["templateHTML"]);
 
         w2ui['recipient'].postData["campaign"] = parseInt(recid);
         w2ui.layout.unlock('main');
@@ -163,7 +164,8 @@ function saveCampaign() {
                                     "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
                                     "compressHTML": $("#campaignCompressHTML").is(":checked"),
                                     "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                    "template": cm.getValue()
+                                    "templateHTML": cm.getValue(),
+                                    "templateText": $("#campaignTemplateText").val()
                                 }
                             }
                         )}

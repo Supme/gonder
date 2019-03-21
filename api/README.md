@@ -281,7 +281,8 @@ response:
   "sendUnsubscribe":true,
   "accepted":true,
   "compressHTML": false,
-  "template":"<h1>My cool mail template<h1>"
+  "templateHTML":"<h1>My cool mail template<h1>",
+  "templateText":"My cool mail template"
 }
 ```
 
@@ -307,7 +308,8 @@ response:
       "sendUnsubscribe":true,
       "accepted":true,
       "compressHTML": false,
-      "template":"<h1>My cool mail template<h1>"
+      "templateHTML":"<h1>My cool mail template<h1>",
+      "templateText":"My cool mail template"
     }
 }
 ```
@@ -324,7 +326,8 @@ response:
   "sendUnsubscribe":true,
   "accepted":true,
   "compressHTML": false,
-  "template":"<h1>My cool mail template<h1>"
+  "templateHTML":"<h1>My cool mail template<h1>",
+  "templateText":"My cool mail template"
 }
 ```
 

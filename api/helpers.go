@@ -18,7 +18,8 @@ type campaignData struct {
 	CompressHTML    bool   `json:"compressHTML"`
 	SendUnsubscribe bool   `json:"sendUnsubscribe"`
 	Accepted        bool   `json:"accepted"`
-	Template        string `json:"template"`
+	TemplateHTML    string `json:"templateHTML"`
+	TemplateText    string `json:"templateText"`
 }
 
 type request struct {

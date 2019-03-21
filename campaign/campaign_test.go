@@ -101,8 +101,8 @@ var r = Recipient{
 }
 
 var c = campaign{
-	ID:       "testCampaign",
-	htmlTmpl: tmpl,
+	ID:           "testCampaign",
+	templateHTML: tmpl,
 }
 
 func init() {
