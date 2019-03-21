@@ -14,7 +14,7 @@ $('#templateTabs').w2tabs({
     active: 'preview',
     tabs: [
         { id: 'preview', caption: w2utils.lang('Preview') },
-        { id: 'code', caption: w2utils.lang('Code') },
+        { id: 'html', caption: w2utils.lang('HTML') },
         { id: 'text', caption: w2utils.lang('Text') },
         { id: 'help', caption: w2utils.lang('Help') }
     ],
@@ -24,7 +24,7 @@ $('#templateTabs').w2tabs({
             case "preview":
                 templateShowPreview();
                 break;
-            case "code":
+            case "html":
                 templateShowHTML();
                 break;
             case "text":
