@@ -86,7 +86,8 @@
                 </div>
                 <div id="campaignTemplateTextContainer" style="display: none;">
                     <div id="campaignTemplateTextButton" style="margin: 5px; height: 20px;">
-                        <button onclick="MakeTextFromHTML();">Make from HTML</button>
+                        <button onclick="MakeTextFromHTML(false);">Make from HTML</button>
+                        <button onclick="MakeTextFromHTML(true);">Make from HTML with IMG tag</button>
                     </div>
                     <div style="position: absolute; width: 100%; height: calc(100% - 65px); ">
                         <textarea id="campaignTemplateText" style="width:100%;height:100%;resize: none;"></textarea>

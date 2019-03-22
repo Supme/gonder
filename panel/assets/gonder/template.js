@@ -69,9 +69,33 @@ function templateShowHelp() {
     $("#campaignTemplateHelpContainer").show();
 }
 
-function MakeTextFromHTML() {
-    $("#campaignTemplateText").val(
-        htmlToPlainText(cm.getValue().replace(/(?=<!--)([\s\S]*?)-->/g, ''), {
+function MakeTextFromHTML(withImg) {
+    var config;
+    if (withImg) {
+        config = {
             headingStyle: "hashify"
-        }));
+        };
+    } else {
+        config = {
+            headingStyle: "hashify",
+            imgProcess: function (src, alt){
+                if (alt == "") {
+                    return " ";
+                }
+                return alt
+            },
+            linkProcess: function (href, linkText) {
+                if (linkText == " ") {
+                    return "(" + href + ")";
+                }
+                return "[" + linkText + "] " + "(" + href + ")";
+            }
+        };
+    }
+
+    $("#campaignTemplateText").val(
+        htmlToPlainText(cm.getValue().replace(/(?=<!--)([\s\S]*?)-->/g, ''), config).replace(/(&\S{2,16};)/g, function(str, num) {
+            return $("<span />", { html: num }).text();
+        })
+    );
 }
