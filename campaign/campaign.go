@@ -25,6 +25,7 @@ type campaign struct {
 	ID              string
 	FromEmail       string
 	FromName        string
+	FromDomain		string
 	DkimSelector    string
 	DkimPrivateKey  []byte
 	DkimUse         bool
@@ -70,6 +71,12 @@ func getCampaign(id string) (campaign, error) {
 	)
 	if err != nil {
 		return c, err
+	}
+
+	splitEmail := strings.Split(c.FromEmail, "@")
+	if len(splitEmail) == 2 {
+		c.FromDomain = strings.ToLower(strings.TrimSpace(splitEmail[1]))
+		fmt.Printf("FromDomain: %s\n", c.FromDomain)
 	}
 
 	c.subjectTmplFunc, err = template.New("Subject").Parse(subject)
@@ -229,6 +236,9 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
 			}
 			bldr.AddAttachment(c.Attachments...)
+			if c.DkimUse {
+				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
+			}
 			email := bldr.Email(r.ID, func(result smtpSender.Result) {
 				var res string
 				if result.Err == nil {
@@ -304,6 +314,9 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
 			}
 			bldr.AddAttachment(c.Attachments...)
+			if c.DkimUse {
+				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
+			}
 			email := bldr.Email(r.ID, func(result smtpSender.Result) {
 				var res string
 				if result.Err == nil {
