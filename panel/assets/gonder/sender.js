@@ -59,7 +59,7 @@ $().w2form({
                 cmd = 'save'
             }
             $.ajax({
-                type: "GET",
+                type: "POST",
                 url: '/api/sender',
                 dataType: "json",
                 data: {"request":
