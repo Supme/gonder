@@ -42,7 +42,7 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 	return Config.URL + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
-// Decode utm data string and return Message whis prefilled id and email
+// Decode utm data string and return Message with the pre-filled id and email
 func DecodeUTM(base64data string) (message Message, data string, err error) {
 	var param utm
 

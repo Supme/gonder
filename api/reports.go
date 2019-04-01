@@ -11,6 +11,10 @@ import (
 	"net/http"
 )
 
+
+// ToDo add question report
+// SELECT * FROM `question` LEFT JOIN `question_data` ON `question`.`id`=`question_data`.`question_id` LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id`
+
 func reportStartedCampaign(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte

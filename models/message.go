@@ -44,6 +44,7 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 	return err
 }
 
+// Get template directory
 // ToDo move to campaign/Recipient
 func (m *Message) UnsubscribeTemplateDir() (name string) {
 	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
@@ -62,4 +63,39 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 	}
 	name = WorkDir("templates/" + name)
 	return
+}
+
+func (m *Message) QuestionTemplateDir() (name string) {
+	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
+	if err != nil {
+		log.Print(err)
+	}
+	if name == "" {
+		name = "default"
+	} else {
+		if _, err := os.Stat(WorkDir("templates/" + name + "/question.html")); err != nil {
+			name = "default"
+		}
+	}
+	name = WorkDir("templates/" + name)
+	return
+}
+
+//
+func (m *Message) Question(data map[string]string) error {
+	r, err := Db.Exec("INSERT INTO question (`recipient_id`) VALUE (?)", m.RecipientID)
+	if err != nil {
+		log.Print(err)
+	}
+	id, e := r.LastInsertId()
+	if e != nil {
+		log.Print(e)
+	}
+	for name, value := range data {
+		_, err = Db.Exec("INSERT INTO question_data (`question_id`, `name`, `value`) VALUE (?, ?, ?)", id, name, value)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	return err
 }

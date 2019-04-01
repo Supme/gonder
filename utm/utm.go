@@ -50,21 +50,35 @@ func Run() {
 	utm.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mem := new(runtime.MemStats)
 		runtime.ReadMemStats(mem)
-		w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
+		_, err := w.Write([]byte("Welcome to San Tropez! (Conn: " + strconv.Itoa(models.Db.Stats().OpenConnections) + " Allocate: " + strconv.FormatUint(mem.Alloc, 10) + ")"))
+		if err != nil {
+			utmlog.Println(err)
+			return
+		}
+
 	})
 
 	// robots.txt
 	// ToDo disallow all
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
+		_, err := w.Write([]byte("# " + models.Config.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
+		if err != nil {
+			utmlog.Println(err)
+			return
+		}
+
 	})
 
 	// favicon.ico
 	utm.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/x-icon")
 		ico, _ := base64.StdEncoding.DecodeString("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAByGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/8q2uP9yGSL/yra4/3IZIv/Ktrj/yra4/3IZIv9yGSL/yra4/8q2uP9yGSL/yra4/3IZIv/Ktrj/chki/3IZIv/Ktrj/chki/+je3/9yGSL/yra4/3IZIv/Ktrj/chki/8q2uP9yGSL/chki/8q2uP9yGSL/yra4/3IZIv9yGSL/yra4/+je3//Ktrj/chki/8q2uP9yGSL/yra4/3IZIv/Ktrj/yra4/3IZIv/Ktrj/yra4/3IZIv9yGSL/chki/+je3/9yGSL/yra4/3IZIv/Ktrj/chki/8q2uP9yGSL/yra4/3IZIv9yGSL/yra4/3IZIv/Ktrj/chki/3IZIv/Ktrj/chki/8q2uP9yGSL/yra4/8q2uP9yGSL/chki/8q2uP/Ktrj/chki/8q2uP/Ktrj/yra4/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/+je3//o3t//6N7f/+je3//o3t//6N7f/+je3/9yGSL/6N7f/+je3//o3t//6N7f/+je3//o3t//chki/3IZIv/o3t//yra4/8q2uP/Ktrj/yra4/8q2uP/Ktrj/chki/8q2uP/Ktrj/yra4/8q2uP/Ktrj/6N7f/3IZIv9yGSL/6N7f/8q2uP9yGSL/chki/3IZIv/Ktrj/6N7f/3IZIv/Ktrj/yra4/3IZIv9yGSL/yra4/+je3/9yGSL/chki/+je3//Ktrj/chki/8q2uP/o3t//6N7f/8q2uP9yGSL/6N7f/+je3/9yGSL/chki/8q2uP/o3t//chki/3IZIv/o3t//yra4/3IZIv/o3t//yra4/8q2uP/Ktrj/chki/8q2uP/Ktrj/chki/3IZIv/Ktrj/6N7f/3IZIv9yGSL/6N7f/+je3/9yGSL/chki/3IZIv9yGSL/chki/3IZIv/Ktrj/yra4/8q2uP/Ktrj/6N7f/+je3/9yGSL/chki/+je3//o3t//6N7f/+je3//o3t//6N7f/+je3/9yGSL/6N7f/+je3//o3t//6N7f/+je3//o3t//chki/3IZIv/Ktrj/yra4/8q2uP/Ktrj/yra4/8q2uP/Ktrj/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/chki/3IZIv9yGSL/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==")
-		w.Write(ico)
+		_, err := w.Write(ico)
+		if err != nil {
+			utmlog.Println(err)
+			return
+		}
 	})
 
 	// folder files
@@ -74,7 +88,11 @@ func Run() {
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			message, data, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
+			splitURL := strings.Split(r.URL.Path, "/")
+			if len(splitURL) != 3 {
+				return
+			}
+			message, data, err := models.DecodeUTM(splitURL[2])
 			if err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
@@ -93,26 +111,35 @@ func Run() {
 						utmlog.Println(err)
 						http.Error(w, "", http.StatusInternalServerError)
 					} else {
-						t.Execute(w, map[string]string{
+						err = t.Execute(w, map[string]string{
 							"CampaignId":     message.CampaignID,
 							"RecipientId":    message.RecipientID,
 							"RecipientEmail": message.RecipientEmail,
 							"RecipientName":  message.RecipientName,
 						})
+						if err != nil {
+							utmlog.Println(err)
+							return
+						}
 					}
 				}
+				return
 			}
 			if data == "web" {
 				if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/accept.html"); err != nil {
 					utmlog.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 				} else {
-					t.Execute(w, map[string]string{
+					err = t.Execute(w, map[string]string{
 						"CampaignId":     message.CampaignID,
 						"RecipientId":    message.RecipientID,
 						"RecipientEmail": message.RecipientEmail,
 						"RecipientName":  message.RecipientName,
 					})
+					if err != nil {
+						utmlog.Println(err)
+						return
+					}
 				}
 			}
 		}
@@ -153,19 +180,28 @@ func Run() {
 					http.Error(w, "", http.StatusInternalServerError)
 					return
 				}
-				t.Execute(w, map[string]string{
+				err = t.Execute(w, map[string]string{
 					"CampaignId":     message.CampaignID,
 					"RecipientId":    message.RecipientID,
 					"RecipientEmail": message.RecipientEmail,
 					"RecipientName":  message.RecipientName,
 				})
+				if err != nil {
+					utmlog.Println(err)
+					return
+				}
+
 			}
 		}
 	})
 
 	// redirect link
 	utm.HandleFunc("/redirect/", func(w http.ResponseWriter, r *http.Request) {
-		message, data, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
+		splitURL := strings.Split(r.URL.Path, "/")
+		if len(splitURL) != 3 {
+			return
+		}
+		message, data, err := models.DecodeUTM(splitURL[2])
 		if err != nil {
 			utmlog.Print(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -185,7 +221,11 @@ func Run() {
 
 	utm.HandleFunc("/web/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		message, _, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
+		splitURL := strings.Split(r.URL.Path, "/")
+		if len(splitURL) != 3 {
+			return
+		}
+		message, _, err := models.DecodeUTM(splitURL[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -216,7 +256,11 @@ func Run() {
 
 	// StatPng
 	utm.HandleFunc("/open/", func(w http.ResponseWriter, r *http.Request) {
-		message, _, err := models.DecodeUTM(strings.Split(r.URL.Path, "/")[2])
+		splitURL := strings.Split(r.URL.Path, "/")
+		if len(splitURL) != 3 {
+			return
+		}
+		message, _, err := models.DecodeUTM(splitURL[2])
 		if err != nil {
 			utmlog.Println(err)
 			http.Error(w, "", http.StatusInternalServerError)
@@ -233,7 +277,11 @@ func Run() {
 		w.Header().Set("Content-Type", "image/gif")
 		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
 		gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-		w.Write(gif)
+		_, err = w.Write(gif)
+		if err != nil {
+			utmlog.Println(err)
+			return
+		}
 	})
 
 	// QRcode generator
@@ -273,6 +321,51 @@ func Run() {
 				utmlog.Print(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
+			}
+		}
+	})
+
+	// Question
+	utm.HandleFunc("/question/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			splitURL := strings.Split(r.URL.Path, "/")
+			if len(splitURL) != 3 {
+				return
+			}
+			message, _, err := models.DecodeUTM(splitURL[2])
+			if err != nil {
+				utmlog.Println(err)
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+			if t, err := template.ParseFiles(message.QuestionTemplateDir()+ "/question.html"); err != nil {
+				utmlog.Println(err)
+				http.Error(w, "", http.StatusInternalServerError)
+			} else {
+				if err := r.ParseForm(); err != nil {
+					utmlog.Println(err)
+					return
+				}
+				var data = map[string]string{}
+				for name, value := range r.PostForm {
+						data[name] = strings.Join(value, "|")
+				}
+				if err := message.Question(data); err != nil {
+					utmlog.Println(err)
+					http.Error(w, "", http.StatusInternalServerError)
+					return
+				}
+				err = t.Execute(w, map[string]string{
+					"CampaignId":     message.CampaignID,
+					"RecipientId":    message.RecipientID,
+					"RecipientEmail": message.RecipientEmail,
+					"RecipientName":  message.RecipientName,
+				})
+				if err != nil {
+					utmlog.Println(err)
+					return
+				}
 			}
 		}
 	})

@@ -46,7 +46,9 @@ func GetRecipient(id string) (Recipient, error) {
 	recipient.Params["CampaignId"] = recipient.CampaignID
 	recipient.Params["RecipientEmail"] = recipient.Email
 	recipient.Params["RecipientName"] = recipient.Name
+	recipient.Params["WebUrl"] = models.EncodeUTM("web", "", recipient.Params)
 	recipient.Params["StatPng"] = models.EncodeUTM("open", "", recipient.Params)
+	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", "", recipient.Params)
 	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", recipient.Params)
 
 	return recipient, nil
@@ -54,7 +56,8 @@ func GetRecipient(id string) (Recipient, error) {
 
 func (r *Recipient) unsubscribed() bool {
 	var unsubscribeCount int
-	models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
+	err := models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
+	checkErr(err)
 	if unsubscribeCount == 0 {
 		return false
 	}
