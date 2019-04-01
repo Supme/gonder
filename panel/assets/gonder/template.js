@@ -73,7 +73,14 @@ function MakeTextFromHTML(withImg) {
     var config;
     if (withImg) {
         config = {
-            headingStyle: "hashify"
+            headingStyle: "hashify",
+            linkProcess: function (href, linkText) {
+                href = href.replace(/^\s*?(\[.*?\]).*?/g, '');
+                if (linkText == "") {
+                    return "(" + href + ")";
+                }
+                return "[" + linkText + "] " + "(" + href + ")";
+            }
         };
     } else {
         config = {
@@ -85,6 +92,7 @@ function MakeTextFromHTML(withImg) {
                 return alt
             },
             linkProcess: function (href, linkText) {
+                href = href.replace(/^\s*?(\[.*?\]).*?/g, '');
                 if (linkText == " ") {
                     return "(" + href + ")";
                 }
