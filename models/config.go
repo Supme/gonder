@@ -122,7 +122,7 @@ func (c *config) Update() {
 	checkErr(err)
 	apiConfig, err := config.Section("API")
 	checkErr(err)
-	c.URL = "http://" + mainConfig.ValueOf("host")
+	c.URL = mainConfig.ValueOf("host")
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.APIPort = apiConfig.ValueOf("port")
 
