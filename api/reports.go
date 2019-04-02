@@ -36,6 +36,7 @@ func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if user.CampaignRight(r.FormValue("campaign")) {
 		var result []resultUnit
+		result = []resultUnit{}
 
 		query, err := models.Db.Query("SELECT `question`.`id`, `question`.`recipient_id`, `recipient`.`email`, `question`.`at` FROM `question` LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`campaign_id`=?", r.FormValue("campaign"))
 		if err != nil {
