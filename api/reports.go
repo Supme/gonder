@@ -13,7 +13,81 @@ import (
 
 
 // ToDo add question report
-// SELECT * FROM `question` LEFT JOIN `question_data` ON `question`.`id`=`question_data`.`question_id` LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id`
+// SELECT
+//  `question`.`id`,
+//  `recipient`.`email`,
+//  `question_data`.`name`,
+//  `question_data`.`value`,
+//  `question`.`at`
+// FROM `question`
+// LEFT JOIN `question_data` ON `question`.`id`=`question_data`.`question_id`
+// LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id`
+// WHERE `recipient`.`campaign_id`=1625
+func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var js []byte
+	type resultUnit struct {
+		RecipientID int64 `json:"recipient_id"`
+		Email string  `json:"email"`
+		At int64  `json:"at"`
+		Data map[string]string  `json:"data"`
+	}
+
+	user := r.Context().Value("Auth").(*Auth)
+	if user.CampaignRight(r.FormValue("campaign")) {
+		var result []resultUnit
+
+		query, err := models.Db.Query("SELECT `question`.`id`, `question`.`recipient_id`, `recipient`.`email`, `question`.`at` FROM `question` LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`campaign_id`=?", r.FormValue("campaign"))
+		if err != nil {
+			apilog.Print(err)
+		}
+		defer query.Close()
+
+		stmtData, err := models.Db.Prepare("SELECT `name`, `value` FROM `question_data` WHERE `question_id`=?")
+		if err != nil {
+			apilog.Print(err)
+		}
+		for query.Next() {
+			var (
+				res        resultUnit
+				questionID int64
+				at mysql.NullTime
+			)
+			err = query.Scan(&questionID, &res.RecipientID, &res.Email, &at)
+			if err != nil {
+				apilog.Print(err)
+				break
+			}
+			res.At = at.Time.Unix()
+			questionData := map[string]string{}
+			rows, err := stmtData.Query(questionID)
+			for rows.Next() {
+				var name, value string
+				err = rows.Scan(&name, &value)
+				if err != nil {
+					apilog.Print(err)
+					break
+				}
+				questionData[name] = value
+			}
+			res.Data = questionData
+			result = append(result, res)
+		}
+
+		js, err = json.Marshal(result)
+		if err != nil {
+			js = []byte(`{"status": "error", "message": "JSON marshaling result"}`)
+		}
+	} else {
+		js = []byte(`{"status": "error", "message": "Forbidden get reports for this campaign"}`)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(js)
+	if err != nil {
+		log.Println(err)
+	}
+}
 
 func reportStartedCampaign(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -111,7 +185,10 @@ func reportClickCount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		apilog.Print(err)
+	}
 }
 
 func reportRecipientsList(w http.ResponseWriter, r *http.Request) {

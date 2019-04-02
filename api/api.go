@@ -126,6 +126,7 @@ func Run() {
 	api.Handle("/report/clicks", apiHandler(reportRecipientClicks, true))
 	api.Handle("/report/unsubscribed", apiHandler(reportUnsubscribed, true))
 	api.Handle("/report/file/recipients", apiHandler(reportRecipientsCsv, true))
+	api.Handle("/report/question", apiHandler(reportQuestionSummary, true))
 
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))

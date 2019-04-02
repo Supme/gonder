@@ -806,3 +806,46 @@ or from group
 ```
 
 </details>
+
+<details> 
+
+<summary>Recipient questions result</summary>
+
+request example ```/report/question?campaign=53```
+
+response show count clicks to links
+```json
+[
+  {
+    "recipient_id":1731227,
+    "email":"bob@mail.tld",
+    "at":1554140897,
+    "data":{
+      "v2":"emailmarketing",
+      "v4":"Push-уведомления"
+    }
+  },
+  {
+    "recipient_id":1731227,
+    "email":"stive@mail.tld",
+    "at":1554141049,
+    "data":{
+      "v2":"emailmarketing",
+      "v3":"powerBI",
+      "v4":"Push-уведомления"
+    }
+  },
+  {
+    "recipient_id":1731227,
+    "email":"ivan@mail.tld",
+    "at":1554141065,
+    "data":{
+      "v2":"emailmarketing",
+      "v3":"powerBI",
+      "v4":"Push-уведомления"
+    }
+  }
+]
+```
+
+</details>

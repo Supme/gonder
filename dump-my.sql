@@ -151,6 +151,19 @@ CREATE TABLE `unsubscribe_extra` (
   KEY `unsubscribe_id` (`unsubscribe_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE `question` (
+  `id` int(11) NOT NULL,
+  `recipient_id` int(11) NOT NULL,
+  `at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `question_data` (
+  `id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `value` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 ALTER TABLE `attachment`
   ADD CONSTRAINT `attachment_ibfk_1`
     FOREIGN KEY (`campaign_id`)
@@ -212,6 +225,24 @@ ALTER TABLE `unsubscribe_extra`
     FOREIGN KEY (`unsubscribe_id`)
     REFERENCES `unsubscribe` (`id`)
     ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `question`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `recipient_id` (`recipient_id`);
+ALTER TABLE `question`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `question`
+  ADD CONSTRAINT `question_ibfk_1`
+    FOREIGN KEY (`recipient_id`) REFERENCES `recipient` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `question_data`
+  ADD PRIMARY KEY (`id`), ADD KEY `question_id` (`question_id`);
+ALTER TABLE `question_data`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `question_data`
+  ADD CONSTRAINT `question_data_ibfk_1`
+    FOREIGN KEY (`question_id`) REFERENCES `question` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
 
 INSERT INTO `auth_right` (`id`, `name`) VALUES
   (1, 'get-groups'),
