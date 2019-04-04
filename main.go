@@ -13,8 +13,8 @@
 package main
 
 import (
-	"github.com/supme/gonder/cmd"
-	"github.com/supme/gonder/models"
+	"gonder/cmd"
+	"gonder/models"
 	"io"
 	"log"
 	"os"

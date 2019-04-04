@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-sql-driver/mysql"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"log"
 	"time"
 )

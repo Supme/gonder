@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"log"
 )
 

@@ -1,7 +1,7 @@
 package campaign
 
 import (
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"testing"
 )
 

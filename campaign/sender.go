@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"io"
 	"log"
 	"os"

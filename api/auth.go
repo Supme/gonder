@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"github.com/supme/directEmail"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"log"
 	"net/http"
 	"net/url"

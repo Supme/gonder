@@ -3,7 +3,7 @@ package campaign
 import (
 	"database/sql"
 	"errors"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"io"
 )
 

@@ -1,8 +1,8 @@
 package api
 
 import (
-	campSender "github.com/supme/gonder/campaign"
-	"github.com/supme/gonder/models"
+	campSender "gonder/campaign"
+	"gonder/models"
 	"io"
 	"io/ioutil"
 	"net/http"

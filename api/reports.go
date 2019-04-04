@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	campSender "github.com/supme/gonder/campaign"
-	"github.com/supme/gonder/models"
+	campSender "gonder/campaign"
+	"gonder/models"
 	"log"
 	"net/http"
 )

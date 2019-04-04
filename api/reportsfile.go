@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
-	"github.com/supme/gonder/models"
+	"gonder/models"
 	"log"
 	"net/http"
 	"strconv"

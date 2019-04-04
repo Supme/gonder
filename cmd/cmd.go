@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/supme/gonder/api"
-	"github.com/supme/gonder/campaign"
-	"github.com/supme/gonder/models"
-	"github.com/supme/gonder/utm"
+	"gonder/api"
+	"gonder/campaign"
+	"gonder/models"
+	"gonder/utm"
 	"io"
 	"os"
 	"os/exec"
@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	errFailedFindProcess  = errors.New("Failed to find process")
-	errProcessNotResponse = errors.New("Process not response to signal.")
+	errFailedFindProcess  = errors.New("failed to find process")
+	errProcessNotResponse = errors.New("process not response to signal.")
 )
 
 // Run starting gonder from command line
