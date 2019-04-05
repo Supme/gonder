@@ -142,10 +142,6 @@ func recipients(req request) (js []byte, err error) {
 			} else {
 				return js, errors.New("Forbidden upload recipients")
 			}
-			if err != nil {
-				log.Println(err)
-				return js, err
-			}
 
 		case "progress":
 			if req.auth.Right("upload-recipients") {
@@ -315,14 +311,24 @@ func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 		log.Println(err)
 		return
 	}
-	defer tx.Rollback()
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer dupl.Close()
+	defer func() {
+		err := dupl.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	cnt = 0
 	for q.Next() {
@@ -353,20 +359,35 @@ func addRecipients(campaignID int64, recipients recips) error {
 		log.Println(err)
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		err := tx.Rollback()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	defer stRecipient.Close()
+	defer func() {
+		err := stRecipient.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	defer stParameter.Close()
+	defer func() {
+		err := stParameter.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	for r := range recipients {
 		res, err := stRecipient.Exec(campaignID, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
@@ -397,7 +418,7 @@ func addRecipients(campaignID int64, recipients recips) error {
 
 func resendCampaign(campaignID int64, user *Auth) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
-	if err != err {
+	if err != nil {
 		log.Println(err)
 		return err
 	}
@@ -447,7 +468,12 @@ func getRecipients(req request) (recipsTable, error) {
 		log.Println(err)
 		return rs, err
 	}
-	defer query.Close()
+	defer func() {
+		err := query.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 	for query.Next() {
 		r := recipTable{}
 		var result sql.NullString
@@ -484,7 +510,12 @@ func getRecipientParams(recipient int64) (recipParams, error) {
 		log.Println(err)
 		return ps, err
 	}
-	defer query.Close()
+	defer func() {
+		err := query.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 	for query.Next() {
 		err = query.Scan(&p.Key, &p.Value)
 		if err != nil {
@@ -517,8 +548,18 @@ func recipientCsv(campaignID int64, file string) error {
 		log.Println(err)
 		return err
 	}
-	defer csvfile.Close()
-	defer os.Remove(file)
+	defer func() {
+		err := csvfile.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+	defer func() {
+		err := os.Remove(file)
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	reader := csv.NewReader(csvfile)
 	reader.FieldsPerRecord = -1
@@ -533,20 +574,32 @@ func recipientCsv(campaignID int64, file string) error {
 		log.Println(err)
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	defer stRecipient.Close()
+	defer func() {
+		if err := stRecipient.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	defer stParameter.Close()
+	defer func() {
+		if err := stParameter.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	total := len(rawCSVdata)
 	for k, v := range rawCSVdata {
@@ -608,7 +661,11 @@ func recipientXlsx(campaignID int64, file string) error {
 		log.Println(err)
 		return err
 	}
-	defer os.Remove(file)
+	defer func() {
+		if err := os.Remove(file); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	if xlFile.Sheets[0] != nil {
 		var tx *sql.Tx
@@ -617,7 +674,11 @@ func recipientXlsx(campaignID int64, file string) error {
 			log.Println(err)
 			return err
 		}
-		defer tx.Rollback()
+		defer func() {
+			if err := tx.Rollback(); err != nil {
+				log.Print(err)
+			}
+		}()
 
 		var stRecipient *sql.Stmt
 		stRecipient, err = tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
@@ -625,7 +686,11 @@ func recipientXlsx(campaignID int64, file string) error {
 			log.Println(err)
 			return err
 		}
-		defer stRecipient.Close()
+		defer func() {
+			if err := stRecipient.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 
 		var stParameter *sql.Stmt
 		stParameter, err = tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
@@ -633,7 +698,11 @@ func recipientXlsx(campaignID int64, file string) error {
 			log.Println(err)
 			return err
 		}
-		defer stParameter.Close()
+		defer func() {
+			if err := stParameter.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 
 		total := len(xlFile.Sheets[0].Rows)
 		for k, v := range xlFile.Sheets[0].Rows {

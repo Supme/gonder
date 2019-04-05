@@ -15,6 +15,7 @@ type utm struct {
 	Data  string `json:"data"`
 }
 
+// EncodeUTM encode command, data with params templating and return unique link
 func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 	if _, ok := params["RecipientId"]; !ok {
 		return "Parameters don`t have CampaignId"
@@ -29,7 +30,10 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 		if err != nil {
 			return fmt.Sprintf("Error parse data params: %s", err)
 		}
-		dataTmpl.Execute(tmp, params)
+		err = dataTmpl.Execute(tmp, params)
+		if err != nil {
+			return fmt.Sprintf("Error execute template: %s", err)
+		}
 		data = tmp.String()
 	}
 
@@ -42,7 +46,7 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 	return Config.URL + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
-// Decode utm data string and return Message with the pre-filled id and email
+// DecodeUTM decode utm data string and return Message with the pre-filled id and email
 func DecodeUTM(base64data string) (message Message, data string, err error) {
 	var param utm
 
@@ -50,7 +54,7 @@ func DecodeUTM(base64data string) (message Message, data string, err error) {
 	if err != nil {
 		return message, data, err
 	}
-	err = json.Unmarshal([]byte(decode), &param) // ToDo decode whithout reflect
+	err = json.Unmarshal([]byte(decode), &param) // ToDo decode without reflect
 	if err != nil {
 		return message, data, err
 	}

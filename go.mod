@@ -9,7 +9,6 @@ require (
 	github.com/gorilla/websocket v1.4.0
 	github.com/gravitational/tail v1.0.1
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/supme/directEmail v0.0.0-20170727143845-ac5a15cab9ac
 	github.com/supme/smtpSender v0.0.0-20180925115025-488f38aec0d1
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible

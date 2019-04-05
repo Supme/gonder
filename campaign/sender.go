@@ -124,10 +124,16 @@ func (s *sending) checkExpired() ([]string, error) {
 		if err != nil {
 			return expired, err
 		}
-		defer query.Close()
+		defer func() {
+			if err := query.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 		for query.Next() {
 			var id string
-			query.Scan(&id)
+			if err := query.Scan(&id); err != nil {
+				log.Print(err)
+			}
 			expired = append(expired, id)
 		}
 	}
@@ -170,7 +176,6 @@ func (s *sending) removeStarted(id string) {
 		delete(s.campaigns, id)
 	}
 	s.mu.Unlock()
-	return
 }
 
 func checkErr(err error) {

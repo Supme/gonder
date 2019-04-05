@@ -29,15 +29,21 @@ func profilesList(req request) (js []byte, err error) {
 }
 
 func getProfilesList() ([]pList, error) {
-	var p pList
-	var ps []pList
+	var (
+		p  pList
+		ps []pList
+	)
 	ps = []pList{}
 	query, err := models.Db.Query("SELECT `id`, `name` FROM `profile`")
 	if err != nil {
 		log.Println(err)
 		return ps, err
 	}
-	defer query.Close()
+	defer func() {
+		if err := query.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 	for query.Next() {
 		err = query.Scan(&p.ID, &p.Name)
 		if err != nil {

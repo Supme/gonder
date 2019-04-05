@@ -339,7 +339,7 @@ func Run() {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
-			if t, err := template.ParseFiles(message.QuestionTemplateDir()+ "/question.html"); err != nil {
+			if t, err := template.ParseFiles(message.QuestionTemplateDir() + "/question.html"); err != nil {
 				utmlog.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
 			} else {
@@ -349,7 +349,7 @@ func Run() {
 				}
 				var data = map[string]string{}
 				for name, value := range r.PostForm {
-						data[name] = strings.Join(value, "|")
+					data[name] = strings.Join(value, "|")
 				}
 				if err := message.Question(data); err != nil {
 					utmlog.Println(err)

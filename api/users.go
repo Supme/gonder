@@ -96,7 +96,10 @@ func users(req request) (js []byte, err error) {
 			// Change user
 			if req.Record.Password != "" {
 				hash := sha256.New()
-				hash.Write([]byte(fmt.Sprint(req.Record.Password)))
+				if _, err := hash.Write([]byte(fmt.Sprint(req.Record.Password))); err != nil {
+					log.Print(err)
+					return nil, err
+				}
 				md := hash.Sum(nil)
 				shaPassword := hex.EncodeToString(md)
 				_, err = models.Db.Exec("UPDATE `auth_user` SET `password`=?, auth_unit_id=? WHERE `id`=?", shaPassword, req.Record.Unit.ID, req.Record.ID)

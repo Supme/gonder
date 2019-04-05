@@ -44,24 +44,28 @@ func Init() {
 	if err != nil {
 		checkErr(createDb())
 	}
-	InitEmailPool()
+	checkErr(InitEmailPool())
 }
 
 func createDb() error {
 	var input string
 	fmt.Print("Install database (y/N)? ")
-	fmt.Scanln(&input)
+	if _, err := fmt.Scanln(&input); err != nil {
+		return err
+	}
 	if input == "y" || input == "Y" {
-		sql, err := ioutil.ReadFile("dump-my.sql")
+		sqlDump, err := ioutil.ReadFile("dump.sql")
 		if err != nil {
 			return err
 		}
-		query := strings.Split(string(sql), ";")
+		query := strings.Split(string(sqlDump), ";")
 		tx, err := Db.Begin()
 		if err != nil {
 			return err
 		}
-		defer tx.Rollback()
+		defer func() {
+			_ = tx.Rollback()
+		}()
 		for i := range query[:len(query)-1] {
 			_, err = tx.Exec(query[i])
 			if err != nil {

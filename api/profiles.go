@@ -78,7 +78,7 @@ func profiles(req request) (js []byte, err error) {
 				return js, err
 			}
 			js, err = json.Marshal(ps)
-			if err != err {
+			if err != nil {
 				log.Println(err)
 			}
 			return js, err
@@ -176,7 +176,11 @@ func getProfiles(req request) (profs, error) {
 		log.Println(err)
 		return ps, err
 	}
-	defer query.Close()
+	defer func() {
+		if err := query.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	for query.Next() {
 		err = query.Scan(&p.ID, &p.Name, &p.Iface, &p.Host, &p.Stream, &p.ResendDelay, &p.ResendCount)

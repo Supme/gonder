@@ -84,26 +84,26 @@ var (
     <p>
       Если Вы не желаете получать информацию, пожалуйста, <a href="{{.UnsubscribeUrl}}" style="color: #9e9e9e;" target="_blank"> откажитесь от подписки</a>
     </p>
-  <img src='{{.StatPng}}' border='0px' width='10px' height='10px'/></body>
+  <img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/></body>
 </html>
 `
 )
 
-var r = Recipient{
-	ID:         "test",
-	CampaignID: "testCampaign",
-	Email:      "test@site.tld",
-	Name:       "Вася",
-	Params: map[string]interface{}{
-		"Sex": "male",
-		"Age": 32,
-	},
-}
-
-var c = campaign{
-	ID:           "testCampaign",
-	templateHTML: tmpl,
-}
+//var r = Recipient{
+//	ID:         "test",
+//	CampaignID: "testCampaign",
+//	Email:      "test@site.tld",
+//	Name:       "Вася",
+//	Params: map[string]interface{}{
+//		"Sex": "male",
+//		"Age": 32,
+//	},
+//}
+//
+//var c = campaign{
+//	ID:           "testCampaign",
+//	templateHTML: tmpl,
+//}
 
 func init() {
 	models.Config.URL = "https://Site.Net"

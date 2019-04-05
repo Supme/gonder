@@ -223,7 +223,7 @@ func getCampaigns(req request) (camps, error) {
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, false)
 	if err != nil {
-		apilog.Print(err)
+		log.Print(err)
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `campaign` WHERE "+partWhere, partParams...).Scan(&cs.Total)
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/supme/directEmail"
 	"gonder/models"
 	"log"
 	"net/http"
@@ -24,24 +23,25 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		user, password, _ := r.BasicAuth()
 		auth.userID, auth.unitID, authorize = check(user, password)
 		if !authorize {
-			if user != "" {
-				ip := models.GetIP(r)
-				apilog.Printf("%s bad user login '%s'", ip, user)
-				if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
-					// ToDo use smtpSender
-					go func() {
-						email := directEmail.New()
-						email.FromEmail = models.Config.GonderMail
-						email.ToName = models.Config.AdminMail
-						email.Subject = "Bad login to Gonder"
-						email.TextPlain(ip + " bad user login '" + user + "'")
-						email.Render()
-						if err := email.Send(); err != nil {
-							apilog.Print("Error send mail:", err)
-						}
-					}()
-				}
-			}
+			//if user != "" {
+			//	ip := models.GetIP(r)
+			//	apilog.Printf("%s bad user login '%s'", ip, user)
+			//	if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
+			//		go func() {
+			//			bldr := &smtpSender.Builder{
+			//				From: models.Config.GonderMail,
+			//				To: models.Config.AdminMail,
+			//				Subject: "Bad login to Gonder",
+			//			}
+			//			bldr.AddTextPlain([]byte(ip + " bad user login '" + user + "'"))
+			//
+			//			email := bldr.Email("", func(result smtpSender.Result){
+			//				apilog.Print("Error send mail:", result.Err)
+			//			})
+			//			email.Send(&smtpSender.Connect{}, nil)
+			//		}()
+			//	}
+			//}
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)
 			return
@@ -113,10 +113,7 @@ func (a *Auth) Right(right string) bool {
 
 func (a *Auth) IsAdmin() bool {
 	// admins has group 0
-	if a.unitID == 0 {
-		return true
-	}
-	return false
+	return a.unitID == 0
 }
 
 func check(user, password string) (int64, int64, bool) {
@@ -125,7 +122,9 @@ func check(user, password string) (int64, int64, bool) {
 	var userID, unitID int64
 
 	hash := sha256.New()
-	hash.Write([]byte(password))
+	if _, err := hash.Write([]byte(password)); err != nil {
+		apilog.Print(err)
+	}
 	md := hash.Sum(nil)
 	shaPassword := hex.EncodeToString(md)
 

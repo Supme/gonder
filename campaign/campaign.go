@@ -9,6 +9,7 @@ import (
 	"gonder/campaign/minifyEmail"
 	"gonder/models"
 	"io"
+	"log"
 	"math/rand"
 	"path/filepath"
 	"regexp"
@@ -25,7 +26,7 @@ type campaign struct {
 	ID              string
 	FromEmail       string
 	FromName        string
-	FromDomain		string
+	FromDomain      string
 	DkimSelector    string
 	DkimPrivateKey  []byte
 	DkimUse         bool
@@ -231,11 +232,15 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				"X-Postmaster-Msgtype: campaign"+c.ID,
 			)
 			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false))
+			if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
+				log.Print(err)
+			}
 			if c.templateText != "" {
 				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
 			}
-			bldr.AddAttachment(c.Attachments...)
+			if err := bldr.AddAttachment(c.Attachments...); err != nil {
+				log.Print(err)
+			}
 			if c.DkimUse {
 				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
 			}
@@ -271,7 +276,11 @@ const softBounceWhere = "LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read 
 func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND "+softBounceWhere, c.ID)
 	checkErr(err)
-	defer query.Close()
+	defer func() {
+		if err := query.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	updateRecipientStatus, err := c.prepareQueryUpdateRecipientStatus()
 	checkErr(err)
@@ -309,11 +318,15 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				"X-Postmaster-Msgtype: campaign"+c.ID,
 			)
 			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false))
+			if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
+				log.Print(err)
+			}
 			if c.templateText != "" {
 				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
 			}
-			bldr.AddAttachment(c.Attachments...)
+			if err := bldr.AddAttachment(c.Attachments...); err != nil {
+				log.Print(err)
+			}
 			if c.DkimUse {
 				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
 			}
@@ -393,24 +406,31 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 			r.Params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + r.CampaignID
 			r.Params["QuestionUrl"] = "/question?campaignId=" + r.CampaignID
-			c.templateHTMLFunc.Funcs(template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
-					return strings.TrimSpace(url[len(url)-1])
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateHTML)
+			_, err := c.templateHTMLFunc.Funcs(
+				template.FuncMap{
+					"RedirectUrl": func(p map[string]interface{}, u string) string {
+						url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
+						return strings.TrimSpace(url[len(url)-1])
+					},
+					// ToDo more functions (example QRcode generator)
+				}).Parse(c.templateHTML)
+			if err != nil {
+				log.Print(err)
+			}
 		} else {
 			if web {
 				r.Params["WebUrl"] = nil
 			}
-			c.templateHTMLFunc.Funcs(
+			_, err := c.templateHTMLFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
 						return models.EncodeUTM("redirect", u, p)
 					},
 					// ToDo more functions (example QRcode generator)
 				}).Parse(c.templateHTML)
+			if err != nil {
+				log.Print(err)
+			}
 		}
 
 		return c.templateHTMLFunc.Execute(w, r.Params)
@@ -427,26 +447,33 @@ func (c *campaign) textTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			}
 			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 			r.Params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + r.CampaignID
-			c.templateTextFunc.Funcs(template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
-					return strings.TrimSpace(url[len(url)-1])
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateText)
+			_, err := c.templateTextFunc.Funcs(
+				template.FuncMap{
+					"RedirectUrl": func(p map[string]interface{}, u string) string {
+						url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
+						return strings.TrimSpace(url[len(url)-1])
+					},
+					// ToDo more functions (example QRcode generator)
+				}).Parse(c.templateText)
+			if err != nil {
+				log.Print(err)
+			}
 		} else {
 			if web {
 				r.Params["WebUrl"] = nil
 			} else {
 				r.Params["WebUrl"] = models.EncodeUTM("web", "", r.Params)
 			}
-			c.templateTextFunc.Funcs(
+			_, err := c.templateTextFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
 						return models.EncodeUTM("redirect", u, p)
 					},
 					// ToDo more functions (example QRcode generator)
 				}).Parse(c.templateText)
+			if err != nil {
+				log.Print(err)
+			}
 		}
 
 		return c.templateTextFunc.Execute(w, r.Params)
@@ -486,8 +513,8 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 	part := make([]string, 5)
 
 	// add StatPng if not exist
-	if strings.Index(tmp, "{{.StatPng}}") == -1 {
-		if strings.Index(tmp, "</body>") == -1 {
+	if !strings.Contains(tmp, "{{.StatPng}}") {
+		if !strings.Contains(tmp, "</body>") {
 			tmp = tmp + "<img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/>"
 		} else {
 			tmp = strings.Replace(tmp, "</body>", "<img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/></body>", -1)

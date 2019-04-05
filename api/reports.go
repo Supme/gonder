@@ -15,46 +15,52 @@ func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var js []byte
 	type resultUnit struct {
-		RecipientID int64 `json:"recipient_id"`
-		Email string  `json:"email"`
-		At int64  `json:"at"`
-		Data map[string]string  `json:"data"`
+		RecipientID int64             `json:"recipient_id"`
+		Email       string            `json:"email"`
+		At          int64             `json:"at"`
+		Data        map[string]string `json:"data"`
 	}
 
 	user := r.Context().Value("Auth").(*Auth)
 	if user.CampaignRight(r.FormValue("campaign")) {
 		var result []resultUnit
-		result = []resultUnit{}
 
 		query, err := models.Db.Query("SELECT `question`.`id`, `question`.`recipient_id`, `recipient`.`email`, `question`.`at` FROM `question` LEFT JOIN `recipient` ON `question`.`recipient_id`=`recipient`.`id` WHERE `recipient`.`campaign_id`=?", r.FormValue("campaign"))
 		if err != nil {
-			apilog.Print(err)
+			log.Print(err)
 		}
-		defer query.Close()
+		defer func() {
+			if err := query.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 
 		stmtData, err := models.Db.Prepare("SELECT `name`, `value` FROM `question_data` WHERE `question_id`=?")
 		if err != nil {
-			apilog.Print(err)
+			log.Print(err)
 		}
 		for query.Next() {
 			var (
 				res        resultUnit
 				questionID int64
-				at mysql.NullTime
+				at         mysql.NullTime
 			)
 			err = query.Scan(&questionID, &res.RecipientID, &res.Email, &at)
 			if err != nil {
-				apilog.Print(err)
+				log.Print(err)
 				break
 			}
 			res.At = at.Time.Unix()
 			questionData := map[string]string{}
 			rows, err := stmtData.Query(questionID)
+			if err != nil {
+				log.Print(err)
+			}
 			for rows.Next() {
 				var name, value string
 				err = rows.Scan(&name, &value)
 				if err != nil {
-					apilog.Print(err)
+					log.Print(err)
 					break
 				}
 				questionData[name] = value
@@ -91,7 +97,10 @@ func reportStartedCampaign(w http.ResponseWriter, r *http.Request) {
 		js = []byte(`{"status": "error", "message": "Get reports for this campaign"}`)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func reportSummary(w http.ResponseWriter, r *http.Request) {
@@ -154,13 +163,17 @@ func reportClickCount(w http.ResponseWriter, r *http.Request) {
 		res := make(map[string]int)
 		query, err := models.Db.Query(fmt.Sprintf("SELECT `jumping`.`url` as link, ( SELECT COUNT(`jumping`.`id`) FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `jumping`.`url`=link AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 ) as cnt FROM `jumping` INNER JOIN `recipient` ON `jumping`.`recipient_id`=`recipient`.`id` WHERE `url` NOT IN ('%s', '%s', '%s') AND `jumping`.`campaign_id`=? AND `recipient`.`removed`=0 GROUP BY `jumping`.`url`", models.WebVersion, models.OpenTrace, models.Unsubscribe), r.Form["campaign"][0], r.Form["campaign"][0])
 		if err != nil {
-			apilog.Print(err)
+			log.Print(err)
 		}
-		defer query.Close()
+		defer func() {
+			if err := query.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 		for query.Next() {
 			err = query.Scan(&url, &count)
 			if err != nil {
-				apilog.Print(err)
+				log.Print(err)
 			}
 			res[url] = count
 		}
@@ -176,7 +189,7 @@ func reportClickCount(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(js)
 	if err != nil {
-		apilog.Print(err)
+		log.Print(err)
 	}
 }
 
@@ -231,7 +244,9 @@ func reportRecipientsList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"status": "error", "message": "Forbidden get reports for this campaign"}`))
+	if _, err := w.Write([]byte(`{"status": "error", "message": "Forbidden get reports for this campaign"}`)); err != nil {
+		log.Print(err)
+	}
 }
 
 //ToDo add to readme
@@ -247,12 +262,16 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		err = models.Db.QueryRow("SELECT `campaign_id` FROM `recipient` WHERE `id`=?", r.Form["recipient"][0]).Scan(&campaign)
 		if err == sql.ErrNoRows {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"status": "error", "message": "unknown recipient"}`))
+			if _, err := w.Write([]byte(`{"status": "error", "message": "unknown recipient"}`)); err != nil {
+				log.Print(err)
+			}
 			return
 		}
 	} else {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status": "error", "message": "required parameter missing"}`))
+		if _, err := w.Write([]byte(`{"status": "error", "message": "required parameter missing"}`)); err != nil {
+			log.Print(err)
+		}
 		return
 	}
 
@@ -269,7 +288,11 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer query.Close()
+		defer func() {
+			if err := query.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 
 		var clicks []clickType
 		for query.Next() {
@@ -290,14 +313,13 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		err = enc.Encode(clicks)
 		if err != nil {
 			log.Print(err)
-			return
 		}
-
-		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"status": "error", "message": "Forbidden get reports for this recipient"}`))
+	if _, err := w.Write([]byte(`{"status": "error", "message": "Forbidden get reports for this recipient"}`)); err != nil {
+		log.Print(err)
+	}
 }
 
 func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
@@ -339,12 +361,16 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Query to database error", http.StatusInternalServerError)
 			return
 		}
-		defer query.Close()
+		defer func() {
+			if err := query.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
 		for query.Next() {
 			rs := U{}
 			err = query.Scan(&id, &rs.Email, &timestamp)
 			if err != nil {
-				apilog.Print(err)
+				log.Print(err)
 			}
 			rs.Date = timestamp.Time.Unix()
 			// extra data
@@ -355,7 +381,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 			)
 			q, err := models.Db.Query("SELECT `name`, `value` FROM `unsubscribe_extra` WHERE `unsubscribe_id`=?", id)
 			if err != nil {
-				apilog.Print(err)
+				log.Print(err)
 			}
 			for q.Next() {
 				err = q.Scan(&name, &value)
@@ -422,7 +448,7 @@ func _reportSuccessSendCount(campaignID string) int {
 	var count int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `recipient` WHERE `campaign_id`=? AND `status`='Ok' AND `removed`=0", campaignID).Scan(&count)
 	if err != nil {
-		apilog.Print(err)
+		log.Print(err)
 	}
 	return count
 }

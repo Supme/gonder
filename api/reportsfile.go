@@ -25,7 +25,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("Auth").(*Auth)
 	if !user.Right("get-recipients") && !user.CampaignRight(campaign) {
-		apilog.Println(err)
+		log.Println(err)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -41,7 +41,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 		"recid": "id", "name": "name", "email": "email", "result": "status", "open": "open",
 	}, true)
 	if err != nil {
-		apilog.Println(err)
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -51,7 +51,11 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	defer query.Close()
+	defer func() {
+		if err := query.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	w.Header().Set("Content-Disposition", "attachment; filename=recipients_"+strconv.FormatInt(campaign, 10)+".csv")
 	w.Header().Set("Content-Type", "text/csv")
@@ -74,7 +78,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 		)
 		err = query.Scan(&id, &name, &email, &result, &opened)
 		if err != nil {
-			apilog.Println(err)
+			log.Println(err)
 			return
 		}
 		if opened {
@@ -90,6 +94,4 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	}
 
 	csvWriter.Flush()
-
-	return
 }

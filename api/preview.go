@@ -5,6 +5,7 @@ import (
 	"gonder/models"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"text/template"
@@ -27,7 +28,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
 			err = tmplFunc(w)
 			if err != nil {
-				apilog.Println(err)
+				log.Println(err)
 			}
 
 		} else {
@@ -45,7 +46,7 @@ func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
 		var tmpl string
 		var content []byte
 		var err error
-		models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", r.FormValue("id")).Scan(&tmpl)
+		_ = models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", r.FormValue("id")).Scan(&tmpl)
 		if tmpl == "" {
 			tmpl = "default"
 		} else {

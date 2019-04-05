@@ -9,6 +9,7 @@ import (
 	"gonder/models"
 	"gonder/utm"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -17,7 +18,7 @@ import (
 
 var (
 	errFailedFindProcess  = errors.New("failed to find process")
-	errProcessNotResponse = errors.New("process not response to signal.")
+	errProcessNotResponse = errors.New("process not response to signal")
 )
 
 // Run starting gonder from command line
@@ -180,7 +181,10 @@ func startProcess(name string) error {
 		return errors.New("Process " + name + " already running")
 	}
 	p := exec.Command(os.Args[0], "daemonize", name)
-	p.Start()
+	err = p.Start()
+	if err != nil {
+		return errors.New(name + " start error: " + err.Error())
+	}
 	fmt.Println("Started "+name+" pid", p.Process.Pid)
 	err = setPid(name, p.Process.Pid)
 	if err != nil {
@@ -205,9 +209,11 @@ func stopProcess(name string) error {
 		return err
 	}
 	p, _ := strconv.Atoi(string(pid))
-	process, _ := os.FindProcess(p)
+	process, err := os.FindProcess(p)
 	if err != nil {
-		os.Remove(models.WorkDir("pid/" + name + ".pid"))
+		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+			log.Print(err)
+		}
 		return errFailedFindProcess
 	}
 	// ToDo wait
@@ -215,8 +221,9 @@ func stopProcess(name string) error {
 	if err != nil {
 		return err
 	}
-	os.Remove(models.WorkDir("pid/" + name + ".pid"))
-
+	if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+		log.Print(err)
+	}
 	fmt.Println("Process " + name + " stoped")
 	return nil
 }
@@ -249,12 +256,16 @@ func checkPid(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		os.Remove(models.WorkDir("pid/" + name + ".pid"))
+		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+			log.Print(err)
+		}
 		return errFailedFindProcess
 	}
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		os.Remove(models.WorkDir("pid/" + name + ".pid"))
+		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+			log.Print(err)
+		}
 		return errProcessNotResponse
 	}
 

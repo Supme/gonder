@@ -58,10 +58,7 @@ func (r *Recipient) unsubscribed() bool {
 	var unsubscribeCount int
 	err := models.Db.QueryRow("SELECT COUNT(*) FROM `unsubscribe` t1 INNER JOIN `campaign` t2 ON t1.group_id = t2.group_id WHERE t2.id = ? AND t1.email = ?", r.CampaignID, r.Email).Scan(&unsubscribeCount)
 	checkErr(err)
-	if unsubscribeCount == 0 {
-		return false
-	}
-	return true
+	return unsubscribeCount != 0
 }
 
 func (r *Recipient) unsubscribeEmailHeaderURL() string {
