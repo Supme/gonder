@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"gonder/models"
 	"log"
@@ -129,9 +130,8 @@ func check(user, password string) (int64, int64, bool) {
 	shaPassword := hex.EncodeToString(md)
 
 	err := models.Db.QueryRow("SELECT `id`, `auth_unit_id`, `password` FROM `auth_user` WHERE `name`=?", user).Scan(&userID, &unitID, &passwordHash)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
-		l = false
 	}
 
 	if shaPassword == passwordHash {

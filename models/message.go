@@ -67,7 +67,7 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 
 func (m *Message) QuestionTemplateDir() (name string) {
 	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		log.Print(err)
 	}
 	if name == "" {

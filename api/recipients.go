@@ -312,10 +312,7 @@ func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 		return
 	}
 	defer func() {
-		err := tx.Rollback()
-		if err != nil {
-			log.Print(err)
-		}
+		_ = tx.Rollback()
 	}()
 
 	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
@@ -360,10 +357,7 @@ func addRecipients(campaignID int64, recipients recips) error {
 		return err
 	}
 	defer func() {
-		err := tx.Rollback()
-		if err != nil {
-			log.Print(err)
-		}
+		_ = tx.Rollback()
 	}()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
@@ -575,9 +569,7 @@ func recipientCsv(campaignID int64, file string) error {
 		return err
 	}
 	defer func() {
-		if err := tx.Rollback(); err != nil {
-			log.Print(err)
-		}
+		_ = tx.Rollback()
 	}()
 
 	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
@@ -675,9 +667,7 @@ func recipientXlsx(campaignID int64, file string) error {
 			return err
 		}
 		defer func() {
-			if err := tx.Rollback(); err != nil {
-				log.Print(err)
-			}
+			_ = tx.Rollback()
 		}()
 
 		var stRecipient *sql.Stmt
