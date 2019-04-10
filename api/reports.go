@@ -39,6 +39,8 @@ func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Print(err)
 		}
+
+		result = []resultUnit{}
 		for query.Next() {
 			var (
 				res        resultUnit

@@ -18,6 +18,10 @@ type Message struct {
 func (m *Message) New(recipientID string) error {
 	m.RecipientID = recipientID
 	err := Db.QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", m.RecipientID).Scan(&m.CampaignID, &m.RecipientEmail, &m.RecipientName)
+	if err != nil && err != sql.ErrNoRows {
+		log.Print(err)
+		return errors.New("Find recipient with error")
+	}
 	if err == sql.ErrNoRows {
 		return errors.New("The recipient does not exist")
 	}
@@ -44,11 +48,11 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 	return err
 }
 
-// Get template directory
+// UnsubscribeTemplateDir get template directory
 // ToDo move to campaign/Recipient
 func (m *Message) UnsubscribeTemplateDir() (name string) {
 	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		log.Print(err)
 	}
 	if name == "" {
@@ -65,6 +69,7 @@ func (m *Message) UnsubscribeTemplateDir() (name string) {
 	return
 }
 
+// QuestionTemplateDir get question template directory
 func (m *Message) QuestionTemplateDir() (name string) {
 	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
 	if err != nil && err != sql.ErrNoRows {
@@ -81,7 +86,6 @@ func (m *Message) QuestionTemplateDir() (name string) {
 	return
 }
 
-//
 func (m *Message) Question(data map[string]string) error {
 	r, err := Db.Exec("INSERT INTO question (`recipient_id`) VALUE (?)", m.RecipientID)
 	if err != nil {

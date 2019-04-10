@@ -56,30 +56,34 @@ var upgrader = websocket.Upgrader{
 func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		return
 	}
 
-	defer conn.Close()
+	defer func() {
+		_= conn.Close()
+	}()
 
 	var more string
 	var offset tail.SeekInfo
 	offset.Whence = 2
 	fi, err := os.Open(file)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 	}
 	f, err := fi.Stat()
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 	}
-	if f.Size() < 10000 {
+	if f.Size() < 50000 {
 		offset.Offset = f.Size() * (-1)
 	} else {
-		offset.Offset = -10000
-		more = "... "
+		offset.Offset = -50000
+		more = "..."
 	}
-	fi.Close()
+	if err := fi.Close(); err != nil {
+		log.Print(err)
+	}
 
 	conf := tail.Config{
 		Follow:   true,
@@ -90,18 +94,18 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 
 	t, err := tail.TailFile(file, conf)
 	if err != nil {
-		apilog.Println(err)
+		apilog.Print(err)
 	}
 
 	for line := range t.Lines {
 		if line.Err == nil {
 			if err = conn.WriteMessage(websocket.TextMessage, []byte(more+line.Text)); err != nil {
-				log.Println(err)
+				_ = conn.Close()
 				return
 			}
 			more = ""
 		} else {
-			log.Println(err)
+			log.Print(err)
 		}
 
 	}
