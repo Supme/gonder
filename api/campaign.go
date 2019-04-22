@@ -49,15 +49,7 @@ func campaign(req request) (js []byte, err error) {
 
 	case "save":
 		if req.auth.Right("save-campaign") && req.auth.CampaignRight(req.ID) {
-			var accepted bool
-			row := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", req.ID)
-			err = row.Scan(&accepted)
-			if err != nil {
-				log.Println(err)
-				return js, err
-			}
-
-			if accepted {
+			if isAccepted(req.ID) {
 				return js, errors.New("You can't save an accepted for send campaign.")
 			}
 

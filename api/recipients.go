@@ -80,6 +80,9 @@ func recipients(req request) (js []byte, err error) {
 
 		case "upload":
 			if req.auth.Right("upload-recipients") && req.auth.CampaignRight(req.Campaign) {
+				if isAccepted(req.Campaign) {
+					return js, errors.New("Cannot add recipients to an accepted campaign.")
+				}
 				var content []byte
 				content, err = base64.StdEncoding.DecodeString(req.FileContent)
 				if err != nil {

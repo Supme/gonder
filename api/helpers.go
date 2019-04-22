@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"gonder/models"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -198,4 +200,13 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 
 	query = queryStr + " " + strings.Join(result, " ")
 	return query, params, nil
+}
+
+func isAccepted(campaignID int64) bool{
+	var accepted bool
+	err := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", campaignID).Scan(&accepted)
+	if err != nil {
+		log.Println(err)
+	}
+	return accepted
 }

@@ -79,6 +79,10 @@ $('#recipientUploadFile').w2field('file', {max: 1});
 $("#recipientUploadButton").html(w2utils.lang('Upload'));
 $('#recipientUploadButton').click(
     function () {
+        if (w2ui['toolbar'].get('acceptSend').checked) {
+            w2alert(w2utils.lang('Cannot add recipients to an accepted campaign.'), w2utils.lang('Error'));
+            return
+        }
         if ($('#recipientUploadFile').data("selected").length == 0) {
             w2alert(w2utils.lang('No one file selected.'), w2utils.lang('Error'));
         } else {
