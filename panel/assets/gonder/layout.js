@@ -87,29 +87,61 @@ w2ui.layout.content('bottom', $().w2layout({
 }));
 
 function switchAcceptSend() {
+    var campaignData = getCampaignData($('#campaignId').val());
+
+
     var confirm;
     if (w2ui['toolbar'].get('acceptSend').checked) {
-        confirm = w2utils.lang('Are you sure to deactivate campaign?');
+        confirm = 'Are you sure to deactivate campaign?';
     } else {
         confirm = 'Are you sure to activate campaign?';
     }
-    w2confirm(w2utils.lang(confirm), function (btn) {
-        if (btn == 'Yes') {
-            $.ajax({
-                type: "POST",
-                url: '/api/campaign',
-                dataType: "json",
-                data: {"request": JSON.stringify({"cmd": "accept", "id": parseInt($('#campaignId').val()), "select": w2ui['toolbar'].get('acceptSend').checked})}
-            }).done(function (data) {
-                if (data['status'] == 'error') {
-                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                    setAcceptSend(!w2ui['toolbar'].get('acceptSend').checked);
-                }
-            })
-        } else {
-            setAcceptSend(!w2ui['toolbar'].get('acceptSend').checked);
-        }
+    w2popup.open({
+        title: w2utils.lang(confirm),
+        body:
+            '<div>' +
+            '<div>' + w2utils.lang("Subject") + ': "<b>' + campaignData.subject + '</b>"</div>' +
+            '<div>' + w2utils.lang("Sender") + ': "<b>' + campaignData.senderName + '</b>"</div>' +
+            '<div>' + w2utils.lang("Profile") + ': "' + campaignData.profileName + '"</div>' +
+            '<div>' + w2utils.lang("Start date") + ': "' + w2utils.formatDate(campaignData.startDate, w2utils.settings.dateFormat) + ' ' + w2utils.formatTime(campaignData.startDate, w2utils.settings.timeFormat) +'"</div>' +
+            '<div>' + w2utils.lang("End date") + ': "' + w2utils.formatDate(campaignData.endDate, w2utils.settings.dateFormat) + ' ' + w2utils.formatTime(campaignData.endDate, w2utils.settings.timeFormat) +'"</div>' +
+            '<br>' +
+            '<div>' +
+            ' <div style="float: left; width: 420px">' +
+            '  <div style="position: absolute; border: 1px solid #333; width: 420px; height: 300px; overflow-y: scroll;">' + campaignData.templateHTML + '</div>' +
+            ' </div>' +
+            ' <div style="float: right;width: 360px;">' +
+            '  <div style="position: absolute; border: 1px solid #333; width: 360px; height: 300px; overflow-y: scroll;"><pre>' + campaignData.templateText + '</pre></div>' +
+            ' </div>' +
+            '</div>'
+        ,
+        buttons: '<button class="w2ui-btn" onclick="changeAcceptSend(true); w2popup.close();">'+ w2utils.lang("Yes") + '</button>'+
+                 '&nbsp;'+
+                 '<button class="w2ui-btn" onclick="changeAcceptSend(false); w2popup.close();">'+ w2utils.lang("No") + '</button>',
+        width: 800,
+        height: 480,
+        showMax: false
     });
+}
+
+function changeAcceptSend(change) {
+    var accept = w2ui['toolbar'].get('acceptSend').checked;
+    if (change) {
+        $.ajax({
+            type: "POST",
+            url: '/api/campaign',
+            dataType: "json",
+            data: {"request": JSON.stringify({"cmd": "accept", "id": parseInt($('#campaignId').val()), "select": w2ui['toolbar'].get('acceptSend').checked})}
+        }).done(function (data) {
+            if (data['status'] == 'error') {
+                w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                accept = !w2ui['toolbar'].get('acceptSend').checked;
+            }
+        })
+    } else {
+        accept = !w2ui['toolbar'].get('acceptSend').checked;
+    }
+    setAcceptSend(accept);
 }
 
 function setAcceptSend(accept) {
@@ -199,8 +231,7 @@ $('#parameter').w2form({
         { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
         { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.timeFormat} },
         { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
-        { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
-        // { name: 'campaignAcceptSend', type: 'toggle', html: { caption: w2utils.lang('Accept send') } }
+        { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } }
     ]
 });
 

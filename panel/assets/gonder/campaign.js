@@ -104,38 +104,99 @@ function addCampaign(groupId) {
 // --- Get campaign data ---
 function getCampaign(recid, name) {
     w2ui.layout.lock('main', w2utils.lang('Loading...'), true);
+    var campaignData = getCampaignData(recid);
+
+    refreshProfilesList(campaignData.profiles, campaignData.profileID);
+    refreshSenderList(campaignData.senders, campaignData.senderID);
+
+    $('#campaignId').val(recid);
+    $('#campaignName').val(name);
+    $("#campaignSubject").val(campaignData.subject);
+    $("#campaignStartDate").val(w2utils.formatDate(campaignData.startDate, w2utils.settings.dateFormat));
+    $("#campaignStartTime").val(w2utils.formatTime(campaignData.startDate, w2utils.settings.timeFormat));
+    $("#campaignEndDate").val(w2utils.formatDate(campaignData.endDate, w2utils.settings.dateFormat));
+    $("#campaignEndTime").val(w2utils.formatTime(campaignData.endDate, w2utils.settings.timeFormat));
+    $("#campaignSendUnsubscribe").prop("checked", campaignData.sendUnsubscribe);
+    $("#campaignCompressHTML").prop("checked", campaignData.compressHTML);
+    $("#campaignTemplateHTML").val(campaignData.templateHTML);
+    $("#campaignTemplateText").val(campaignData.templateText);
+
+    setAcceptSend(campaignData.accepted);
+
+    cm.setValue(campaignData.templateHTML);
+
+    w2ui['recipient'].postData["campaign"] = parseInt(recid);
+    w2ui.layout.unlock('main');
+
+    w2ui['toolbar'].click('parametersButton');
+}
+
+function getCampaignData(campaignId) {
+    var campaignData = {
+        subject: "",
+        profiles: [{}],
+        profileID: 0,
+        profileName: "",
+        senders: [{}],
+        senderID: 0,
+        senderName: "",
+        startDate: Date(),
+        endDate: Date(),
+        sendUnsubscribe: false,
+        compressHTML: false,
+        accepted: false,
+        templateHTML: "",
+        templateText: ""
+    };
+    var zone = new Date().getTimezoneOffset() * 60;
     $.ajax({
         type: "GET",
+        async: false,
         url: '/api/campaign',
         dataType: 'json',
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(recid)})}
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(campaignId)})}
     }).done(function(data) {
-
-        zone = new Date().getTimezoneOffset() * 60;
-        refreshProfilesList(data["profileId"]);
-        refreshSenderList(data["senderId"]);
-
-        $('#campaignId').val(recid);
-        $('#campaignName').val(name);
-        $("#campaignSubject").val(data["subject"]);
-        $("#campaignStartDate").val(w2utils.formatDate((new Date((data["startDate"] + zone)* 1000 )), w2utils.settings.dateFormat));
-        $("#campaignStartTime").val(w2utils.formatTime((new Date((data["startDate"] + zone) * 1000)), w2utils.settings.timeFormat));
-        $("#campaignEndDate").val(w2utils.formatDate((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.dateFormat));
-        $("#campaignEndTime").val(w2utils.formatTime((new Date((data["endDate"] + zone) * 1000)), w2utils.settings.timeFormat));
-        $("#campaignSendUnsubscribe").prop("checked", data["sendUnsubscribe"]);
-        $("#campaignCompressHTML").prop("checked", data["compressHTML"]);
-        $("#campaignTemplateHTML").val(data["templateHTML"]);
-        $("#campaignTemplateText").val(data["templateText"]);
-
-        setAcceptSend(data["accepted"]);
-
-        cm.setValue(data["templateHTML"]);
-
-        w2ui['recipient'].postData["campaign"] = parseInt(recid);
-        w2ui.layout.unlock('main');
-
-        w2ui['toolbar'].click('parametersButton');
+        campaignData.subject = data["subject"];
+        campaignData.profileID = data["profileId"];
+        campaignData.senderID = data["senderId"];
+        campaignData.startDate = new Date((data["startDate"] + zone) * 1000);
+        campaignData.endDate = new Date((data["endDate"] + zone) * 1000);
+        campaignData.sendUnsubscribe = data["sendUnsubscribe"];
+        campaignData.compressHTML = data["compressHTML"];
+        campaignData.accepted = data["accepted"];
+        campaignData.templateHTML = data["templateHTML"];
+        campaignData.templateText = data["templateText"];
     });
+    $.ajax({
+        type: "GET",
+        async: false,
+        url: '/api/profilelist',
+        data: {"request": JSON.stringify({"cmd": "get"})},
+        dataType: "json"
+    }).done(function(data) {
+        campaignData.profiles = data;
+        campaignData.profiles.forEach(function(v) {
+           if (v.id === campaignData.profileID) {
+               campaignData.profileName = v.text;
+           }
+        });
+    });
+    $.ajax({
+        type: "GET",
+        async: false,
+        url: '/api/senderlist',
+        dataType: "json",
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})},
+    }).done(function(data) {
+        campaignData.senders = data;
+        campaignData.senders.forEach(function(v) {
+            if (v.id === campaignData.senderID) {
+                campaignData.senderName = v.text;
+            }
+        });
+    });
+
+    return campaignData;
 }
 
 // ---Save campaign data ---
@@ -184,34 +245,14 @@ function saveCampaign() {
     }
 }
 
-function refreshProfilesList(selectedProfile){
-    var profile;
-    $.ajax({
-        type: "GET",
-        async: false,
-        url: '/api/profilelist',
-        data: {"request": JSON.stringify({"cmd": "get"})},
-        dataType: "json"
-    }).done(function(data) {
-        profile = data;
-    });
-    w2ui['parameter'].set('campaignProfileId', { options: { items: profile } });
-    w2ui['parameter'].record['campaignProfileId'] = selectedProfile;
+function refreshProfilesList(profiles, profileID){
+    w2ui['parameter'].set('campaignProfileId', { options: { items: profiles } });
+    w2ui['parameter'].record['campaignProfileId'] = profileID;
     w2ui['parameter'].refresh();
 }
 
-function refreshSenderList(selectedSender){
-    var sender;
-    $.ajax({
-        type: "GET",
-        async: false,
-        url: '/api/senderlist',
-        dataType: "json",
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})},
-    }).done(function(data) {
-        sender = data;
-    });
-    w2ui['parameter'].set('campaignSenderId', { options: { items: sender } });
-    w2ui['parameter'].record['campaignSenderId'] = selectedSender;
+function refreshSenderList(senders, senderID){
+    w2ui['parameter'].set('campaignSenderId', { options: { items: senders } });
+    w2ui['parameter'].record['campaignSenderId'] = senderID;
     w2ui['parameter'].refresh();
 }
