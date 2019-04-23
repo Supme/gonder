@@ -88,8 +88,6 @@ w2ui.layout.content('bottom', $().w2layout({
 
 function switchAcceptSend() {
     var campaignData = getCampaignData($('#campaignId').val());
-
-
     var confirm;
     if (w2ui['toolbar'].get('acceptSend').checked) {
         confirm = 'Are you sure to deactivate campaign?';
@@ -120,8 +118,10 @@ function switchAcceptSend() {
                  '<button class="w2ui-btn" onclick="changeAcceptSend(false); w2popup.close();">'+ w2utils.lang("No") + '</button>',
         width: 800,
         height: 480,
-        showMax: false
-    });
+        showMax: false,
+        showClose: false,
+        keyboard: false
+    })
 }
 
 function changeAcceptSend(change) {
@@ -134,12 +134,12 @@ function changeAcceptSend(change) {
             data: {"request": JSON.stringify({"cmd": "accept", "id": parseInt($('#campaignId').val()), "select": w2ui['toolbar'].get('acceptSend').checked})}
         }).done(function (data) {
             if (data['status'] == 'error') {
+                accept = !accept;
                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                accept = !w2ui['toolbar'].get('acceptSend').checked;
             }
         })
     } else {
-        accept = !w2ui['toolbar'].get('acceptSend').checked;
+        accept = !accept;
     }
     setAcceptSend(accept);
 }
