@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"gonder/models"
@@ -205,7 +206,7 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 func isAccepted(campaignID int64) bool{
 	var accepted bool
 	err := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", campaignID).Scan(&accepted)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
 	}
 	return accepted
