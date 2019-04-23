@@ -109,7 +109,7 @@ function switchAcceptSend() {
             '  <div style="position: absolute; border: 1px solid #333; width: 420px; height: 300px; overflow-y: scroll;">' + campaignData.templateHTML + '</div>' +
             ' </div>' +
             ' <div style="float: right;width: 360px;">' +
-            '  <div style="position: absolute; border: 1px solid #333; width: 360px; height: 300px; overflow-y: scroll;"><pre>' + campaignData.templateText + '</pre></div>' +
+            '  <div style="position: absolute; border: 1px solid #333; width: 360px; height: 300px; overflow-y: scroll; background-color: #fff"><pre>' + campaignData.templateText + '</pre></div>' +
             ' </div>' +
             '</div>'
         ,
