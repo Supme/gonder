@@ -147,9 +147,12 @@ function changeAcceptSend(change) {
 function setAcceptSend(accept) {
     if (accept) {
         w2ui['toolbar'].check('acceptSend');
+        w2ui['toolbar'].get('acceptSend').text = w2utils.lang('Cancel accepted send');
     } else {
         w2ui['toolbar'].uncheck('acceptSend');
+        w2ui['toolbar'].get('acceptSend').text = w2utils.lang('Accept send');
     }
+    w2ui['toolbar'].refresh('acceptSend');
 }
 
 function switchToParameters() {
