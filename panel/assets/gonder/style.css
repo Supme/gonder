@@ -1,6 +1,6 @@
 .CodeMirror {
     border: 1px solid #eee;
-    height: auto;
+    height: 100%;
 }
 
 #tb_toolbar_item_acceptSend .checked {

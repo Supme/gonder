@@ -4,20 +4,19 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Gonder panel</title>
 
-    <script type="application/javascript" src="{{.root}}/assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
-
-    <script type="application/javascript" src="{{.root}}/assets/w2ui/w2ui.js?{{.version}}"></script>
     <link rel="stylesheet" type="text/css" href="{{.root}}/assets/w2ui/w2ui.css?{{.version}}" />
-
     <link rel="stylesheet" type="text/css" href="{{.root}}/assets/codemirror/codemirror.css?{{.version}}" />
     <link rel="stylesheet" type="text/css" href="{{.root}}/assets/codemirror/dracula.css?{{.version}}" />
+    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/gonder/style.css?{{.version}}" />
+
+    <script type="application/javascript" src="{{.root}}/assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
+    <script type="application/javascript" src="{{.root}}/assets/w2ui/w2ui.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/codemirror.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/selection-pointer.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/xml.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/javascript.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/css.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/htmlmixed.js?{{.version}}"></script>
-
     <script src="{{.root}}/assets/textversionjs/textversion.js?{{.version}}"></script>
 
     <script type="application/javascript">
@@ -50,7 +49,6 @@
         );
     </script>
     <script src="{{.root}}/assets/gonder/status.js?{{.version}}"></script>
-    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/gonder/style.css?{{.version}}" />
 </head>
 <body>
 
@@ -77,7 +75,7 @@
                     <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid silver; width: 768px; height: calc(100% - 65px); overflow-y: scroll;"></div>
                 </div>
                 <div id="campaignTemplateHTMLContainer" style="display: none;">
-                    <div style="position: absolute; width: 100%; height: calc(100% - 30px); ">
+                    <div style="position: absolute; width: 100%; height: calc(100% - 30px);">
                         <textarea id="campaignTemplateHTML"></textarea>
                     </div>
                 </div>
