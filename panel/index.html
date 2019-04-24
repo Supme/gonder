@@ -5,8 +5,8 @@
     <title>Gonder panel</title>
 
     <script type="application/javascript" src="{{.root}}/assets/jquery/jquery-3.1.1.min.js?{{.version}}"></script>
-    <script type="application/javascript" src="{{.root}}/assets/w2ui/w2ui.js?{{.version}}"></script>
 
+    <script type="application/javascript" src="{{.root}}/assets/w2ui/w2ui.js?{{.version}}"></script>
     <link rel="stylesheet" type="text/css" href="{{.root}}/assets/w2ui/w2ui.css?{{.version}}" />
 
     <link rel="stylesheet" type="text/css" href="{{.root}}/assets/codemirror/codemirror.css?{{.version}}" />
@@ -20,7 +20,6 @@
 
     <script src="{{.root}}/assets/textversionjs/textversion.js?{{.version}}"></script>
 
-    <script src="{{.root}}/assets/gonder/status.js?{{.version}}"></script>
     <script type="application/javascript">
         var root = "{{.root}}";
         var locale = "{{.locale}}";
@@ -50,34 +49,32 @@
             }
         );
     </script>
-    <style>
-        .CodeMirror {
-            border: 1px solid #eee;
-            height: 100%;
-        }
-        #tb_toolbar_item_acceptSend .checked {
-            background-color: #b6d5ff;
-        }
-    </style>
+    <script src="{{.root}}/assets/gonder/status.js?{{.version}}"></script>
+    <link rel="stylesheet" type="text/css" href="{{.root}}/assets/gonder/style.css?{{.version}}" />
 </head>
 <body>
 
     <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
 
-    <div id="formbox" style="visibility: hidden;">
-        <div id="parameter" style="display: none"></div>
+    <div id="mainbox" style="height: 100%; visibility: hidden;">
+        <div id="parameter" style="display: none">
+                <div id="parameterForm" style="float:left; width: 450px;"></div>
+                <div id="parameterTemplatePreviewContainer" style="float: left; height: 100%;">
+                    <div id="parameterTemplatePreview" style="position: absolute; margin: 0px 1px; border: 1px solid silver; width: calc(100% - 452px); height: 100%; overflow-y: scroll; background-color: #fff;"></div>
+                </div>
+        </div>
         <div id="template" style="display: none">
             <div id="templateTabs"></div>
             <div id="templateContent">
                 <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
-                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 20px;">
-                        <button onclick="$('#campaignTemplatePreview').width(360)">360px</button>
-                        <button onclick="$('#campaignTemplatePreview').width(420)">420px</button>
-                        <button onclick="$('#campaignTemplatePreview').width(768)">768px</button>
-                        <button onclick="$('#campaignTemplatePreview').width(1024)">1024px</button>
-                        <button onclick="$('#campaignTemplatePreview').width(1280)">1280px</button>
+                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 26px;">
+                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(360)">360px</button>
+                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(420)">420px</button>
+                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(768)">768px</button>
+                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1024)">1024px</button>
+                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1280)">1280px</button>
                     </div>
-                    <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid #333; width: 768px; height: calc(100% - 60px); overflow-y: scroll;"></div>
+                    <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid silver; width: 768px; height: calc(100% - 65px); overflow-y: scroll;"></div>
                 </div>
                 <div id="campaignTemplateHTMLContainer" style="display: none;">
                     <div style="position: absolute; width: 100%; height: calc(100% - 30px); ">
@@ -85,35 +82,18 @@
                     </div>
                 </div>
                 <div id="campaignTemplateTextContainer" style="display: none;">
-                    <div id="campaignTemplateTextButton" style="margin: 5px; height: 20px;">
-                        <button onclick="MakeTextFromHTML(false);">Make from HTML</button>
-                        <button onclick="MakeTextFromHTML(true);">Make from HTML with IMG tag</button>
+                    <div id="campaignTemplateTextButton" style="margin: 5px; height: 26px;">
+                        <button class="w2ui-btn" onclick="MakeTextFromHTML(false);">{{tr "Make from HTML"}}</button>
+                        <button class="w2ui-btn" onclick="MakeTextFromHTML(true);">{{tr "Make from HTML with IMG tag"}}</button>
                     </div>
-                    <div style="position: absolute; width: 100%; height: calc(100% - 65px); ">
+                    <div style="position: absolute; width: 100%; height: calc(100% - 68px); ">
                         <textarea id="campaignTemplateText" style="width:100%;height:100%;resize: none;"></textarea>
                     </div>
                 </div>
                 <div id="campaignTemplateHelpContainer" style="display: none;">
                     <div id="campaignTemplateHelp" style="margin: 10px;">
-                        System variables:
-                        <ul>
-                            <li>&#123;&#123;.CampaignId&#125;&#125;</li>
-                            <li>&#123;&#123;.RecipientEmail&#125;&#125;</li>
-                            <li>&#123;&#123;.RecipientName&#125;&#125;</li>
-                            <li>&#123;&#123;.StatPng&#125;&#125;</li>
-                            <li>&#123;&#123;.QuestionUrl&#125;&#125;</li>
-                            <li>&#123;&#123;.UnsubscribeUrl&#125;&#125;</li>
-                            <li>&#123;&#123;.WebUrl&#125;&#125;</li>
-                        </ul>
-                        Functions:
-                        <ul>
-                            <li>&#123;&#123;RedirectUrl . `[You URL comment] https://you-url.to/site-page.html`&#125;&#125;</li>
-                        </ul>
+                        {{tr "Template help"}}
                     </div>
-                </div>
-                <div id="campaignTemplateGrapesjsContainer" style="display: none;">
-                    <div id="campaignTemplateGrapesjsButton" style="margin: 5px; height: 20px"></div>
-                    <div id="campaignTemplateGrapesjs" style="position: absolute; border: 1px solid #333; height: calc(100% - 60px);"></div>
                 </div>
             </div>
         </div>

@@ -2,3 +2,7 @@
     border: 1px solid #eee;
     height: auto;
 }
+
+#tb_toolbar_item_acceptSend .checked {
+    background-color: #b6d5ff;
+}

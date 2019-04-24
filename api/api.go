@@ -115,6 +115,63 @@ func Run() {
 		}
 	})
 
+	indexTmpl, err := template.New("index.html").Funcs(template.FuncMap{
+		"tr": func(s string) template.HTML {
+			return template.HTML(lang.tr(panelLocale, s))
+		},
+	}).ParseFiles(models.WorkDir("panel/index.html"))
+	if err != nil {
+		log.Panic(err)
+		return
+	}
+
+	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if pusher, ok := w.(http.Pusher); ok {
+				// Push is supported.
+				for _, p := range []string{
+					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Config.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Config.Version,
+					panelRoot + "/assets/panel/layout.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/group.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/sender.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/campaign.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/recipient.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/profile.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/users.js?" + models.Config.Version,
+					panelRoot + "/assets/panel/template.js?" + models.Config.Version,
+				} {
+					if err := pusher.Push(p, nil); err != nil {
+						apilog.Printf("Failed to push: %v", err)
+					}
+				}
+			} else {
+				apilog.Println("Push not supported")
+			}
+
+			err = indexTmpl.Execute(w, map[string]string{
+				"version": models.Config.Version,
+				"locale":  panelLocale,
+				"root":    panelRoot,
+			})
+			if err != nil {
+				log.Print(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}), false))
+
+	// Assets static dirs
+	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/") {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
+			http.ServeFile(w, r, path.Join(models.WorkDir("panel/"), r.URL.Path))
+		}), true)))
+
 	// API
 	api.Handle("/api/", apiHandler(apiRequest, true))
 
@@ -157,59 +214,6 @@ func Run() {
 	api.HandleFunc("/status/ws/api.log", CheckAuth(apiLog))
 	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmLog))
 	api.HandleFunc("/status/ws/main.log", CheckAuth(mainLog))
-
-	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if pusher, ok := w.(http.Pusher); ok {
-				// Push is supported.
-				for _, p := range []string{
-					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Config.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Config.Version,
-					panelRoot + "/assets/panel/layout.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/group.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/sender.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/campaign.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/recipient.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/profile.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/users.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/template.js?" + models.Config.Version,
-				} {
-					if err := pusher.Push(p, nil); err != nil {
-						apilog.Printf("Failed to push: %v", err)
-					}
-				}
-			} else {
-				apilog.Println("Push not supported")
-			}
-
-			tmpl := template.Must(template.ParseFiles(models.WorkDir("panel/index.html")))
-			if err != nil {
-				log.Print(err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			err = tmpl.Execute(w, map[string]string{
-				"version": models.Config.Version,
-				"locale":  panelLocale,
-				"root":    panelRoot,
-			})
-			if err != nil {
-				log.Print(err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		}), false))
-
-	// Assets static dirs
-	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.URL.Path, "/") {
-				http.NotFound(w, r)
-				return
-			}
-			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
-			http.ServeFile(w, r, path.Join(models.WorkDir("panel/"), r.URL.Path))
-		}), true)))
 
 	apilog.Println("API listening on port " + models.Config.APIPort + "...")
 	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.WorkDir("/cert/server.pem"), models.WorkDir("/cert/server.key"), api))

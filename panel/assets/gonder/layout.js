@@ -20,8 +20,8 @@ w2ui.layout.content('top', $().w2toolbar({
         { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'icon-page' },
         { type: 'radio', id: 'editorButton', group: '1', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil' },
         { type: 'radio', id: 'recipientsButton', group: '1', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns' },
-        { type: 'break' },
-        { type: 'button', id: 'saveButton', text: w2utils.lang('Save'), img: 'w2ui-icon-check'},
+        // { type: 'break' },
+        // { type: 'button', id: 'saveButton', text: w2utils.lang('Save'), img: 'w2ui-icon-check'},
         { type: 'break' },
         { type: 'check', id: 'acceptSend', group: '1', text: w2utils.lang('Accept send'), style: '.checked {background: #ddff00}' },
         { type: 'spacer' },
@@ -77,7 +77,7 @@ w2ui.layout.content('top', $().w2toolbar({
     }
 }));
 
-w2ui.layout.content('main', $('#formbox').html());
+w2ui.layout.content('main', $('#mainbox').html());
 w2ui.layout.content('bottom', $().w2layout({
     name: 'bottom',
     panels: [
@@ -156,12 +156,13 @@ function setAcceptSend(accept) {
 }
 
 function switchToParameters() {
+    $('#parameterTemplatePreview').html(cm.getValue())
     $('#template').hide();
     $('#recipient').hide();
-    $('#parameter').show();
     $('#profile').hide();
     $('#users').hide();
     $('#status').hide();
+    $('#parameter').show();
 }
 
 function switchToEditor() {
@@ -217,11 +218,10 @@ function switchToStatus() {
     $('#users').hide();
     $('#status').show();
 }
-
 // --- /Layout ---
 
 // --- Parameters form ---
-$('#parameter').w2form({
+$('#parameterForm').w2form({
     name: 'parameter',
     fields: [
         { name: 'campaignId', type: 'text', html: { caption: w2utils.lang('Id'), attr: 'size="4" readonly' } },
@@ -234,8 +234,13 @@ $('#parameter').w2form({
         { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
         { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.timeFormat} },
         { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
-        { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } }
-    ]
+        { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
+    ],
+    actions: {
+        Save: function () {
+            saveCampaign();
+        }
+    }
 });
 
 $('#campaignSendUnsubscribe').click(function(data) {

@@ -65,6 +65,9 @@
     "Export to code": "Экспортировать в код",
     "Import from code": "Импортировать из кода",
     "Clear GrapesJs template?": "Очистить GrapesJs шаблон?",
-    "Get this as csv file": "Получить это в виде csv файла"
+    "Get this as csv file": "Получить это в виде csv файла",
+    "Make from HTML": "Создать из HTML",
+    "Make from HTML with IMG tag": "Создать из HTML с тэгами IMG",
+    "Template help": "Системные переменные:\n<ul>\n<li>&#123;&#123;.CampaignId&#125;&#125;</li>\n<li>&#123;&#123;.RecipientEmail&#125;&#125;</li>\n<li>&#123;&#123;.RecipientName&#125;&#125;</li>\n<li>&#123;&#123;.StatPng&#125;&#125;</li>\n<li>&#123;&#123;.QuestionUrl&#125;&#125;</li>\n<li>&#123;&#123;.UnsubscribeUrl&#125;&#125;</li>\n<li>&#123;&#123;.WebUrl&#125;&#125;</li>\n</ul>\nСистемные функции:\n<ul>\n<li>&#123;&#123;RedirectUrl . `[You URL comment] https://you-url.to/site-page.html`&#125;&#125;</li>\n</ul>"
   }
 }

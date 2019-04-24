@@ -203,46 +203,47 @@ function getCampaignData(campaignId) {
 function saveCampaign() {
     if (w2ui['toolbar'].get('acceptSend').checked) {
         w2alert(w2utils.lang("You can't save an accepted for send campaign."), w2utils.lang('Error'));
-    } else {
-        w2confirm(w2utils.lang('Save changes in campaign?'), function (btn) {
-            if ( btn == 'Yes') {
-                // ---Save campaign data ---
-                w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
-                $.ajax({
-                    type: "POST",
-                    url: '/api/campaign',
-                    dataType: "json",
-                    data: {"request": JSON.stringify(
-                            {
-                                "cmd": "save",
-                                "id": parseInt($('#campaignId').val()),
-                                "content": {
-                                    "profileId": $('#campaignProfileId').data('selected').id,
-                                    "name": $('#campaignName').val(),
-                                    "subject": $("#campaignSubject").val(),
-                                    "senderId": $('#campaignSenderId').data('selected').id,
-                                    "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
-                                    "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
-                                    "compressHTML": $("#campaignCompressHTML").is(":checked"),
-                                    "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                    "templateHTML": cm.getValue(),
-                                    "templateText": $("#campaignTemplateText").val()
-                                }
-                            }
-                        )}
-                }).done(function(data) {
-                    if (data['status'] == 'error') {
-                        w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-                    } else {
-                        w2ui.layout.lock('main', w2utils.lang('Saved'), false);
-                    }
-                    setTimeout(function(){
-                        w2ui.layout.unlock('main');
-                    }, 1000);
-                });
-            }
-        });
+        return
     }
+
+    w2confirm(w2utils.lang('Save changes in campaign?'), function (btn) {
+        if ( btn == 'Yes') {
+            // ---Save campaign data ---
+            w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
+            $.ajax({
+                type: "POST",
+                url: '/api/campaign',
+                dataType: "json",
+                data: {"request": JSON.stringify(
+                        {
+                            "cmd": "save",
+                            "id": parseInt($('#campaignId').val()),
+                            "content": {
+                                "profileId": $('#campaignProfileId').data('selected').id,
+                                "name": $('#campaignName').val(),
+                                "subject": $("#campaignSubject").val(),
+                                "senderId": $('#campaignSenderId').data('selected').id,
+                                "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
+                                "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
+                                "compressHTML": $("#campaignCompressHTML").is(":checked"),
+                                "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
+                                "templateHTML": cm.getValue(),
+                                "templateText": $("#campaignTemplateText").val()
+                            }
+                        }
+                    )}
+            }).done(function(data) {
+                if (data['status'] == 'error') {
+                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                } else {
+                    w2ui.layout.lock('main', w2utils.lang('Saved'), false);
+                }
+                setTimeout(function(){
+                    w2ui.layout.unlock('main');
+                }, 1000);
+            });
+        }
+    });
 }
 
 function refreshProfilesList(profiles, profileID){
