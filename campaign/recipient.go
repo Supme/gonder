@@ -13,13 +13,14 @@ type Recipient struct {
 	Email      string
 	Name       string
 	Params     map[string]interface{}
+	utmURL     string
 }
 
 func GetRecipient(id string) (Recipient, error) {
 	recipient := Recipient{ID: id}
 	err := models.Db.
-		QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", &recipient.ID).
-		Scan(&recipient.CampaignID, &recipient.Email, &recipient.Name)
+		QueryRow("SELECT t3.`utm_url`, t1.`campaign_id`, t1.`email`, t1.`name` FROM `recipient` t1 INNER JOIN `campaign` t2 ON t1.`campaign_id`=t2.`id` INNER JOIN `sender` t3 ON t3.`id`=t2.`sender_id` WHERE t1.`id`=?", &recipient.ID).
+		Scan(&recipient.utmURL, &recipient.CampaignID, &recipient.Email, &recipient.Name)
 	if err == sql.ErrNoRows {
 		return recipient, errors.New("recipient does not exist")
 	} else if err != nil {
@@ -46,10 +47,10 @@ func GetRecipient(id string) (Recipient, error) {
 	recipient.Params["CampaignId"] = recipient.CampaignID
 	recipient.Params["RecipientEmail"] = recipient.Email
 	recipient.Params["RecipientName"] = recipient.Name
-	recipient.Params["WebUrl"] = models.EncodeUTM("web", "", recipient.Params)
-	recipient.Params["StatPng"] = models.EncodeUTM("open", "", recipient.Params)
-	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", "", recipient.Params)
-	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", "web", recipient.Params)
+	recipient.Params["WebUrl"] = models.EncodeUTM("web", recipient.utmURL, "", recipient.Params)
+	recipient.Params["StatPng"] = models.EncodeUTM("open", recipient.utmURL, "", recipient.Params)
+	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", recipient.utmURL, "", recipient.Params)
+	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", recipient.utmURL, "web", recipient.Params)
 
 	return recipient, nil
 }
@@ -62,7 +63,7 @@ func (r *Recipient) unsubscribed() bool {
 }
 
 func (r *Recipient) unsubscribeEmailHeaderURL() string {
-	return models.EncodeUTM("unsubscribe", "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
+	return models.EncodeUTM("unsubscribe", r.utmURL, "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
 }
 
 func (r Recipient) WebHTML(web bool, preview bool) func(io.Writer) error {

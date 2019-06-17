@@ -53,6 +53,7 @@ type request struct {
 	ID          int64        `json:"id,omitempty"`
 	Email       string       `json:"email,omitempty"`
 	Name        string       `json:"name,omitempty"`
+	UtmURL      string       `json:"utmURL,omitempty"`
 	Content     campaignData `json:"content,omitempty"`
 	Select      bool         `json:"select,omitempty"`
 
@@ -203,7 +204,7 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 	return query, params, nil
 }
 
-func isAccepted(campaignID int64) bool{
+func isAccepted(campaignID int64) bool {
 	var accepted bool
 	err := models.Db.QueryRow("SELECT `accepted` FROM campaign WHERE id=?", campaignID).Scan(&accepted)
 	if err != nil && err != sql.ErrNoRows {

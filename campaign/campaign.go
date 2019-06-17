@@ -43,6 +43,8 @@ type campaign struct {
 	templateText     string
 	templateTextFunc *template.Template
 
+	utmURL string
+
 	Stop   chan struct{}
 	Finish chan struct{}
 }
@@ -50,14 +52,16 @@ type campaign struct {
 func getCampaign(id string) (campaign, error) {
 	var (
 		subject string
+		utmURL  string
 	)
 	c := campaign{ID: id}
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`,t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`, t3.`utm_url`, t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
 		&c.FromName,
+		&utmURL,
 		&c.DkimSelector,
 		&c.DkimPrivateKey,
 		&c.DkimUse,
@@ -74,10 +78,15 @@ func getCampaign(id string) (campaign, error) {
 		return c, err
 	}
 
+	if utmURL == "" {
+		c.utmURL = models.Config.URL
+	} else {
+		c.utmURL = utmURL
+	}
+
 	splitEmail := strings.Split(c.FromEmail, "@")
 	if len(splitEmail) == 2 {
 		c.FromDomain = strings.ToLower(strings.TrimSpace(splitEmail[1]))
-		fmt.Printf("FromDomain: %s\n", c.FromDomain)
 	}
 
 	c.subjectTmplFunc, err = template.New("Subject").Parse(subject)
@@ -227,7 +236,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			bldr.SetFrom(c.FromName, c.FromEmail)
 			bldr.SetTo(r.Name, r.Email)
 			bldr.AddHeader(
-				"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", "mail", r.Params)+"\nPrecedence: bulk",
+				"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.utmURL, "mail", r.Params)+"\nPrecedence: bulk",
 				"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
 				"X-Postmaster-Msgtype: campaign"+c.ID,
 			)
@@ -424,7 +433,7 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			_, err := c.templateHTMLFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
-						return models.EncodeUTM("redirect", u, p)
+						return models.EncodeUTM("redirect", c.utmURL, u, p)
 					},
 					// ToDo more functions (example QRcode generator)
 				}).Parse(c.templateHTML)
@@ -462,12 +471,12 @@ func (c *campaign) textTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 			if web {
 				r.Params["WebUrl"] = nil
 			} else {
-				r.Params["WebUrl"] = models.EncodeUTM("web", "", r.Params)
+				r.Params["WebUrl"] = models.EncodeUTM("web", c.utmURL, "", r.Params)
 			}
 			_, err := c.templateTextFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
-						return models.EncodeUTM("redirect", u, p)
+						return models.EncodeUTM("redirect", c.utmURL, u, p)
 					},
 					// ToDo more functions (example QRcode generator)
 				}).Parse(c.templateText)

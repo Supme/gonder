@@ -61,7 +61,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	}
 
 	defer func() {
-		_= conn.Close()
+		_ = conn.Close()
 	}()
 
 	var more string

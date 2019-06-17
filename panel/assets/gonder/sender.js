@@ -12,6 +12,7 @@ $().w2grid({
     columns: [
         { field: 'email', caption: w2utils.lang('Email'), size: '50%' },
         { field: 'name', caption: w2utils.lang('Name'), size: '50%'},
+        { field: 'utmURL', hidden: true },
         { field: 'dkimSelector', hidden: true },
         { field: 'dkimKey', hidden: true },
         { field: 'dkimUse', hidden: true }
@@ -40,6 +41,7 @@ $().w2form({
         { name: 'recid', type: 'text', html: { caption: 'ID', attr: 'size="10" readonly' } },
         { name: 'name', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40"' } },
         { name: 'email', type: 'email', required: true, html: { caption: w2utils.lang('Email'), attr: 'size="30"' } },
+        { name: 'utmURL', type: 'text', html: { caption: w2utils.lang('Utm url'), attr: 'size="40" maxlength="100"' } },
         { name: 'dkimSelector', type: 'text', html: { caption: w2utils.lang('DKIM Selector'), attr: 'size="20" maxlength="20"' } },
         { name: 'dkimKey', type: 'textarea', html: { caption: w2utils.lang('DKIM Private Key'), attr: 'style="width: 420px; height: 280px"' } },
         { name: 'dkimUse', type: 'checkbox', html: { caption: w2utils.lang('Use DKIM') } }
@@ -68,6 +70,7 @@ $().w2form({
                         "id": cmd == 'save'?parseInt(i.record.recid):parseInt(w2ui['group'].getSelection()[0]),
                         "email": i.record.email,
                         "name": i.record.name,
+                        "utmURL": i.record.utmURL,
                         "dkimSelector": i.record.dkimSelector,
                         "dkimKey": i.record.dkimKey,
                         "dkimUse": i.record.dkimUse

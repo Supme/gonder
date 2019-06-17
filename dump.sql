@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS `sender` (
   `group_id` int(11) NOT NULL,
   `email` VARCHAR(100) NOT NULL,
   `name` VARCHAR(100) NOT NULL,
+  `utm_url` VARCHAR(100) NOT NULL DEFAULT '',
   `dkim_selector` VARCHAR(20) NOT NULL,
   `dkim_key` VARCHAR(2000) NOT NULL,
   `dkim_use` BOOLEAN NOT NULL,

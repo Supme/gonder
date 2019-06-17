@@ -16,7 +16,7 @@ type utm struct {
 }
 
 // EncodeUTM encode command, data with params templating and return unique link
-func EncodeUTM(cmd, data string, params map[string]interface{}) string {
+func EncodeUTM(cmd, url, data string, params map[string]interface{}) string {
 	if _, ok := params["RecipientId"]; !ok {
 		return "Parameters don`t have CampaignId"
 	}
@@ -43,7 +43,7 @@ func EncodeUTM(cmd, data string, params map[string]interface{}) string {
 			Email: params["RecipientEmail"].(string),
 			Data:  data,
 		})
-	return Config.URL + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
+	return url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
 }
 
 // DecodeUTM decode utm data string and return Message with the pre-filled id and email
