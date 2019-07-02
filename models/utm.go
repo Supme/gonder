@@ -24,6 +24,10 @@ func EncodeUTM(cmd, url, data string, params map[string]interface{}) string {
 		return "Parameters don`t have RecipientEmail"
 	}
 
+	if url == "" {
+		url = Config.URL
+	}
+
 	if data != "" {
 		tmp := bytes.NewBufferString("")
 		dataTmpl, err := template.New("url").Parse(data)

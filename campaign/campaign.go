@@ -78,12 +78,6 @@ func getCampaign(id string) (campaign, error) {
 		return c, err
 	}
 
-	if utmURL == "" {
-		c.utmURL = models.Config.URL
-	} else {
-		c.utmURL = utmURL
-	}
-
 	splitEmail := strings.Split(c.FromEmail, "@")
 	if len(splitEmail) == 2 {
 		c.FromDomain = strings.ToLower(strings.TrimSpace(splitEmail[1]))
