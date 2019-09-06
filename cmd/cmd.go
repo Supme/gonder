@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"gonder/api"
 	"gonder/campaign"
@@ -23,183 +24,119 @@ var (
 
 // Run starting gonder from command line
 func Run() {
+	var (
+		configFile string
+		pidFile    string
+	)
+
+	flag.StringVar(&configFile, "c", "./config.ini", "Path to config file")
+	start := flag.Bool("start", false, "Start as daemon")
+	stop := flag.Bool("stop", false, "Stop daemon")
+	restart := flag.Bool("restart", false, "Restart daemon")
+	check := flag.Bool("status", false, "Check daemon status")
+	flag.StringVar(&pidFile, "p", "pid/gonder.pid", "Path to pid file")
+	initDb := flag.Bool("i", false, "Initial database")
+	showVer := flag.Bool("v", false, "Prints version")
+	flag.Parse()
+
+	if *showVer {
+		fmt.Printf("Gonder version: v%s\r\n\r\n", models.Version)
+		os.Exit(0)
+	}
+
 	var err error
-	if len(os.Args) == 2 {
-		if os.Args[1] == "status" {
-			err = checkPid("sender")
-			if err == nil {
-				fmt.Println("Process sender running")
-			} else {
-				fmt.Println("Process sender stoping")
-			}
-			err = checkPid("utm")
-			if err == nil {
-				fmt.Println("Process utm running")
-			} else {
-				fmt.Println("Process utm stoping")
-			}
+
+	if *initDb {
+		err = models.Init(configFile)
+		if err != nil{
+			fmt.Print(err)
+			os.Exit(1)
 		}
-		if os.Args[1] == "start" {
-			err = startProcess("sender")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			err = startProcess("utm")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			os.Exit(0)
+		err = models.InitDb()
+		if err != nil{
+			fmt.Print(err)
+			os.Exit(1)
 		}
-		if os.Args[1] == "stop" {
-			err = stopProcess("sender")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			err = stopProcess("utm")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			os.Exit(0)
-		}
-		if os.Args[1] == "restart" {
-			err = stopProcess("utm")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			err = startProcess("utm")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			err = stopProcess("sender")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			err = startProcess("sender")
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			os.Exit(0)
-		}
+		fmt.Println("Ok")
+		os.Exit(0)
 	}
 
-	if len(os.Args) == 3 {
-		if os.Args[1] == "start" {
-			if os.Args[2] == "sender" {
-				err = startProcess("sender")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			if os.Args[2] == "utm" {
-				err = startProcess("utm")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			os.Exit(0)
+	if *check {
+		err = checkPid(pidFile)
+		if err == nil {
+			fmt.Println("Gonder daemon is running")
+		} else {
+			fmt.Println("Gonder daemon is stoping")
 		}
-
-		if os.Args[1] == "stop" {
-			if os.Args[2] == "sender" {
-				err = stopProcess("sender")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			if os.Args[2] == "utm" {
-				err = stopProcess("utm")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			os.Exit(0)
-		}
-
-		if os.Args[1] == "restart" {
-			if os.Args[2] == "sender" {
-				err = stopProcess("sender")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-				err = startProcess("sender")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			if os.Args[2] == "utm" {
-				err = stopProcess("utm")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-				err = startProcess("utm")
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			}
-			os.Exit(0)
-		}
-
-		if os.Args[1] == "daemonize" {
-			models.Init()
-			if os.Args[2] == "sender" {
-				fmt.Println("Start campaign mailer")
-				go campaign.Run()
-				fmt.Println("Start api http server")
-				api.Run()
-			}
-
-			if os.Args[2] == "utm" {
-				fmt.Println("Start utm http server")
-				utm.Run()
-			}
-
-		}
-
+		os.Exit(0)
 	}
 
-	if len(os.Args) == 1 {
-		models.Init()
-		fmt.Println("Start api http server")
-		go api.Run()
-
-		fmt.Println("Start database mailer")
-		go campaign.Run()
-
-		fmt.Println("Start utm http server")
-		go utm.Run()
-
-		fmt.Println("Press Enter for stop")
-		var input string
-		fmt.Scanln(&input)
+	if *stop {
+		err = stopProcess(pidFile)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
 	}
+
+	err = models.Init(configFile)
+	if err != nil{
+		fmt.Print(err)
+		os.Exit(1)
+	}
+
+
+	if *start {
+		err = startProcess(pidFile)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
+	}
+
+	if *restart {
+		err = stopProcess(pidFile)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		err = startProcess(pidFile)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
+	}
+
+	go api.Run()
+	go campaign.Run()
+	utm.Run()
 
 }
 
-func startProcess(name string) error {
-	err := checkPid(name)
+func startProcess(pidFile string) error {
+	err := checkPid(pidFile)
 	if err == nil {
-		return errors.New("Process " + name + " already running")
+		return errors.New("Process " + pidFile + " already running")
 	}
-	p := exec.Command(os.Args[0], "daemonize", name)
+	p := exec.Command(os.Args[0])
 	err = p.Start()
 	if err != nil {
-		return errors.New(name + " start error: " + err.Error())
+		return errors.New(pidFile + " start error: " + err.Error())
 	}
-	fmt.Println("Started "+name+" pid", p.Process.Pid)
-	err = setPid(name, p.Process.Pid)
+	fmt.Println("Started pid", p.Process.Pid)
+	err = setPid(pidFile, p.Process.Pid)
 	if err != nil {
-		return errors.New(name + " set PID error: " + err.Error())
+		return errors.New(pidFile + " set PID error: " + err.Error())
 	}
 
 	return nil
 }
 
-func stopProcess(name string) error {
-	err := checkPid(name)
+func stopProcess(pidFile string) error {
+	err := checkPid(pidFile)
 	if err != nil {
 		return err
 	}
-	file, err := os.Open(models.WorkDir("pid/" + name + ".pid"))
+	file, err := os.Open(pidFile)
 	if err != nil {
 		return err
 	}
@@ -211,7 +148,7 @@ func stopProcess(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+		if err := os.Remove(pidFile); err != nil {
 			log.Print(err)
 		}
 		return errFailedFindProcess
@@ -221,16 +158,16 @@ func stopProcess(name string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+	if err := os.Remove(pidFile); err != nil {
 		log.Print(err)
 	}
-	fmt.Println("Process " + name + " stoped")
+	fmt.Println("Process stoped")
 	return nil
 }
 
-func setPid(name string, pid int) error {
+func setPid(pidFile string, pid int) error {
 	p := strconv.Itoa(pid)
-	file, err := os.Create(models.WorkDir("pid/" + name + ".pid"))
+	file, err := os.Create(pidFile)
 	if err != nil {
 		return err
 	}
@@ -242,8 +179,8 @@ func setPid(name string, pid int) error {
 	return nil
 }
 
-func checkPid(name string) error {
-	file, err := os.Open(models.WorkDir("pid/" + name + ".pid"))
+func checkPid(pidFile string) error {
+	file, err := os.Open(pidFile)
 	if err != nil {
 		return err
 	}
@@ -256,14 +193,14 @@ func checkPid(name string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+		if err := os.Remove( pidFile); err != nil {
 			log.Print(err)
 		}
 		return errFailedFindProcess
 	}
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		if err := os.Remove(models.WorkDir("pid/" + name + ".pid")); err != nil {
+		if err := os.Remove(pidFile); err != nil {
 			log.Print(err)
 		}
 		return errProcessNotResponse

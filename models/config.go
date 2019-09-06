@@ -16,7 +16,6 @@ import (
 type config struct {
 	dbType, dbString string
 	dbConnections    int
-	Version          string
 	URL              string
 	APIPort          string
 	StatPort         string
@@ -33,71 +32,91 @@ var (
 	Config config
 )
 
-func Init() {
-	var err error
-	Config.Update()
+func Init(configFile string) error {
+	err := Config.Update(configFile)
+	if err != nil {
+		return err
+	}
 	Db, err = sql.Open(Config.dbType, Config.dbString)
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("open database error: %s", err)
+	}
+	err = Db.Ping()
+	if err != nil {
+		return fmt.Errorf("ping database error: %s", err)
+	}
 	Db.SetMaxIdleConns(Config.dbConnections)
 	Db.SetMaxOpenConns(Config.dbConnections)
 	_, err = Db.Query("SELECT 1 FROM `auth_user`")
 	if err != nil {
-		checkErr(createDb())
+		return fmt.Errorf("database is empty, use -i key for create from a template")
 	}
-	checkErr(InitEmailPool())
-}
-
-func createDb() error {
-	var input string
-	fmt.Print("Install database (y/N)? ")
-	if _, err := fmt.Scanln(&input); err != nil {
+	err = InitEmailPool()
+	if err != nil {
 		return err
-	}
-	if input == "y" || input == "Y" {
-		sqlDump, err := ioutil.ReadFile("dump.sql")
-		if err != nil {
-			return err
-		}
-		query := strings.Split(string(sqlDump), ";")
-		tx, err := Db.Begin()
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = tx.Rollback()
-		}()
-		for i := range query[:len(query)-1] {
-			_, err = tx.Exec(query[i])
-			if err != nil {
-				return err
-			}
-		}
-		if err = tx.Commit(); err != nil {
-			return err
-		}
-
 	}
 	return nil
 }
 
-func (c *config) Update() {
+func InitDb() error {
+	var confirm string
+	fmt.Print("Initial database (y/N)? ")
+	if _, err := fmt.Scanln(&confirm); err != nil {
+		return err
+	}
+	if strings.ToLower(confirm) != "y" {
+		return nil
+	}
+
+	sqlDump, err := ioutil.ReadFile("dump.sql")
+	if err != nil {
+		return err
+	}
+	query := strings.Split(string(sqlDump), ";")
+	tx, err := Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	for i := range query[:len(query)-1] {
+		_, err = tx.Exec(query[i])
+		if err != nil {
+			return err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *config) Update(configFile string) error {
 	var err error
 
-	config, err := configparser.Read(WorkDir("config.ini"))
-	checkErr(err)
+	config, err := configparser.Read(configFile)
+	if err != nil {
+		return fmt.Errorf("error parse config file: %s", err)
+	}
 
 	mainConfig, err := config.Section("Main")
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("error parse config file: %s", err)
+	}
 
 	c.DefaultProfile, err = strconv.Atoi(mainConfig.ValueOf("defaultProfile"))
 	if err != nil {
-		panic("Error parse config parametr 'defaultProfile'")
+		return fmt.Errorf("error parse config file value defaultProfile: %s", err)
 	}
+
 	c.AdminMail = mainConfig.ValueOf("adminMail")
 	c.GonderMail = mainConfig.ValueOf("gonderMail")
 
 	dbConfig, err := config.Section("Database")
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("error parse config file section Database: %s", err)
+	}
 	c.dbType = dbConfig.ValueOf("type")
 	c.dbString = dbConfig.ValueOf("string")
 	c.dbConnections, err = strconv.Atoi(dbConfig.ValueOf("connections"))
@@ -106,7 +125,9 @@ func (c *config) Update() {
 	}
 
 	mailerConfig, err := config.Section("Mailer")
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("error parse config file: %s", err)
+	}
 	if mailerConfig.ValueOf("send") == "yes" {
 		c.RealSend = true
 	} else {
@@ -119,18 +140,21 @@ func (c *config) Update() {
 	}
 	c.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
 	if err != nil {
-		panic("Error parse config parametr 'maxcampaign'")
+		return fmt.Errorf("error parse config file value maxcampaign: %s", err)
 	}
 
 	statisticConfig, err := config.Section("Statistic")
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("error parse config file has not section Statistic: %s", err)
+	}
 	apiConfig, err := config.Section("API")
-	checkErr(err)
+	if err != nil {
+		return fmt.Errorf("error parse config file has not section API: %s", err)
+	}
 	c.URL = mainConfig.ValueOf("host")
 	c.StatPort = statisticConfig.ValueOf("port")
 	c.APIPort = apiConfig.ValueOf("port")
-
-	c.Version = version
+	return nil
 }
 
 func WorkDir(path string) string {

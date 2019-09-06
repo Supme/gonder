@@ -130,17 +130,17 @@ func Run() {
 			if pusher, ok := w.(http.Pusher); ok {
 				// Push is supported.
 				for _, p := range []string{
-					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Config.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Config.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Config.Version,
-					panelRoot + "/assets/panel/layout.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/group.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/sender.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/campaign.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/recipient.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/profile.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/users.js?" + models.Config.Version,
-					panelRoot + "/assets/panel/template.js?" + models.Config.Version,
+					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Version,
+					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Version,
+					panelRoot + "/assets/panel/layout.js?" + models.Version,
+					panelRoot + "/assets/panel/group.js?" + models.Version,
+					panelRoot + "/assets/panel/sender.js?" + models.Version,
+					panelRoot + "/assets/panel/campaign.js?" + models.Version,
+					panelRoot + "/assets/panel/recipient.js?" + models.Version,
+					panelRoot + "/assets/panel/profile.js?" + models.Version,
+					panelRoot + "/assets/panel/users.js?" + models.Version,
+					panelRoot + "/assets/panel/template.js?" + models.Version,
 				} {
 					if err := pusher.Push(p, nil); err != nil {
 						apilog.Printf("Failed to push: %v", err)
@@ -151,7 +151,7 @@ func Run() {
 			}
 
 			err = indexTmpl.Execute(w, map[string]string{
-				"version": models.Config.Version,
+				"version": models.Version,
 				"locale":  panelLocale,
 				"root":    panelRoot,
 			})
