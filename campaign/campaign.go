@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/supme/smtpSender"
+	"github.com/Supme/smtpSender"
 	"github.com/tdewolff/minify"
 	"gonder/campaign/minifyEmail"
 	"gonder/models"
@@ -260,9 +260,9 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				wg.Done()
 			})
 			if !models.Config.RealSend {
-				err = fakeSend(email)
+				err = fakeSend(*email)
 			} else {
-				err = pipe.Send(email)
+				err = pipe.Send(*email)
 			}
 			if err != nil {
 				break
@@ -346,9 +346,9 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				wg.Done()
 			})
 			if !models.Config.RealSend {
-				err = fakeSend(email)
+				err = fakeSend(*email)
 			} else {
-				err = pipe.Send(email)
+				err = pipe.Send(*email)
 			}
 			if err != nil {
 				camplog.Println(err)
@@ -527,11 +527,11 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 	// make absolute URL
 	tmp = reReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
 		part = reReplaceRelativeSrc.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.URL, part[3]) + part[4]
+		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
 	})
 	tmp = reReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
 		part = reReplaceRelativeHref.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.URL, part[3]) + part[4]
+		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
 	})
 
 	// replace http and https href link to utm redirect

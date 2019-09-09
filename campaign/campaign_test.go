@@ -106,7 +106,7 @@ var (
 //}
 
 func init() {
-	models.Config.URL = "https://Site.Net"
+	models.Config.UTMDefaultURL = "https://Site.Net"
 }
 
 func TestHtmlStringPrepare(t *testing.T) {

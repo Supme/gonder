@@ -64,7 +64,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	csvWriter.Comma = ';'
 	csvWriter.UseCRLF = true
 
-	err = csvWriter.Write([]string{lang.tr(panelLocale, "Id"), lang.tr(panelLocale, "Email"), lang.tr(panelLocale, "Name"), lang.tr(panelLocale, "Opened"), lang.tr(panelLocale, "Result")})
+	err = csvWriter.Write([]string{lang.tr(models.Config.APIPanelLocale, "Id"), lang.tr(models.Config.APIPanelLocale, "Email"), lang.tr(models.Config.APIPanelLocale, "Name"), lang.tr(models.Config.APIPanelLocale, "Opened"), lang.tr(models.Config.APIPanelLocale, "Result")})
 	if err != nil {
 		log.Println(err)
 		return
@@ -82,9 +82,9 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if opened {
-			openedStr = lang.tr(panelLocale, "Yes")
+			openedStr = lang.tr(models.Config.APIPanelLocale, "Yes")
 		} else {
-			openedStr = lang.tr(panelLocale, "No")
+			openedStr = lang.tr(models.Config.APIPanelLocale, "No")
 		}
 		err = csvWriter.Write([]string{id, email, name, openedStr, result.String})
 		if err != nil {

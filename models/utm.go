@@ -25,7 +25,7 @@ func EncodeUTM(cmd, url, data string, params map[string]interface{}) string {
 	}
 
 	if url == "" {
-		url = Config.URL
+		url = Config.UTMDefaultURL
 	}
 
 	if data != "" {

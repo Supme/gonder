@@ -27,11 +27,11 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 			//if user != "" {
 			//	ip := models.GetIP(r)
 			//	apilog.Printf("%s bad user login '%s'", ip, user)
-			//	if models.Config.GonderMail != "" && models.Config.AdminMail != "" {
+			//	if models.Config.GonderEmail != "" && models.Config.AdminEmail != "" {
 			//		go func() {
 			//			bldr := &smtpSender.Builder{
-			//				From: models.Config.GonderMail,
-			//				To: models.Config.AdminMail,
+			//				From: models.Config.GonderEmail,
+			//				To: models.Config.AdminEmail,
 			//				Subject: "Bad login to Gonder",
 			//			}
 			//			bldr.AddTextPlain([]byte(ip + " bad user login '" + user + "'"))

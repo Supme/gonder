@@ -2,7 +2,7 @@ package models
 
 import (
 	"errors"
-	"github.com/supme/smtpSender"
+	"github.com/Supme/smtpSender"
 	"strings"
 	"sync"
 )
@@ -60,7 +60,7 @@ func InitEmailPool() error {
 			config:      []smtpSender.Config{cnf},
 			resendDelay: resendDelay,
 			resendCount: resendCount,
-			pipe:        &pipe,
+			pipe:        pipe,
 		}
 	}
 
@@ -103,7 +103,7 @@ func InitEmailPool() error {
 			config:      cnf,
 			resendDelay: resendDelay,
 			resendCount: resendCount,
-			pipe:        &pipe,
+			pipe:        pipe,
 		}
 	}
 

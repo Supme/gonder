@@ -9,7 +9,7 @@
 //  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
 //  PURPOSE.
 //
-// Please see the License.txt file for more information.
+// Please see the LICENSE file for more information.
 package api
 
 import (
@@ -50,9 +50,6 @@ const (
 	useMinifyHTML = true
 	useMinifyJS   = true
 	useMinifyJSON = true
-
-	panelRoot   = "/panel"
-	panelLocale = "ru-ru"
 )
 
 func init() {
@@ -117,7 +114,7 @@ func Run() {
 
 	indexTmpl, err := template.New("index.html").Funcs(template.FuncMap{
 		"tr": func(s string) template.HTML {
-			return template.HTML(lang.tr(panelLocale, s))
+			return template.HTML(lang.tr(models.Config.APIPanelLocale, s))
 		},
 	}).ParseFiles(models.WorkDir("panel/index.html"))
 	if err != nil {
@@ -125,22 +122,22 @@ func Run() {
 		return
 	}
 
-	api.Handle(panelRoot, apiHandler(http.HandlerFunc(
+	api.Handle(models.Config.APIPanelPath, apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			if pusher, ok := w.(http.Pusher); ok {
 				// Push is supported.
 				for _, p := range []string{
-					panelRoot + "/assets/jquery/jquery-3.1.1.min.js?" + models.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.js?" + models.Version,
-					panelRoot + "/assets/w2ui/w2ui.min.css?" + models.Version,
-					panelRoot + "/assets/panel/layout.js?" + models.Version,
-					panelRoot + "/assets/panel/group.js?" + models.Version,
-					panelRoot + "/assets/panel/sender.js?" + models.Version,
-					panelRoot + "/assets/panel/campaign.js?" + models.Version,
-					panelRoot + "/assets/panel/recipient.js?" + models.Version,
-					panelRoot + "/assets/panel/profile.js?" + models.Version,
-					panelRoot + "/assets/panel/users.js?" + models.Version,
-					panelRoot + "/assets/panel/template.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/jquery/jquery-3.1.1.min.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/w2ui/w2ui.min.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/w2ui/w2ui.min.css?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/layout.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/group.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/sender.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/campaign.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/recipient.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/profile.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/users.js?" + models.Version,
+					models.Config.APIPanelPath + "/assets/panel/template.js?" + models.Version,
 				} {
 					if err := pusher.Push(p, nil); err != nil {
 						apilog.Printf("Failed to push: %v", err)
@@ -152,8 +149,8 @@ func Run() {
 
 			err = indexTmpl.Execute(w, map[string]string{
 				"version": models.Version,
-				"locale":  panelLocale,
-				"root":    panelRoot,
+				"locale":  models.Config.APIPanelLocale,
+				"root":    models.Config.APIPanelPath,
 			})
 			if err != nil {
 				log.Print(err)
@@ -162,7 +159,7 @@ func Run() {
 		}), false))
 
 	// Assets static dirs
-	api.Handle(panelRoot+"/assets/", http.StripPrefix(panelRoot, apiHandler(http.HandlerFunc(
+	api.Handle(models.Config.APIPanelPath+"/assets/", http.StripPrefix(models.Config.APIPanelPath, apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasSuffix(r.URL.Path, "/") {
 				http.NotFound(w, r)

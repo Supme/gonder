@@ -29,13 +29,14 @@ func Run() {
 		pidFile    string
 	)
 
-	flag.StringVar(&configFile, "c", "./config.ini", "Path to config file")
+	flag.StringVar(&configFile, "c", "./dist_config.ini", "Path to config file")
 	start := flag.Bool("start", false, "Start as daemon")
 	stop := flag.Bool("stop", false, "Stop daemon")
 	restart := flag.Bool("restart", false, "Restart daemon")
 	check := flag.Bool("status", false, "Check daemon status")
 	flag.StringVar(&pidFile, "p", "pid/gonder.pid", "Path to pid file")
 	initDb := flag.Bool("i", false, "Initial database")
+	initDbY := flag.Bool("iy", false, "Initial database without confirm")
 	showVer := flag.Bool("v", false, "Prints version")
 	flag.Parse()
 
@@ -46,15 +47,15 @@ func Run() {
 
 	var err error
 
-	if *initDb {
+	if *initDb || *initDbY {
 		err = models.Init(configFile)
-		if err != nil{
-			fmt.Print(err)
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(1)
 		}
-		err = models.InitDb()
-		if err != nil{
-			fmt.Print(err)
+		err = models.InitDb(*initDbY)
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		fmt.Println("Ok")
@@ -74,17 +75,16 @@ func Run() {
 	if *stop {
 		err = stopProcess(pidFile)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err)
 		}
 		os.Exit(0)
 	}
 
 	err = models.Init(configFile)
-	if err != nil{
-		fmt.Print(err)
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
-
 
 	if *start {
 		err = startProcess(pidFile)
@@ -109,7 +109,6 @@ func Run() {
 	go api.Run()
 	go campaign.Run()
 	utm.Run()
-
 }
 
 func startProcess(pidFile string) error {
@@ -193,7 +192,7 @@ func checkPid(pidFile string) error {
 	p, _ := strconv.Atoi(string(pid))
 	process, err := os.FindProcess(p)
 	if err != nil {
-		if err := os.Remove( pidFile); err != nil {
+		if err := os.Remove(pidFile); err != nil {
 			log.Print(err)
 		}
 		return errFailedFindProcess

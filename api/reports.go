@@ -336,15 +336,15 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if (r.Form["group"] != nil && user.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0])) {
 		type U struct {
-			Email string              `json:"email"`
-			Date  int64               `json:"date"`
+			Email string            `json:"email"`
+			Date  int64             `json:"date"`
 			Extra map[string]string `json:"extra,omitempty"`
 		}
 		var (
 			queryString, param string
 			timestamp          mysql.NullTime
-			id int64
-			res []U
+			id                 int64
+			res                []U
 		)
 
 		if r.Form["group"] != nil {

@@ -1,5 +1,6 @@
 package models
 
+import "C"
 import (
 	"database/sql"
 	"fmt"
@@ -14,17 +15,19 @@ import (
 )
 
 type config struct {
-	dbType, dbString string
+	dbString         string
 	dbConnections    int
-	URL              string
+	UTMDefaultURL    string
 	APIPort          string
-	StatPort         string
+	APIPanelPath     string
+	APIPanelLocale   string
+	UTMPort          string
 	MaxCampaingns    int
 	RealSend         bool
 	DNScache         bool
-	DefaultProfile   int
-	AdminMail        string
-	GonderMail       string
+	DefaultProfileID int
+	AdminEmail       string
+	GonderEmail      string
 }
 
 var (
@@ -32,12 +35,28 @@ var (
 	Config config
 )
 
+// Init read config file redefine variables from environment, if exist, check and connect to database and create email pool
+// use env variables for redefine variables from config:
+//  GONDER_MAIN_DEFAULT_PROFILE_ID (int)
+//  GONDER_MAIN_ADMIN_EMAIL (string)
+//  GONDER_MAIN_GONDER_EMAIL (string)
+//  GONDER_DATABASE_STRING (string)
+//  GONDER_DATABASE_CONNECTIONS (int)
+//  GONDER_MAILER_SEND (bool)
+//  GONDER_MAILER_DNS_CACHE (bool)
+//  GONDER_MAILER_MAX_CAMPAIGNS (int)
+//  GONDER_UTM_DEFAULT_URL (string)
+//  GONDER_UTM_PORT (int)
+//  GONDER_API_PORT (int)
+//  GONDER_API_PANEL_PATH (string)
+//  GONDER_API_PANEL_LOCALE (string)
 func Init(configFile string) error {
-	err := Config.Update(configFile)
+	err := Config.read(configFile)
 	if err != nil {
 		return err
 	}
-	Db, err = sql.Open(Config.dbType, Config.dbString)
+
+	Db, err = sql.Open("mysql", Config.dbString)
 	if err != nil {
 		return fmt.Errorf("open database error: %s", err)
 	}
@@ -58,14 +77,17 @@ func Init(configFile string) error {
 	return nil
 }
 
-func InitDb() error {
-	var confirm string
-	fmt.Print("Initial database (y/N)? ")
-	if _, err := fmt.Scanln(&confirm); err != nil {
-		return err
-	}
-	if strings.ToLower(confirm) != "y" {
-		return nil
+// InitDb initialize database
+func InitDb(withoutConfirm bool) error {
+	if !withoutConfirm {
+		var confirm string
+		fmt.Print("Initial database (y/N)? ")
+		if _, err := fmt.Scanln(&confirm); err != nil {
+			return err
+		}
+		if strings.ToLower(confirm) != "y" {
+			return nil
+		}
 	}
 
 	sqlDump, err := ioutil.ReadFile("dump.sql")
@@ -92,69 +114,94 @@ func InitDb() error {
 	return nil
 }
 
-func (c *config) Update(configFile string) error {
-	var err error
-
+func (c *config) read(configFile string) error {
 	config, err := configparser.Read(configFile)
 	if err != nil {
 		return fmt.Errorf("error parse config file: %s", err)
 	}
 
-	mainConfig, err := config.Section("Main")
+	mainSection, err := config.Section("main")
 	if err != nil {
 		return fmt.Errorf("error parse config file: %s", err)
 	}
 
-	c.DefaultProfile, err = strconv.Atoi(mainConfig.ValueOf("defaultProfile"))
+	c.DefaultProfileID, err = getEnvInt("GONDER_MAIN_DEFAULT_PROFILE_ID", mainSection.ValueOf("default_profile_id"))
 	if err != nil {
 		return fmt.Errorf("error parse config file value defaultProfile: %s", err)
 	}
 
-	c.AdminMail = mainConfig.ValueOf("adminMail")
-	c.GonderMail = mainConfig.ValueOf("gonderMail")
+	c.AdminEmail = getEnvString("GONDER_MAIN_ADMIN_EMAIL", mainSection.ValueOf("admin_email"))
+	c.GonderEmail = getEnvString("GONDER_MAIN_GONDER_EMAIL", mainSection.ValueOf("gonder_email"))
 
-	dbConfig, err := config.Section("Database")
+	databaseSection, err := config.Section("database")
 	if err != nil {
 		return fmt.Errorf("error parse config file section Database: %s", err)
 	}
-	c.dbType = dbConfig.ValueOf("type")
-	c.dbString = dbConfig.ValueOf("string")
-	c.dbConnections, err = strconv.Atoi(dbConfig.ValueOf("connections"))
+	c.dbString = getEnvString("GONDER_DATABASE_STRING", databaseSection.ValueOf("string"))
+	c.dbConnections, err = getEnvInt("GONDER_DATABASE_CONNECTIONS", databaseSection.ValueOf("connections"))
 	if err != nil {
 		c.dbConnections = 10
 	}
 
-	mailerConfig, err := config.Section("Mailer")
+	mailerSection, err := config.Section("mailer")
 	if err != nil {
 		return fmt.Errorf("error parse config file: %s", err)
 	}
-	if mailerConfig.ValueOf("send") == "yes" {
-		c.RealSend = true
-	} else {
-		c.RealSend = false
-	}
-	if mailerConfig.ValueOf("dnscache") == "yes" {
-		c.DNScache = true
-	} else {
-		c.DNScache = false
-	}
-	c.MaxCampaingns, err = strconv.Atoi(mailerConfig.ValueOf("maxcampaign"))
+	c.RealSend, err = getEnvBool("GONDER_MAILER_SEND", mailerSection.ValueOf("send"))
 	if err != nil {
-		return fmt.Errorf("error parse config file value maxcampaign: %s", err)
+		return fmt.Errorf("error parse config file value send: %s", err)
+	}
+	c.DNScache, err = getEnvBool("GONDER_MAILER_DNS_CACHE", mailerSection.ValueOf("dns_cache"))
+	if err != nil {
+		return fmt.Errorf("error parse config file value dns_cache: %s", err)
 	}
 
-	statisticConfig, err := config.Section("Statistic")
+	c.MaxCampaingns, err = getEnvInt("GONDER_MAILER_MAX_CAMPAIGNS", mailerSection.ValueOf("max_campaigns"))
+	if err != nil {
+		return fmt.Errorf("error parse config file value max_campaigns: %s", err)
+	}
+
+	utmSection, err := config.Section("utm")
 	if err != nil {
 		return fmt.Errorf("error parse config file has not section Statistic: %s", err)
 	}
-	apiConfig, err := config.Section("API")
+	c.UTMDefaultURL = getEnvString("GONDER_UTM_DEFAULT_URL", utmSection.ValueOf("default_url"))
+	c.UTMPort = getEnvString("GONDER_UTM_PORT", utmSection.ValueOf("port"))
+
+	apiSection, err := config.Section("api")
 	if err != nil {
 		return fmt.Errorf("error parse config file has not section API: %s", err)
 	}
-	c.URL = mainConfig.ValueOf("host")
-	c.StatPort = statisticConfig.ValueOf("port")
-	c.APIPort = apiConfig.ValueOf("port")
+	c.APIPort = getEnvString("GONDER_API_PORT", apiSection.ValueOf("port"))
+	c.APIPanelPath = getEnvString("GONDER_API_PANEL_PATH", apiSection.ValueOf("panel_path"))
+	c.APIPanelLocale = getEnvString("GONDER_API_PANEL_LOCALE", apiSection.ValueOf("panel_locale"))
+
 	return nil
+}
+
+func getEnvString(key string, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue string) (int, error) {
+	if value, exists := os.LookupEnv(key); exists {
+		v, err := strconv.Atoi(value)
+		return v, err
+	}
+	v, err := strconv.Atoi(defaultValue)
+	return v, err
+}
+
+func getEnvBool(key string, defaultValue string) (bool, error) {
+	if value, exists := os.LookupEnv(key); exists {
+		v, err := strconv.ParseBool(value)
+		return v, err
+	}
+	v, err := strconv.ParseBool(defaultValue)
+	return v, err
 }
 
 func WorkDir(path string) string {

@@ -370,8 +370,8 @@ func Run() {
 		}
 	})
 
-	utmlog.Println("UTM listening on port " + models.Config.StatPort + "...")
-	log.Fatal(http.ListenAndServe(":"+models.Config.StatPort, muxLog(utm)))
+	utmlog.Println("UTM listening on port " + models.Config.UTMPort + "...")
+	log.Fatal(http.ListenAndServe(":"+models.Config.UTMPort, muxLog(utm)))
 }
 
 func muxLog(handler http.Handler) http.Handler {

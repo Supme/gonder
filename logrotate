@@ -1,7 +1,7 @@
-/home/gonder/log/*.log {
+/app/log/*.log {
         daily
         missingok
-        rotate 14
+        rotate 5
         compress
         delaycompress
         notifempty
