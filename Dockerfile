@@ -17,7 +17,9 @@ COPY --from=builder /app/gonder/templates /app/templates
 COPY --from=builder /app/gonder/cert /app/cert
 COPY --from=builder /app/gonder/dist_config.ini /app/
 COPY --from=builder /app/gonder/logrotate /etc/logrotate.d/gonder
-RUN mkdir /app/log
-RUN mkdir /app/files
+RUN chmod 644 /etc/logrotate.d/gonder && \
+    apk add logrotate && \
+    mkdir /app/log && \
+    mkdir /app/files
 EXPOSE 8080 7777
 ENTRYPOINT ["./start"]

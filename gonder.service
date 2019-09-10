@@ -1,10 +1,14 @@
 [Unit]
 Description=Gonder
+After=mysql.service
+Requires=mysql.service
 
 [Service]
 User=gonder
-ExecStart=/home/gonder/gonder
+WorkingDirectory=/home/gonder
+ExecStart=/home/gonder/gonder -c config.ini
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-InaccessibleDirectories=/sys
-PrivateDevices=true
-ProtectSystem=full
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
