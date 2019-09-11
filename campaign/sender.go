@@ -3,13 +3,9 @@ package campaign
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"gonder/models"
-	"io"
 	"log"
-	"os"
 	"sync"
-	"time"
 )
 
 type sending struct {
@@ -17,45 +13,7 @@ type sending struct {
 	mu        sync.RWMutex
 }
 
-var (
-	Sending sending
-	camplog *log.Logger
-)
-
-// Run start look database for ready campaign for send
-func Run() {
-	l, err := os.OpenFile("log/campaign.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("error opening campaign log file: %v", err)
-	}
-	defer l.Close()
-	camplog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
-
-	Sending.campaigns = map[string]campaign{}
-
-	for {
-		for Sending.Count() >= models.Config.MaxCampaingns {
-			time.Sleep(1 * time.Second)
-		}
-		if Sending.Count() > 0 {
-			camp, err := Sending.checkExpired()
-			checkErr(err)
-			Sending.Stop(camp...)
-		}
-		if id, err := Sending.checkNext(); err == nil {
-			fmt.Println("check next campaign for send id:", id)
-			camp, err := getCampaign(id)
-			checkErr(err)
-			Sending.add(camp)
-			go func(id string) {
-				camp.send()
-				Sending.removeStarted(id)
-			}(id)
-			continue
-		}
-		time.Sleep(time.Second * 10)
-	}
-}
+var Sending sending
 
 func (s *sending) add(c campaign) {
 	s.mu.Lock()
@@ -180,6 +138,6 @@ func (s *sending) removeStarted(id string) {
 
 func checkErr(err error) {
 	if err != nil {
-		camplog.Println(err)
+		campLog.Println(err)
 	}
 }

@@ -24,11 +24,9 @@ import (
 	minifyJSON "github.com/tdewolff/minify/json"
 	"gonder/models"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -37,7 +35,7 @@ import (
 
 var (
 	//user   Auth
-	apilog *log.Logger
+	apiLog *log.Logger
 	min    *minify.M
 	lang   *languages
 )
@@ -85,20 +83,17 @@ func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
 }
 
 // Run start api server
-func Run() {
-	l, err := os.OpenFile(models.WorkDir("log/api.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("error opening api log file: %s", err)
-	}
-	defer l.Close()
-	apilog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+func Run(logger *log.Logger) {
+	var err error
+
+	apiLog = logger
 
 	lang, err = newLang(
 		models.WorkDir("/panel/assets/w2ui/locale/*.json"),
 		models.WorkDir("/panel/assets/gonder/locale/*.json"),
 	)
 	if err != nil {
-		apilog.Printf("error loading languages: %s", err)
+		apiLog.Printf("error loading languages: %s", err)
 	}
 
 	api := http.NewServeMux()
@@ -140,11 +135,11 @@ func Run() {
 					models.Config.APIPanelPath + "/assets/panel/template.js?" + models.Version,
 				} {
 					if err := pusher.Push(p, nil); err != nil {
-						apilog.Printf("Failed to push: %v", err)
+						apiLog.Printf("Failed to push: %v", err)
 					}
 				}
 			} else {
-				apilog.Println("Push not supported")
+				apiLog.Println("Push not supported")
 			}
 
 			err = indexTmpl.Execute(w, map[string]string{
@@ -207,12 +202,12 @@ func Run() {
 
 	api.HandleFunc("/logout", Logout)
 
-	api.HandleFunc("/status/ws/campaign.log", CheckAuth(campaignLog))
-	api.HandleFunc("/status/ws/api.log", CheckAuth(apiLog))
-	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmLog))
-	api.HandleFunc("/status/ws/main.log", CheckAuth(mainLog))
+	api.HandleFunc("/status/ws/campaign.log", CheckAuth(campaignStatus))
+	api.HandleFunc("/status/ws/api.log", CheckAuth(apiStatus))
+	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmStatus))
+	api.HandleFunc("/status/ws/main.log", CheckAuth(mainStatus))
 
-	apilog.Println("API listening on port " + models.Config.APIPort + "...")
+	apiLog.Println("API listening on port " + models.Config.APIPort + "...")
 	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.WorkDir("/cert/server.pem"), models.WorkDir("/cert/server.key"), api))
 }
 

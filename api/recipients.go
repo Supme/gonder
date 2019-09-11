@@ -105,7 +105,7 @@ func recipients(req request) (js []byte, err error) {
 					log.Println(err)
 					return js, err
 				}
-				apilog.Print(req.auth.name, " upload file ", req.FileName)
+				apiLog.Print(req.auth.name, " upload file ", req.FileName)
 
 				switch path.Ext(req.FileName) {
 				case ".csv":
@@ -115,7 +115,7 @@ func recipients(req request) (js []byte, err error) {
 						progress.Unlock()
 						err = recipientCsv(req.Campaign, filename)
 						if err != nil {
-							apilog.Println(err)
+							apiLog.Println(err)
 						}
 						progress.Lock()
 						delete(progress.cnt, filename)
@@ -130,7 +130,7 @@ func recipients(req request) (js []byte, err error) {
 						progress.Unlock()
 						err = recipientXlsx(req.Campaign, filename)
 						if err != nil {
-							apilog.Println(err)
+							apiLog.Println(err)
 						}
 						progress.Lock()
 						delete(progress.cnt, filename)
@@ -182,7 +182,7 @@ func recipients(req request) (js []byte, err error) {
 			var cnt int64
 			cnt, err = deduplicateRecipient(req.Campaign)
 			if err != nil {
-				apilog.Println(err)
+				apiLog.Println(err)
 				return js, errors.New("Can't deduplicate recipients")
 			}
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
@@ -194,7 +194,7 @@ func recipients(req request) (js []byte, err error) {
 			var cnt int64
 			cnt, err = markUnavaibleRecentTime(req.Campaign)
 			if err != nil {
-				apilog.Println(err)
+				apiLog.Println(err)
 				return js, errors.New("Can't mark unavaible recipients")
 			}
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
@@ -424,7 +424,7 @@ func resendCampaign(campaignID int64, user *Auth) error {
 		log.Println(err)
 		return err
 	}
-	apilog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", user.name, campaignID, c)
+	apiLog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", user.name, campaignID, c)
 	return nil
 }
 

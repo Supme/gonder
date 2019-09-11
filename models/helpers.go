@@ -2,11 +2,13 @@ package models
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net"
 	"net/http"
-	"reflect"
+	"os"
+	"path/filepath"
 	"strconv"
-	"unsafe"
 )
 
 func GetIP(r *http.Request) string {
@@ -45,21 +47,12 @@ func Conv1st2nd(num int) string {
 	return fmt.Sprintf("%d%s", num, suffix)
 }
 
-// Null memory allocate convert
-func BytesToString(b []byte) string {
-	sliceHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	stringHeader := reflect.StringHeader{
-		Data: sliceHeader.Data,
-		Len:  sliceHeader.Len,
+func NewLogger(name string) (*log.Logger, error) {
+	var logger *log.Logger
+	l, err := os.OpenFile(filepath.Join(LogDir, name+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return logger, fmt.Errorf("error opening log file: %s", err)
 	}
-	return *(*string)(unsafe.Pointer(&stringHeader))
-}
-func StringToBytes(s string) []byte {
-	stringHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	sliceHeader := reflect.SliceHeader{
-		Data: stringHeader.Data,
-		Len:  stringHeader.Len,
-		Cap:  stringHeader.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&sliceHeader))
+	logger = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+	return logger, nil
 }

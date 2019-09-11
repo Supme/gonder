@@ -14,23 +14,10 @@ package main
 
 import (
 	"gonder/cmd"
-	"gonder/models"
-	"io"
-	"log"
-	"os"
 	"runtime"
 )
 
 func main() {
-	l, err := os.OpenFile(models.WorkDir("log/main.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("error opening log file: %v", err)
-	}
-	defer l.Close()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.SetOutput(io.MultiWriter(l, os.Stdout))
-
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	cmd.Run()
 }

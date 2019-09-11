@@ -26,7 +26,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		if !authorize {
 			//if user != "" {
 			//	ip := models.GetIP(r)
-			//	apilog.Printf("%s bad user login '%s'", ip, user)
+			//	apiLog.Printf("%s bad user login '%s'", ip, user)
 			//	if models.Config.GonderEmail != "" && models.Config.AdminEmail != "" {
 			//		go func() {
 			//			bldr := &smtpSender.Builder{
@@ -37,7 +37,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 			//			bldr.AddTextPlain([]byte(ip + " bad user login '" + user + "'"))
 			//
 			//			email := bldr.Email("", func(result smtpSender.Result){
-			//				apilog.Print("Error send mail:", result.Err)
+			//				apiLog.Print("Error send mail:", result.Err)
 			//			})
 			//			email.Send(&smtpSender.Connect{}, nil)
 			//		}()
@@ -53,7 +53,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 		}
-		apilog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.name, r.Method, uri)
+		apiLog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.name, r.Method, uri)
 
 		ctx := context.WithValue(r.Context(), "Auth", auth)
 		fn(w, r.WithContext(ctx))
@@ -124,7 +124,7 @@ func check(user, password string) (int64, int64, bool) {
 
 	hash := sha256.New()
 	if _, err := hash.Write([]byte(password)); err != nil {
-		apilog.Print(err)
+		apiLog.Print(err)
 	}
 	md := hash.Sum(nil)
 	shaPassword := hex.EncodeToString(md)

@@ -49,6 +49,38 @@ type campaign struct {
 	Finish chan struct{}
 }
 
+var campLog *log.Logger
+
+// Run start look database for ready campaign for send
+func Run(logger *log.Logger) {
+	campLog = logger
+
+	Sending.campaigns = map[string]campaign{}
+
+	for {
+		for Sending.Count() >= models.Config.MaxCampaingns {
+			time.Sleep(1 * time.Second)
+		}
+		if Sending.Count() > 0 {
+			camp, err := Sending.checkExpired()
+			checkErr(err)
+			Sending.Stop(camp...)
+		}
+		if id, err := Sending.checkNext(); err == nil {
+			fmt.Println("check next campaign for send id:", id)
+			camp, err := getCampaign(id)
+			checkErr(err)
+			Sending.add(camp)
+			go func(id string) {
+				camp.send()
+				Sending.removeStarted(id)
+			}(id)
+			continue
+		}
+		time.Sleep(time.Second * 10)
+	}
+}
+
 func getCampaign(id string) (campaign, error) {
 	var (
 		subject string
@@ -117,17 +149,17 @@ func (c *campaign) send() {
 	pipe, err := models.EmailPool.Get(c.ProfileID)
 	checkErr(err)
 
-	camplog.Printf("Start campaign id %s.", c.ID)
+	campLog.Printf("Start campaign id %s.", c.ID)
 	c.streamSend(pipe)
 
 	select {
 	case <-c.Stop:
-		camplog.Printf("Campaign %s stoped", c.ID)
+		campLog.Printf("Campaign %s stoped", c.ID)
 		goto End
 	default:
 		resend := c.HasResend()
 		if resend > 0 && c.ResendCount > 0 {
-			camplog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
+			campLog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
 		}
 		if resend > 0 {
 			for i := 1; i <= c.ResendCount; i++ {
@@ -148,7 +180,7 @@ func (c *campaign) send() {
 						timer.Stop()
 					}
 
-					camplog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.ID)
+					campLog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.ID)
 					c.resend(pipe)
 				}
 
@@ -156,17 +188,17 @@ func (c *campaign) send() {
 				case <-c.Stop:
 					goto Done
 				default:
-					camplog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.ID)
+					campLog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.ID)
 				}
 			}
 		}
 	Finish:
-		camplog.Printf("Finish campaign id %s", c.ID)
+		campLog.Printf("Finish campaign id %s", c.ID)
 	}
 Done:
 	select {
 	case <-c.Stop:
-		camplog.Printf("Campaign %s stoped", c.ID)
+		campLog.Printf("Campaign %s stoped", c.ID)
 	default:
 		close(c.Stop)
 	}
@@ -190,7 +222,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			camplog.Printf("Stop signal for campaign %s received", c.ID)
+			campLog.Printf("Stop signal for campaign %s received", c.ID)
 			goto Done
 		default:
 			var rID string
@@ -202,7 +234,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			if r.unsubscribed() && !c.SendUnsubscribe {
 				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
-				camplog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
+				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
 				continue
 			}
 
@@ -221,7 +253,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				}
 				_, err := updateRecipientStatus.Exec(res, r.ID)
 				checkErr(err)
-				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, wait.String())
+				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, wait.String())
 				wg.Done()
 				continue
 			}
@@ -256,7 +288,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				}
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
-				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
+				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
 				wg.Done()
 			})
 			if !models.Config.RealSend {
@@ -292,7 +324,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			camplog.Printf("Stop signal for campaign %s received", c.ID)
+			campLog.Printf("Stop signal for campaign %s received", c.ID)
 			return
 		default:
 			var rID string
@@ -304,7 +336,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			if r.unsubscribed() && !c.SendUnsubscribe {
 				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
-				camplog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
+				campLog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
 				continue
 			}
 
@@ -342,7 +374,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				}
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
-				camplog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
+				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
 				wg.Done()
 			})
 			if !models.Config.RealSend {
@@ -351,7 +383,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				err = pipe.Send(*email)
 			}
 			if err != nil {
-				camplog.Println(err)
+				campLog.Println(err)
 				break
 			}
 		}
@@ -507,7 +539,7 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 
 		tmp, err = m.String("email/html", *htmlTmpl)
 		if err != nil {
-			camplog.Print(err)
+			campLog.Print(err)
 		}
 	} else {
 		tmp = *htmlTmpl

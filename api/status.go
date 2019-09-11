@@ -3,45 +3,47 @@ package api
 import (
 	"github.com/gorilla/websocket"
 	"github.com/gravitational/tail"
+	"gonder/models"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
-func campaignLog(w http.ResponseWriter, r *http.Request) {
+func campaignStatus(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-campaign") {
-		logHandler(w, r, "./log/campaign.log")
+		logHandler(w, r, filepath.Join(models.LogDir, models.CampaignLog+".log"))
 	} else {
 		http.Error(w, "Forbidden get log campaign", http.StatusForbidden)
 		return
 	}
 }
 
-func apiLog(w http.ResponseWriter, r *http.Request) {
+func apiStatus(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-api") {
-		logHandler(w, r, "./log/api.log")
+		logHandler(w, r, filepath.Join(models.LogDir, models.APILog+".log"))
 	} else {
 		http.Error(w, "Forbidden get log api", http.StatusForbidden)
 		return
 	}
 }
 
-func utmLog(w http.ResponseWriter, r *http.Request) {
+func utmStatus(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-utm") {
-		logHandler(w, r, "./log/utm.log")
+		logHandler(w, r, filepath.Join(models.LogDir, models.UTMLog+".log"))
 	} else {
 		http.Error(w, "Forbidden get log utm", http.StatusForbidden)
 		return
 	}
 }
 
-func mainLog(w http.ResponseWriter, r *http.Request) {
+func mainStatus(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
 	if user.Right("get-log-main") {
-		logHandler(w, r, "./log/main.log")
+		logHandler(w, r, filepath.Join(models.LogDir, models.MainLog+".log"))
 	} else {
 		http.Error(w, "Forbidden get log main", http.StatusForbidden)
 		return
@@ -94,7 +96,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 
 	t, err := tail.TailFile(file, conf)
 	if err != nil {
-		apilog.Print(err)
+		apiLog.Print(err)
 	}
 
 	for line := range t.Lines {

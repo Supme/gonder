@@ -33,9 +33,10 @@ type config struct {
 var (
 	Db     *sql.DB
 	Config config
+	LogDir string
 )
 
-// Init read config file redefine variables from environment, if exist, check and connect to database and create email pool
+// ReadConfig read config file redefine variables from environment, if exist, check and connect to database and create email pool
 // use env variables for redefine variables from config:
 //  GONDER_MAIN_DEFAULT_PROFILE_ID (int)
 //  GONDER_MAIN_ADMIN_EMAIL (string)
@@ -50,12 +51,16 @@ var (
 //  GONDER_API_PORT (int)
 //  GONDER_API_PANEL_PATH (string)
 //  GONDER_API_PANEL_LOCALE (string)
-func Init(configFile string) error {
+func ReadConfig(configFile string) error {
 	err := Config.read(configFile)
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func ConnectDb() error {
+	var err error
 	Db, err = sql.Open("mysql", Config.dbString)
 	if err != nil {
 		return fmt.Errorf("open database error: %s", err)
@@ -66,13 +71,12 @@ func Init(configFile string) error {
 	}
 	Db.SetMaxIdleConns(Config.dbConnections)
 	Db.SetMaxOpenConns(Config.dbConnections)
-	_, err = Db.Query("SELECT 1 FROM `auth_user`")
-	if err != nil {
+	return nil
+}
+
+func CheckDb() error {
+	if _, err := Db.Query("SELECT 1 FROM `auth_user`"); err != nil {
 		return fmt.Errorf("database is empty, use -i key for create from a template")
-	}
-	err = InitEmailPool()
-	if err != nil {
-		return err
 	}
 	return nil
 }

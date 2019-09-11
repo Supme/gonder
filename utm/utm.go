@@ -22,10 +22,8 @@ import (
 	"gonder/models"
 	"html/template"
 	"image/png"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -33,17 +31,12 @@ import (
 )
 
 var (
-	utmlog *log.Logger
+	utmLog *log.Logger
 )
 
 // Run start utm server
-func Run() {
-	l, err := os.OpenFile(models.WorkDir("log/utm.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("error opening utm log file: %v", err)
-	}
-	defer l.Close()
-	utmlog = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+func Run(logger *log.Logger) {
+	utmLog = logger
 
 	utm := http.NewServeMux()
 
@@ -370,13 +363,13 @@ func Run() {
 		}
 	})
 
-	utmlog.Println("UTM listening on port " + models.Config.UTMPort + "...")
+	utmLog.Print("UTM listening on port " + models.Config.UTMPort + "...")
 	log.Fatal(http.ListenAndServe(":"+models.Config.UTMPort, muxLog(utm)))
 }
 
 func muxLog(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		utmlog.Printf("host: %s %s %s", models.GetIP(r), r.Method, r.RequestURI)
+		utmLog.Printf("host: %s %s %s", models.GetIP(r), r.Method, r.RequestURI)
 		handler.ServeHTTP(w, r)
 	})
 }
