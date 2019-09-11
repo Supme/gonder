@@ -1,7 +1,6 @@
 [Unit]
 Description=Gonder- mass email sender
-After=mysql.service multi-user.target network.target
-Requires=mysql.service
+After=mariadb.service mysql.service multi-user.target network.target
 
 [Service]
 User=%i
