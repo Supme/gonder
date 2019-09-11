@@ -20,7 +20,7 @@ func Run() {
 	)
 
 	flag.StringVar(&configFile, "c", "./dist_config.ini", "Path to config file")
-	flag.StringVar(&models.LogDir, "p", "./log", "Path to log folder")
+	flag.StringVar(&models.LogDir, "l", "./log", "Path to log folder")
 	initDb := flag.Bool("i", false, "Initial database")
 	initDbY := flag.Bool("iy", false, "Initial database without confirm")
 	showVer := flag.Bool("v", false, "Prints version")

@@ -46,12 +46,8 @@ Usage of ./gonder:
   -c  	    Path to config file (default "./dist_config.ini")
   -i	    Initial database
   -iy  	    Initial database without confirm
-  -p   	    Path to pid file (default "pid/gonder.pid")
-  -restart  Restart daemon
-  -start    Start as daemon
-  -status   Check daemon status
-  -stop     Stop daemon
-  -v	Prints version
+  -l        Path to log folder (default "./log")
+  -v	    Prints version
 
 ```
 
