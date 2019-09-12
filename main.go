@@ -1,3 +1,4 @@
+//go:generate go-bindata -o bindata/data.go -pkg bindata panel/... templates/default/...
 // Project Gonder.
 // Author Supme
 // Copyright Supme 2016
@@ -14,10 +15,8 @@ package main
 
 import (
 	"gonder/cmd"
-	"runtime"
 )
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	cmd.Run()
 }

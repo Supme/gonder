@@ -23,14 +23,18 @@ import (
 	minifyJS "github.com/tdewolff/minify/js"
 	minifyJSON "github.com/tdewolff/minify/json"
 	"gonder/models"
+	"gonder/bindata"
 	"html/template"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -111,7 +115,7 @@ func Run(logger *log.Logger) {
 		"tr": func(s string) template.HTML {
 			return template.HTML(lang.tr(models.Config.APIPanelLocale, s))
 		},
-	}).ParseFiles(models.WorkDir("panel/index.html"))
+	}).Parse(string(bindata.MustAsset("panel/index.html")))
 	if err != nil {
 		log.Panic(err)
 		return
@@ -119,28 +123,6 @@ func Run(logger *log.Logger) {
 
 	api.Handle(models.Config.APIPanelPath, apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			if pusher, ok := w.(http.Pusher); ok {
-				// Push is supported.
-				for _, p := range []string{
-					models.Config.APIPanelPath + "/assets/jquery/jquery-3.1.1.min.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/w2ui/w2ui.min.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/w2ui/w2ui.min.css?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/layout.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/group.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/sender.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/campaign.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/recipient.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/profile.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/users.js?" + models.Version,
-					models.Config.APIPanelPath + "/assets/panel/template.js?" + models.Version,
-				} {
-					if err := pusher.Push(p, nil); err != nil {
-						apiLog.Printf("Failed to push: %v", err)
-					}
-				}
-			} else {
-				apiLog.Println("Push not supported")
-			}
 
 			err = indexTmpl.Execute(w, map[string]string{
 				"version": models.Version,
@@ -161,7 +143,36 @@ func Run(logger *log.Logger) {
 				return
 			}
 			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
-			http.ServeFile(w, r, path.Join(models.WorkDir("panel/"), r.URL.Path))
+
+			filePath := path.Join("panel", r.URL.Path)
+
+			if _, err := os.Stat(filePath); err == nil {
+				http.ServeFile(w, r, path.Join(filePath))
+				return
+			}
+
+			fileInfo, err := bindata.AssetInfo(filePath)
+			if err != nil {
+				apiLog.Print(err)
+				http.NotFound(w, r)
+				return
+			}
+			fileContent, err := bindata.Asset(filePath)
+			if err != nil {
+				apiLog.Print(err)
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Add("Content-Length", strconv.Itoa(int(fileInfo.Size())))
+			w.Header().Add("Date", fileInfo.ModTime().Format(time.RFC1123))
+			w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(fileInfo.Name())))
+
+			_, err = w.Write(fileContent)
+			if err != nil {
+				apiLog.Print(err)
+				return
+			}
+
 		}), true)))
 
 	// API

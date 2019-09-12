@@ -20,7 +20,6 @@ import (
 	"github.com/boombuler/barcode/qr"
 	"gonder/campaign"
 	"gonder/models"
-	"html/template"
 	"image/png"
 	"log"
 	"net/http"
@@ -100,7 +99,7 @@ func Run(logger *log.Logger) {
 					log.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 				} else {
-					if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
+					if t, err := message.GetTemplate("success.html"); err != nil {
 						log.Println(err)
 						http.Error(w, "", http.StatusInternalServerError)
 					} else {
@@ -119,9 +118,10 @@ func Run(logger *log.Logger) {
 				return
 			}
 			if data == "web" {
-				if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/accept.html"); err != nil {
+				if t, err := message.GetTemplate("accept.html"); err != nil {
 					log.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
+					return
 				} else {
 					err = t.Execute(w, map[string]string{
 						"CampaignId":     message.CampaignID,
@@ -158,9 +158,10 @@ func Run(logger *log.Logger) {
 				http.Error(w, "Not valid request", http.StatusInternalServerError)
 				return
 			}
-			if t, err := template.ParseFiles(message.UnsubscribeTemplateDir() + "/success.html"); err != nil {
+			if t, err := message.GetTemplate("success.html"); err != nil {
 				log.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
+				return
 			} else {
 				var extra = map[string]string{}
 				for name, value := range r.PostForm {
@@ -332,7 +333,7 @@ func Run(logger *log.Logger) {
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
-			if t, err := template.ParseFiles(message.QuestionTemplateDir() + "/question.html"); err != nil {
+			if t, err := message.GetTemplate("question.html"); err != nil {
 				log.Println(err)
 				http.Error(w, "", http.StatusInternalServerError)
 			} else {

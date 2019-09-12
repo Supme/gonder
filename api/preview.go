@@ -3,12 +3,10 @@ package api
 import (
 	campSender "gonder/campaign"
 	"gonder/models"
+	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"text/template"
 )
 
 func getMailPreview(w http.ResponseWriter, r *http.Request) {
@@ -42,34 +40,45 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 // ToDo fix get right template then move unsubscribe template from models
 func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("Auth").(*Auth)
-	if user.Right("get-recipients") && user.CampaignRight(r.FormValue("campaignId")) {
-		var tmpl string
-		var content []byte
-		var err error
-		_ = models.Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", r.FormValue("id")).Scan(&tmpl)
-		if tmpl == "" {
-			tmpl = "default"
-		} else {
-			if _, err = os.Stat(models.WorkDir("templates/" + tmpl + "/accept.html")); err != nil {
-				tmpl = "default"
-			}
-			if _, err = os.Stat(models.WorkDir("templates/" + tmpl + "/success.html")); err != nil {
-				tmpl = "default"
-			}
-		}
+	err := r.ParseForm()
+	if err != nil {
+		apiLog.Println(err)
+		http.Error(w, "Not valid request", http.StatusInternalServerError)
+		return
+	}
 
+	var message models.Message
+	err = message.New(r.Form.Get("recipientId"))
+	if err != nil {
+		apiLog.Println(err)
+		http.Error(w, "Not valid request", http.StatusInternalServerError)
+		return
+	}
+
+	if user.Right("get-recipients") && user.CampaignRight(message.CampaignID) {
+		var t *template.Template
 		if r.Method == "GET" {
-			content, _ = ioutil.ReadFile(models.WorkDir("templates/" + tmpl + "/accept.html"))
+			t, err = message.GetTemplate("accept.html")
+			if err != nil {
+				apiLog.Println(err)
+				http.Error(w, "Not valid request", http.StatusInternalServerError)
+				return
+			}
 		} else {
-			content, _ = ioutil.ReadFile(models.WorkDir("templates/" + tmpl + "/success.html"))
+			t, err = message.GetTemplate("success.html")
+			if err != nil {
+				apiLog.Println(err)
+				http.Error(w, "Not valid request", http.StatusInternalServerError)
+				return
+			}
 		}
 
-		t := template.New("unsubscribe")
-		t, err = t.Parse(string(content))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		err = t.Execute(w, map[string]string{"campaignId": r.FormValue("campaignId")})
+		err = t.Execute(w, map[string]string{
+			"CampaignId":     message.CampaignID,
+			"RecipientId":    message.RecipientID,
+			"RecipientEmail": message.RecipientEmail,
+			"RecipientName":  message.RecipientName,
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

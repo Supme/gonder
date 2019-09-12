@@ -439,8 +439,8 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 				r.Params["WebUrl"] = "/preview?id=" + r.ID + "&type=web"
 			}
 			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-			r.Params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + r.CampaignID
-			r.Params["QuestionUrl"] = "/question?campaignId=" + r.CampaignID
+			r.Params["UnsubscribeUrl"] = "/unsubscribe?recipientId=" + r.ID
+			r.Params["QuestionUrl"] = "/question?recipientId=" + r.ID
 			_, err := c.templateHTMLFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
@@ -481,7 +481,7 @@ func (c *campaign) textTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 				r.Params["WebUrl"] = "/preview?id=" + r.ID + "&type=web"
 			}
 			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-			r.Params["UnsubscribeUrl"] = "/unsubscribe?campaignId=" + r.CampaignID
+			r.Params["UnsubscribeUrl"] = "/unsubscribe?recipientId=" + r.ID
 			_, err := c.templateTextFunc.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {

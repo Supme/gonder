@@ -3,8 +3,11 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"gonder/bindata"
+	"html/template"
 	"log"
 	"os"
+	"path"
 )
 
 type Message struct {
@@ -20,10 +23,10 @@ func (m *Message) New(recipientID string) error {
 	err := Db.QueryRow("SELECT `campaign_id`,`email`,`name` FROM `recipient` WHERE `id`=?", m.RecipientID).Scan(&m.CampaignID, &m.RecipientEmail, &m.RecipientName)
 	if err != nil && err != sql.ErrNoRows {
 		log.Print(err)
-		return errors.New("Find recipient with error")
+		return errors.New("find recipient with error")
 	}
 	if err == sql.ErrNoRows {
-		return errors.New("The recipient does not exist")
+		return errors.New("the recipient does not exist")
 	}
 	return nil
 }
@@ -48,44 +51,6 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 	return err
 }
 
-// UnsubscribeTemplateDir get template directory
-// ToDo move to campaign/Recipient
-func (m *Message) UnsubscribeTemplateDir() (name string) {
-	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
-	if err != nil && err != sql.ErrNoRows {
-		log.Print(err)
-	}
-	if name == "" {
-		name = "default"
-	} else {
-		if _, err := os.Stat(WorkDir("templates/" + name + "/accept.html")); err != nil {
-			name = "default"
-		}
-		if _, err := os.Stat(WorkDir("templates/" + name + "/success.html")); err != nil {
-			name = "default"
-		}
-	}
-	name = WorkDir("templates/" + name)
-	return
-}
-
-// QuestionTemplateDir get question template directory
-func (m *Message) QuestionTemplateDir() (name string) {
-	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&name)
-	if err != nil && err != sql.ErrNoRows {
-		log.Print(err)
-	}
-	if name == "" {
-		name = "default"
-	} else {
-		if _, err := os.Stat(WorkDir("templates/" + name + "/question.html")); err != nil {
-			name = "default"
-		}
-	}
-	name = WorkDir("templates/" + name)
-	return
-}
-
 func (m *Message) Question(data map[string]string) error {
 	r, err := Db.Exec("INSERT INTO question (`recipient_id`) VALUE (?)", m.RecipientID)
 	if err != nil {
@@ -102,4 +67,28 @@ func (m *Message) Question(data map[string]string) error {
 		}
 	}
 	return err
+}
+
+// GetTemplate return template from templates dir and if file not exist then find in bindata
+func (m *Message) GetTemplate(fileName string) (*template.Template, error) {
+	var dirName string
+	err := Db.QueryRow("SELECT `group`.`template` FROM `campaign` INNER JOIN `group` ON `campaign`.`group_id`=`group`.`id` WHERE `group`.`template` IS NOT NULL AND `campaign`.`id`=?", m.CampaignID).Scan(&dirName)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	if dirName == "" {
+		dirName = "default"
+	}
+	filePath := path.Join("templates", dirName, fileName)
+
+	_, err = os.Stat(filePath)
+	if err != nil {
+		data, err := bindata.Asset(filePath)
+		if err != nil {
+			return nil, err
+		}
+		return template.New(filePath).Parse(string(data))
+	}
+	return template.ParseFiles(filePath)
 }
