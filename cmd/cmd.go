@@ -21,6 +21,8 @@ func Run() {
 
 	flag.StringVar(&configFile, "c", "./dist_config.ini", "Path to config file")
 	flag.StringVar(&models.LogDir, "l", "./log", "Path to log folder")
+	flag.StringVar(&models.ServerPem, "p", "./cert/server.pem", "Path to certificate pem file")
+	flag.StringVar(&models.ServerKey, "k", "./cert/server.key", "Path to certificate key file")
 	initDb := flag.Bool("i", false, "Initial database")
 	initDbY := flag.Bool("iy", false, "Initial database without confirm")
 	showVer := flag.Bool("v", false, "Prints version")
@@ -31,7 +33,10 @@ func Run() {
 		os.Exit(0)
 	}
 
-	var err error
+	if err := os.MkdirAll(models.LogDir, os.ModePerm); err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
 
 	l, err := os.OpenFile(filepath.Join(models.LogDir, models.MainLog+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {

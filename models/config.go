@@ -31,9 +31,11 @@ type config struct {
 }
 
 var (
-	Db     *sql.DB
-	Config config
-	LogDir string
+	Db        *sql.DB
+	Config    config
+	LogDir    string
+	ServerPem string
+	ServerKey string
 )
 
 // ReadConfig read config file redefine variables from environment, if exist, check and connect to database and create email pool

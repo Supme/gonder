@@ -13,5 +13,5 @@ const (
 	APILog                    = "gonder_api"
 	CampaignLog               = "gonder_campaign"
 	UTMLog                    = "gonder_utm"
-	MainLog = "gonder_main"
+	MainLog                   = "gonder_main"
 )

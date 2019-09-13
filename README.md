@@ -44,9 +44,11 @@ or initialize database command:
 ```shell script
 Usage of ./gonder:
   -c  	    Path to config file (default "./dist_config.ini")
+  -p        Path to certificate pem file (default "./cert/server.pem")
+  -k        Path to certificate key file (default "./cert/server.key")
+  -l        Path to log folder (default "./log")
   -i	    Initial database
   -iy  	    Initial database without confirm
-  -l        Path to log folder (default "./log")
   -v	    Prints version
 
 ```

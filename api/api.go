@@ -22,8 +22,8 @@ import (
 	minifyHTML "github.com/tdewolff/minify/html"
 	minifyJS "github.com/tdewolff/minify/js"
 	minifyJSON "github.com/tdewolff/minify/json"
-	"gonder/models"
 	"gonder/bindata"
+	"gonder/models"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -219,7 +219,7 @@ func Run(logger *log.Logger) {
 	api.HandleFunc("/status/ws/main.log", CheckAuth(mainStatus))
 
 	apiLog.Println("API listening on port " + models.Config.APIPort + "...")
-	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.WorkDir("/cert/server.pem"), models.WorkDir("/cert/server.key"), api))
+	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.ServerPem, models.ServerKey, api))
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
