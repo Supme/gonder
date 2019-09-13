@@ -17,17 +17,18 @@ import (
 type config struct {
 	dbString         string
 	dbConnections    int
-	UTMDefaultURL    string
 	APIPort          string
 	APIPanelPath     string
 	APIPanelLocale   string
+	AdminEmail       string
+	GonderEmail      string
+	UTMDefaultURL    string
+	UTMTemplatesDir  string
 	UTMPort          string
 	MaxCampaingns    int
 	RealSend         bool
 	DNScache         bool
 	DefaultProfileID int
-	AdminEmail       string
-	GonderEmail      string
 }
 
 var (
@@ -49,6 +50,7 @@ var (
 //  GONDER_MAILER_DNS_CACHE (bool)
 //  GONDER_MAILER_MAX_CAMPAIGNS (int)
 //  GONDER_UTM_DEFAULT_URL (string)
+//  GONDER_UTM_TEMPLATES_DIR (string)
 //  GONDER_UTM_PORT (int)
 //  GONDER_API_PORT (int)
 //  GONDER_API_PANEL_PATH (string)
@@ -172,6 +174,7 @@ func (c *config) read(configFile string) error {
 		return fmt.Errorf("error parse config file has not section Statistic: %s", err)
 	}
 	c.UTMDefaultURL = getEnvString("GONDER_UTM_DEFAULT_URL", utmSection.ValueOf("default_url"))
+	c.UTMTemplatesDir = getEnvString("GONDER_UTM_TEMPLATES_DIR", utmSection.ValueOf("templates_dir"))
 	c.UTMPort = getEnvString("GONDER_UTM_PORT", utmSection.ValueOf("port"))
 
 	apiSection, err := config.Section("api")

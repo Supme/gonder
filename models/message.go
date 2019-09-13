@@ -80,7 +80,7 @@ func (m *Message) GetTemplate(fileName string) (*template.Template, error) {
 	if dirName == "" {
 		dirName = "default"
 	}
-	filePath := path.Join("templates", dirName, fileName)
+	filePath := path.Join(Config.UTMTemplatesDir, dirName, fileName)
 
 	_, err = os.Stat(filePath)
 	if err != nil {
