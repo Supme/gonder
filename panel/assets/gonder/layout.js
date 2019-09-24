@@ -27,14 +27,12 @@ w2ui.layout.content('top', $().w2toolbar({
         { type: 'spacer' },
         { type: 'radio', id: 'statusButton', group: '1', text: w2utils.lang('Status'), img: 'w2ui-icon-info' },
         { type: 'radio', id: 'usersButton', group: '1', text: w2utils.lang('Users'), img: 'w2ui-icon-columns' },
-        { type: 'radio', id: 'profilesButton', group: '1', text: w2utils.lang('Profiles'), img: 'w2ui-icon-settings' },
         { type: 'break' }
     ],
     onClick: function (event) {
         // console.log('Target: '+ event.target, event);
         if (
             $('#campaignId').val() != '' ||
-            event.target =='profilesButton'  ||
             event.target =='statusButton' ||
             event.target =='usersButton'
         ) {
@@ -57,9 +55,6 @@ w2ui.layout.content('top', $().w2toolbar({
                     switchAcceptSend();
                     break;
 
-                case 'profilesButton':
-                    switchToProfiles();
-                    break;
                 case 'usersButton':
                     switchToUsers();
                     break;
@@ -182,17 +177,6 @@ function switchToRecipients() {
     $('#parameter').hide();
     $('#recipient').show();
     $('#profile').hide();
-    $('#users').hide();
-    $('#status').hide();
-}
-
-function switchToProfiles() {
-    w2ui['profile'].url = '/api/profiles';
-    w2ui['profile'].reload();
-    $('#template').hide();
-    $('#parameter').hide();
-    $('#recipient').hide();
-    $('#profile').show();
     $('#users').hide();
     $('#status').hide();
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"gonder/models"
 	"log"
+	"sort"
 )
 
 type pList struct {
@@ -29,28 +30,15 @@ func profilesList(req request) (js []byte, err error) {
 }
 
 func getProfilesList() ([]pList, error) {
-	var (
-		p  pList
-		ps []pList
-	)
-	ps = []pList{}
-	query, err := models.Db.Query("SELECT `id`, `name` FROM `profile`")
-	if err != nil {
-		log.Println(err)
-		return ps, err
+	plist := models.EmailPool.List()
+	ps := make([]pList, 0, len(plist))
+	keys := make([]int, 0, len(plist))
+	for k := range plist {
+		keys = append(keys, k)
 	}
-	defer func() {
-		if err := query.Close(); err != nil {
-			log.Print(err)
-		}
-	}()
-	for query.Next() {
-		err = query.Scan(&p.ID, &p.Name)
-		if err != nil {
-			log.Println(err)
-			return ps, err
-		}
-		ps = append(ps, p)
+	sort.Ints(keys)
+	for _, k := range keys {
+		ps = append(ps, pList{ID:k, Name:plist[k]})
 	}
 	return ps, nil
 }

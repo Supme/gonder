@@ -31,7 +31,7 @@ type campaign struct {
 	DkimPrivateKey  []byte
 	DkimUse         bool
 	SendUnsubscribe bool
-	ProfileID       string
+	ProfileID       int
 	ResendDelay     int
 	ResendCount     int
 	Attachments     []string
@@ -90,7 +90,7 @@ func getCampaign(id string) (campaign, error) {
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t3.`email`,t3.`name`, t3.`utm_url`, t3.`dkim_selector`,t3.`dkim_key`,t3.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`,t2.`id`,t1.`send_unsubscribe`,t2.`resend_delay`,t2.`resend_count` FROM `campaign` t1 INNER JOIN `profile` t2 ON t2.`id`=t1.`profile_id` INNER JOIN `sender` t3 ON t3.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`, t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
 		&c.FromName,
 		&utmURL,
@@ -103,11 +103,14 @@ func getCampaign(id string) (campaign, error) {
 		&c.compressHTML,
 		&c.ProfileID,
 		&c.SendUnsubscribe,
-		&c.ResendDelay,
-		&c.ResendCount,
 	)
 	if err != nil {
 		return c, err
+	}
+
+	c.ResendDelay, c.ResendCount, err = models.EmailPool.GetResendParams(c.ProfileID)
+	if err != nil {
+		return c, fmt.Errorf("error get params for pool id %d: %s", c.ProfileID, err)
 	}
 
 	splitEmail := strings.Split(c.FromEmail, "@")

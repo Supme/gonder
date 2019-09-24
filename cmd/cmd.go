@@ -79,11 +79,11 @@ func Run() {
 		os.Exit(1)
 	}
 
-	err = models.InitEmailPool()
-	if err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
+	//err = models.InitEmailPool()
+	//if err != nil {
+	//	log.Print(err)
+	//	os.Exit(1)
+	//}
 
 	apiLog, err := models.NewLogger(models.APILog)
 	if err != nil {

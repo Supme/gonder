@@ -277,8 +277,6 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		js, err = senderList(req)
 	case "/api/units":
 		js, err = units(req)
-	case "/api/profiles":
-		js, err = profiles(req)
 	default:
 		err = errors.New("Path not defined")
 	}

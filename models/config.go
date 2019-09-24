@@ -185,6 +185,55 @@ func (c *config) read(configFile string) error {
 	c.APIPanelPath = getEnvString("GONDER_API_PANEL_PATH", apiSection.ValueOf("panel_path"))
 	c.APIPanelLocale = getEnvString("GONDER_API_PANEL_LOCALE", apiSection.ValueOf("panel_locale"))
 
+	profileSections, _ := config.Sections("profile")
+
+	profiles := []profile{
+		{
+			id:          0,
+			name:        "Default",
+			hostname:    "",
+			iface:       "",
+			stream:      10,
+			resendCount: 2,
+			resendDelay: 1200,
+		},
+	}
+	for i := range profileSections {
+		var id, stream, resendCount, resendDelay int
+		id, err = strconv.Atoi(profileSections[i].ValueOf("id"))
+		if err != nil {
+			return fmt.Errorf("error parse config file profile value id: %s", err)
+		}
+		if profileSections[i].ValueOf("stream") != "" {
+			stream, err = strconv.Atoi(profileSections[i].ValueOf("stream"))
+			if err != nil {
+				return fmt.Errorf("error parse config file profile value stream: %s", err)
+			}
+		}
+		resendCount, err = strconv.Atoi(profileSections[i].ValueOf("resend_count"))
+		if err != nil {
+			return fmt.Errorf("error parse config file profile value resend_count: %s", err)
+		}
+		resendDelay, err = strconv.Atoi(profileSections[i].ValueOf("resend_delay"))
+		if err != nil {
+			return fmt.Errorf("error parse config file profile value resend_delay: %s", err)
+		}
+		profiles = append(profiles, profile{
+			id:          id,
+			name:        profileSections[i].ValueOf("name"),
+			hostname:    profileSections[i].ValueOf("hostname"),
+			iface:       profileSections[i].ValueOf("interface"),
+			stream:      stream,
+			resendCount: resendCount,
+			resendDelay: resendDelay,
+		})
+	}
+
+	err = initPool(profiles)
+	if err != nil {
+		return fmt.Errorf("error initialize email pool: %s", err)
+	}
+
 	return nil
 }
 
