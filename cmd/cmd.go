@@ -19,7 +19,7 @@ func Run() {
 		configFile string
 	)
 
-	flag.StringVar(&configFile, "c", "./dist_config.ini", "Path to config file")
+	flag.StringVar(&configFile, "c", "./dist_config.toml", "Path to config file")
 	flag.StringVar(&models.LogDir, "l", "./log", "Path to log folder")
 	flag.StringVar(&models.ServerPem, "p", "./cert/server.pem", "Path to certificate pem file")
 	flag.StringVar(&models.ServerKey, "k", "./cert/server.key", "Path to certificate key file")
@@ -78,12 +78,6 @@ func Run() {
 		log.Print(err)
 		os.Exit(1)
 	}
-
-	//err = models.InitEmailPool()
-	//if err != nil {
-	//	log.Print(err)
-	//	os.Exit(1)
-	//}
 
 	apiLog, err := models.NewLogger(models.APILog)
 	if err != nil {

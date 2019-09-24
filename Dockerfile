@@ -14,7 +14,7 @@ WORKDIR /app
 COPY --from=builder /app/gonder/start /app/
 COPY --from=builder /app/gonder/dump.sql /app
 COPY --from=builder /app/gonder/cert /app/cert
-COPY --from=builder /app/gonder/dist_config.ini /app/
+COPY --from=builder /app/gonder/dist_config.toml /app/
 COPY --from=builder /app/gonder/logrotate /etc/logrotate.d/gonder
 RUN chmod 644 /etc/logrotate.d/gonder && \
     apk add logrotate && \

@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `compress_html` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (id),
   KEY `group_id` (`group_id`),
-  KEY `profile_id` (`profile_id`),
   KEY `from_id` (`sender_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -91,17 +90,6 @@ CREATE TABLE IF NOT EXISTS `parameter` (
   `value` text NOT NULL,
   PRIMARY KEY (id),
   KEY `recipient_id` (`recipient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS `profile` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` text NOT NULL,
-  `iface` text NOT NULL,
-  `host` text NOT NULL,
-  `stream` int(11) NOT NULL,
-  `resend_delay` int(11) NOT NULL,
-  `resend_count` int(11) NOT NULL,
-  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `recipient` (
@@ -283,6 +271,3 @@ INSERT INTO `auth_unit_right` (`id`, `auth_unit_id`, `auth_right_id`) VALUES
 INSERT INTO `auth_user` (`id`, `auth_unit_id`, `name`, `password`) VALUES
   (1, 0, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'),
   (2, 1, 'user', '04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb');
-
-INSERT INTO _profile_remove_ (`id`, `name`, `iface`, `host`, `stream`, `resend_delay`, `resend_count`) VALUES
-  (1, 'Default', '', '', '15', '1200', '2');
