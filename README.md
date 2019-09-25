@@ -78,6 +78,7 @@ docker run -d -i -t --rm --network host --name gonder \
 -e GONDER_MAILER_SEND=true \
 -e GONDER_UTM_DEFAULT_URL='http://localhost:8080' \
 -e GONDER_UTM_TEMPLATES_DIR='./templates' \
+-e GONDER_UTM_FILES_DIR='./files' \
 -e GONDER_UTM_PORT=8080 \
 -e GONDER_API_PORT=7777 \
 -e GONDER_API_PANEL_PATH='/panel' \
