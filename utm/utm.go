@@ -74,7 +74,7 @@ func Run(logger *log.Logger) {
 	})
 
 	// folder files
-	utm.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.WorkDir("files/")))))
+	utm.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.Config.UTMFilesDir))))
 
 	// unsubscribe
 	utm.HandleFunc("/unsubscribe/", func(w http.ResponseWriter, r *http.Request) {

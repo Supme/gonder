@@ -191,7 +191,7 @@ func Run(logger *log.Logger) {
 	api.Handle("/preview", apiHandler(getMailPreview, true))
 	api.Handle("/unsubscribe", apiHandler(getUnsubscribePreview, true))
 
-	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.WorkDir("files/")))))
+	api.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(models.Config.UTMFilesDir))))
 
 	api.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/x-icon")

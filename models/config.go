@@ -21,6 +21,7 @@ type config struct {
 	GonderEmail      string
 	UTMDefaultURL    string
 	UTMTemplatesDir  string
+	UTMFilesDir      string
 	UTMPort          string
 	MaxCampaingns    int
 	RealSend         bool
@@ -48,6 +49,7 @@ var (
 //  GONDER_MAILER_MAX_CAMPAIGNS (int)
 //  GONDER_UTM_DEFAULT_URL (string)
 //  GONDER_UTM_TEMPLATES_DIR (string)
+//  GONDER_UTM_FILES_DIR (string)
 //  GONDER_UTM_PORT (int)
 //  GONDER_API_PORT (int)
 //  GONDER_API_PANEL_PATH (string)
@@ -113,6 +115,7 @@ func (c *config) read(configFile string) error {
 	}
 	c.UTMDefaultURL = getEnvString("GONDER_UTM_DEFAULT_URL", utmSection.ValueOf("default_url"))
 	c.UTMTemplatesDir = getEnvString("GONDER_UTM_TEMPLATES_DIR", utmSection.ValueOf("templates_dir"))
+	c.UTMFilesDir = getEnvString("GONDER_UTM_FILES_DIR", utmSection.ValueOf("files_dir"))
 	c.UTMPort = getEnvString("GONDER_UTM_PORT", utmSection.ValueOf("port"))
 
 	apiSection, err := config.Section("api")

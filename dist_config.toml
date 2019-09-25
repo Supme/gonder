@@ -15,6 +15,7 @@ dns_cache = true
 [utm]
 default_url = http://localhost:8080
 templates_dir = ./templates
+files_dir = ./files
 port = 8080
 
 [api]
