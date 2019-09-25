@@ -38,7 +38,7 @@ func getProfilesList() ([]pList, error) {
 	}
 	sort.Ints(keys)
 	for _, k := range keys {
-		ps = append(ps, pList{ID:k, Name:plist[k]})
+		ps = append(ps, pList{ID: k, Name: plist[k]})
 	}
 	return ps, nil
 }

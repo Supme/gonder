@@ -5,13 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/alyu/configparser"
-	_ "github.com/go-sql-driver/mysql"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 type config struct {
@@ -58,65 +55,6 @@ var (
 func ReadConfig(configFile string) error {
 	err := Config.read(configFile)
 	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func ConnectDb() error {
-	var err error
-	Db, err = sql.Open("mysql", Config.dbString)
-	if err != nil {
-		return fmt.Errorf("open database error: %s", err)
-	}
-	err = Db.Ping()
-	if err != nil {
-		return fmt.Errorf("ping database error: %s", err)
-	}
-	Db.SetMaxIdleConns(Config.dbConnections)
-	Db.SetMaxOpenConns(Config.dbConnections)
-	return nil
-}
-
-func CheckDb() error {
-	if _, err := Db.Query("SELECT 1 FROM `auth_user`"); err != nil {
-		return fmt.Errorf("database is empty, use -i key for create from a template")
-	}
-	return nil
-}
-
-// InitDb initialize database
-func InitDb(withoutConfirm bool) error {
-	if !withoutConfirm {
-		var confirm string
-		fmt.Print("Initial database (y/N)? ")
-		if _, err := fmt.Scanln(&confirm); err != nil {
-			return err
-		}
-		if strings.ToLower(confirm) != "y" {
-			return nil
-		}
-	}
-
-	sqlDump, err := ioutil.ReadFile("dump.sql")
-	if err != nil {
-		return err
-	}
-	query := strings.Split(string(sqlDump), ";")
-	tx, err := Db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-	for i := range query[:len(query)-1] {
-		_, err = tx.Exec(query[i])
-		if err != nil {
-			return err
-		}
-	}
-	if err = tx.Commit(); err != nil {
 		return err
 	}
 	return nil

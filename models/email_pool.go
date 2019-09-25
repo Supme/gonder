@@ -126,7 +126,7 @@ func (ep *emailPool) StopAll() {
 }
 
 // GetResendParams return delay, count, error for poll id
-func (ep *emailPool) GetResendParams(id int) (int, int, error ){
+func (ep *emailPool) GetResendParams(id int) (int, int, error) {
 	ep.RLock()
 	defer ep.RUnlock()
 
