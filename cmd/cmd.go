@@ -32,7 +32,7 @@ func Run() {
 		os.Exit(0)
 	}
 
-	if err := os.MkdirAll(models.LogDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(models.LogDir, 0744); err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}

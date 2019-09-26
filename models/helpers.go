@@ -61,7 +61,11 @@ func NewLogger(name string) (*log.Logger, error) {
 
 func NewLogfile(name string) (io.Writer, error) {
 	filename := filepath.Join(LogDir, name+".log")
-	_, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(filename, os.O_CREATE, 0640)
+	if err != nil {
+		return nil, err
+	}
+	err = f.Close()
 	if err != nil {
 		return nil, err
 	}
