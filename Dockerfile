@@ -14,10 +14,6 @@ WORKDIR /app
 COPY --from=builder /app/gonder/start /app/
 COPY --from=builder /app/gonder/cert /app/cert
 COPY --from=builder /app/gonder/dist_config.toml /app/
-COPY --from=builder /app/gonder/logrotate /etc/logrotate.d/gonder
-RUN chmod 644 /etc/logrotate.d/gonder && \
-    apk add logrotate && \
-    mkdir /app/log && \
-    mkdir /app/files
+RUN mkdir /app/files
 EXPOSE 8080 7777
 ENTRYPOINT ["./start"]
