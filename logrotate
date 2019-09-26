@@ -1,9 +1,0 @@
-/app/log/*.log {
-        daily
-        missingok
-        rotate 5
-        compress
-        delaycompress
-        notifempty
-        copytruncate
-}

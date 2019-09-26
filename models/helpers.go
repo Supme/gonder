@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"log"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
 
 func GetIP(r *http.Request) string {
@@ -49,10 +51,46 @@ func Conv1st2nd(num int) string {
 
 func NewLogger(name string) (*log.Logger, error) {
 	var logger *log.Logger
-	l, err := os.OpenFile(filepath.Join(LogDir, name+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	logfile, err := NewLogfile(name)
 	if err != nil {
-		return logger, fmt.Errorf("error opening log file: %s", err)
+		return nil, err
 	}
-	logger = log.New(io.MultiWriter(l, os.Stdout), "", log.Ldate|log.Ltime)
+	logger = log.New(io.MultiWriter(logfile, os.Stdout), "", log.Ldate|log.Ltime)
 	return logger, nil
+}
+
+func NewLogfile(name string) (io.Writer, error) {
+	filename := filepath.Join(LogDir, name+".log")
+	_, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, err
+	}
+	logfile := &lumberjack.Logger{
+		Filename:   filename,
+		MaxSize:    0,
+		MaxAge:     0,
+		MaxBackups: 14,
+		LocalTime:  true,
+		Compress:   true,
+	}
+	go func(l *lumberjack.Logger) {
+		now := time.Now().Local()
+		loc, _ := time.LoadLocation("Local")
+		firstTime := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+		if firstTime.Before(now) {
+			firstTime = firstTime.Add(time.Hour * 24)
+		}
+		firstSleep := firstTime.Sub(now)
+		time.Sleep(firstSleep)
+		for {
+			err := l.Rotate()
+			if err != nil {
+				log.Printf("rotate %s log error: %s\r\n", filepath.Base(l.Filename), err)
+			}
+			log.Printf("rotate %s log file\r\n", filepath.Base(l.Filename))
+			time.Sleep(time.Hour * 24)
+		}
+	}(logfile)
+
+	return logfile, nil
 }

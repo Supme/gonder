@@ -72,10 +72,12 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	fi, err := os.Open(file)
 	if err != nil {
 		log.Print(err)
+		return
 	}
 	f, err := fi.Stat()
 	if err != nil {
 		log.Print(err)
+		return
 	}
 	if f.Size() < 50000 {
 		offset.Offset = f.Size() * (-1)
@@ -85,6 +87,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	}
 	if err := fi.Close(); err != nil {
 		log.Print(err)
+		return
 	}
 
 	conf := tail.Config{
@@ -97,6 +100,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 	t, err := tail.TailFile(file, conf)
 	if err != nil {
 		apiLog.Print(err)
+		return
 	}
 
 	for line := range t.Lines {
@@ -108,6 +112,7 @@ func logHandler(w http.ResponseWriter, r *http.Request, file string) {
 			more = ""
 		} else {
 			log.Print(err)
+			return
 		}
 
 	}

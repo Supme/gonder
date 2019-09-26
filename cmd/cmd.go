@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 )
 
 // Run starting gonder from command line
@@ -38,19 +37,20 @@ func Run() {
 		os.Exit(1)
 	}
 
-	l, err := os.OpenFile(filepath.Join(models.LogDir, models.MainLog+".log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("error opening log file: %v", err)
-	}
-	defer l.Close()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.SetOutput(io.MultiWriter(l, os.Stdout))
 
-	err = models.ReadConfig(configFile)
+	err := models.ReadConfig(configFile)
 	if err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
+
+	l, err := models.NewLogfile("gonder_main")
+	if err != nil {
+		log.Printf("error opening log file: %v", err)
+		os.Exit(1)
+	}
+	log.SetOutput(io.MultiWriter(l, os.Stdout))
 
 	err = models.ConnectDb()
 	if err != nil {
