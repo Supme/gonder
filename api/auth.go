@@ -24,7 +24,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		var authorize bool
 		user, password, _ := r.BasicAuth()
 		auth.userID, auth.unitID, authorize = check(user, password)
-		// ToDo rate limit bad auth
+		// ToDo rate limit bad auth or/and user requests
 		if !authorize {
 			//if user != "" {
 			//	ip := models.GetIP(r)
