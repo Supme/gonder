@@ -4,8 +4,7 @@ function startStatusLog(file){
     var logMaxRows = 200;
     var statusData = [];
     var statusLog = $("#statusLog");
-    var wsuri = window.location.protocol=="https:"?"wss://":"ws://";
-    wsuri += window.location.hostname;
+    var wsuri = "wss://" + window.location.hostname;
     wsuri += window.location.port==""?"":":"+window.location.port;
     wsuri += "/status/ws/" + file;
 

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Auth struct {
@@ -23,6 +24,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		var authorize bool
 		user, password, _ := r.BasicAuth()
 		auth.userID, auth.unitID, authorize = check(user, password)
+		// ToDo rate limit bad auth
 		if !authorize {
 			//if user != "" {
 			//	ip := models.GetIP(r)
@@ -43,6 +45,7 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 			//		}()
 			//	}
 			//}
+			time.Sleep(time.Second * 3)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)
 			return
@@ -141,8 +144,8 @@ func check(user, password string) (int64, int64, bool) {
 	return userID, unitID, l
 }
 
-//ToDo
+// ToDo
 func Logout(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("Authorization", "Basic")
-	http.Error(w, "Logout. Bye!", 401)
+	http.Error(w, "Logout. Bye!", http.StatusUnauthorized)
 }

@@ -173,7 +173,7 @@ func Run(logger *log.Logger) {
 				return
 			}
 
-		}), true)))
+		}), false)))
 
 	// API
 	api.Handle("/api/", apiHandler(apiRequest, true))
