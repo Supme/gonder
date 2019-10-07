@@ -148,7 +148,6 @@ function getCampaignData(campaignId) {
         templateHTML: "",
         templateText: ""
     };
-    var zone = new Date().getTimezoneOffset() * 60;
     $.ajax({
         type: "GET",
         async: false,
@@ -159,8 +158,10 @@ function getCampaignData(campaignId) {
         campaignData.subject = data["subject"];
         campaignData.profileID = data["profileId"];
         campaignData.senderID = data["senderId"];
-        campaignData.startDate = new Date((data["startDate"] + zone) * 1000);
-        campaignData.endDate = new Date((data["endDate"] + zone) * 1000);
+        // time from server in UTC, add offset
+        var zone = new Date().getTimezoneOffset() * 60000;
+        campaignData.startDate = new Date((data["startDate"] * 1000) + zone);
+        campaignData.endDate = new Date((data["endDate"] * 1000) + zone);
         campaignData.sendUnsubscribe = data["sendUnsubscribe"];
         campaignData.compressHTML = data["compressHTML"];
         campaignData.accepted = data["accepted"];
@@ -199,15 +200,19 @@ function getCampaignData(campaignId) {
     return campaignData;
 }
 
+function getTimestamp(dateStr, timeStr) {
+    var d = new Date(w2utils.isDateTime(dateStr + ' ' + timeStr, w2utils.settings.datetimeFormat, true));
+    return (d.getTime() - (d.getTimezoneOffset() * 60000))/1000;
+}
+
 // ---Save campaign data ---
 function saveCampaign() {
     if (w2ui['toolbar'].get('acceptSend').checked) {
         w2alert(w2utils.lang("You can't save an accepted for send campaign."), w2utils.lang('Error'));
         return
     }
-
     w2confirm(w2utils.lang('Save changes in campaign?'), function (btn) {
-        if ( btn == 'Yes') {
+        if (btn === 'Yes') {
             // ---Save campaign data ---
             w2ui.layout.lock('main', w2utils.lang('Saving...'), true);
             $.ajax({
@@ -223,8 +228,8 @@ function saveCampaign() {
                                 "name": $('#campaignName').val(),
                                 "subject": $("#campaignSubject").val(),
                                 "senderId": $('#campaignSenderId').data('selected').id,
-                                "startDate": getDate($("#campaignStartDate").val(), $("#campaignStartTime").val()),
-                                "endDate": getDate($("#campaignEndDate").val(), $("#campaignEndTime").val()),
+                                "startDate": getTimestamp($("#campaignStartDate").val(), $("#campaignStartTime").val()),
+                                "endDate": getTimestamp($("#campaignEndDate").val(), $("#campaignEndTime").val()),
                                 "compressHTML": $("#campaignCompressHTML").is(":checked"),
                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
                                 "templateHTML": cm.getValue(),
@@ -233,7 +238,7 @@ function saveCampaign() {
                         }
                     )}
             }).done(function(data) {
-                if (data['status'] == 'error') {
+                if (data['status'] === 'error') {
                     w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                 } else {
                     w2ui.layout.lock('main', w2utils.lang('Saved'), false);

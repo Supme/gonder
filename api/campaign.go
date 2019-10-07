@@ -35,8 +35,8 @@ func campaign(req request) (js []byte, err error) {
 				log.Println(err)
 				return js, err
 			}
-			req.Content.StartDate = start.Time.Unix()
-			req.Content.EndDate = end.Time.Unix()
+			req.Content.StartDate = start.Time.Local().Unix()
+			req.Content.EndDate = end.Time.Local().Unix()
 
 			js, err = json.Marshal(req.Content)
 			if err != nil {
@@ -53,8 +53,8 @@ func campaign(req request) (js []byte, err error) {
 				return js, errors.New("You can't save an accepted for send campaign.")
 			}
 
-			start := time.Unix(req.Content.StartDate, 0).Format(time.RFC3339)
-			end := time.Unix(req.Content.EndDate, 0).Format(time.RFC3339)
+			start := time.Unix(req.Content.StartDate, 0).UTC().Format(time.RFC3339)
+			end := time.Unix(req.Content.EndDate, 0).UTC().Format(time.RFC3339)
 
 			_, err = template.New("checkHTML").Funcs(template.FuncMap{
 				"RedirectUrl": func(p map[string]interface{}, u string) string { return "" },

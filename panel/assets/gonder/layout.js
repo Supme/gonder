@@ -1,8 +1,3 @@
-function getDate(dateStr, timeStr) {
-    var d = new Date(w2utils.isDateTime(dateStr + ' ' + timeStr, w2utils.settings.datetimeFormat, true));
-    return d.getTime()/1000;
-}
-
 // --- Layout ---
 $('#layout').w2layout({
     name: 'layout',
