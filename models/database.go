@@ -1,9 +1,9 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/mcuadros/go-version"
 	"gonder/bindata"
 	"strings"
@@ -11,7 +11,7 @@ import (
 
 func ConnectDb() error {
 	var err error
-	Db, err = sql.Open("mysql", Config.dbString)
+	Db, err = sqlx.Open("mysql", Config.dbString)
 	if err != nil {
 		return fmt.Errorf("open database error: %s", err)
 	}

@@ -55,7 +55,7 @@ $('#campaignRecipient').w2grid({
             {id: 'csv', type: 'button', caption: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
         ],
         onClick: function (event) {
-            if (event.target == "csv") {
+            if (event.target === "csv") {
                 var url = '/report/file/recipients?' +
                     'campaign=' + w2ui.campaign.getSelection()[0] + '&' +
                     'params=' + JSON.stringify({
@@ -63,10 +63,7 @@ $('#campaignRecipient').w2grid({
                         search: w2ui['recipient'].searchData,
                         searchLogic: w2ui.recipient.last.logic
                     });
-                var link=document.createElement('a');
-                document.body.appendChild(link);
-                link.href=url;
-                link.click();
+                loadLink(url);
             }
         }
     }
@@ -83,7 +80,7 @@ $('#recipientUploadButton').click(
             w2alert(w2utils.lang('Cannot add recipients to an accepted campaign.'), w2utils.lang('Error'));
             return
         }
-        if ($('#recipientUploadFile').data("selected").length == 0) {
+        if ($('#recipientUploadFile').data("selected").length === 0) {
             w2alert(w2utils.lang('No one file selected.'), w2utils.lang('Error'));
         } else {
             w2ui.layout.lock('main', "<span id='uploadProgress'>"+ w2utils.lang("Uploading 0%") + "</span>", true);
@@ -101,7 +98,7 @@ $('#recipientUploadButton').click(
                         })
                     }
                 }).done(function(data) {
-                    if (data['status'] == 'error') {
+                    if (data['status'] === 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                         $('#recipientUploadFile').w2field('file', {max: 1});
                         w2ui['recipient'].reload();
@@ -120,7 +117,7 @@ $('#recipientUploadButton').click(
                                     })
                                 }
                             }).done(function(req) {
-                                if (req["status"] == "success") {
+                                if (req["status"] === "success") {
                                     $('#uploadProgress').text("Uploading: " + req["message"] + "%");
                                 } else {
                                     finish = true;
@@ -147,7 +144,7 @@ $("#recipientClearButton").html(w2utils.lang('Clear'));
 $("#recipientClearButton").click(
     function () {
         w2confirm(w2utils.lang('Delete all recipients from campaign?'), function (btn) {
-            if (btn == 'Yes') {
+            if (btn === 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Deleting...'), true);
                 $.ajax({
                     url: "api/recipients",
@@ -155,7 +152,7 @@ $("#recipientClearButton").click(
                     dataType: "json",
                     data: {"request": JSON.stringify({"cmd": "clear", "campaign": parseInt($('#campaignId').val())})}
                 }).done(function(data) {
-                    if (data['status'] == 'error') {
+                    if (data['status'] === 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
                     w2ui['recipient'].reload();
@@ -172,7 +169,7 @@ $("#recipientResend").html(w2utils.lang('Resend by 4xx code'));
 $('#recipientResend').click(
     function () {
         w2confirm(w2utils.lang('Resend by 4xx code') + '?', function (btn) {
-            if (btn == 'Yes') {
+            if (btn === 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Update...'), true);
                 $.ajax({
                     url: "api/recipients",
@@ -181,7 +178,7 @@ $('#recipientResend').click(
                     dataType: "json"
                    }
                 }).done(function(data) {
-                    if (data['status'] == 'error') {
+                    if (data['status'] === 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     }
                     w2ui['recipient'].reload();
@@ -199,7 +196,7 @@ $("#recipientDeduplicate").html(w2utils.lang('Deduplicate'));
 $('#recipientDeduplicate').click(
     function () {
         w2confirm(w2utils.lang('Deduplicate recipients') + '?', function (btn) {
-            if (btn == 'Yes') {
+            if (btn === 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Deduplicating...'), true);
                 $.ajax({
                     url: "api/recipients",
@@ -208,7 +205,7 @@ $('#recipientDeduplicate').click(
                         dataType: "json"
                     }
                 }).done(function(data) {
-                    if (data['status'] != 'success') {
+                    if (data['status'] !== 'success') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     } else {
                         w2alert(data["message"] + " " + w2utils.lang("duplicates removed"));
@@ -228,7 +225,7 @@ $("#recipientUnavaible").html(w2utils.lang('Mark unavaible'));
 $('#recipientUnavaible').click(
     function () {
         w2confirm(w2utils.lang('Mark unavaible recent time recipients') + '?', function (btn) {
-            if (btn == 'Yes') {
+            if (btn === 'Yes') {
                 w2ui.layout.lock('main', w2utils.lang('Marking unavaible...'), true);
                 $.ajax({
                     url: "api/recipients",
@@ -237,7 +234,7 @@ $('#recipientUnavaible').click(
                         dataType: "json"
                     }
                 }).done(function(data) {
-                    if (data['status'] != 'success') {
+                    if (data['status'] !== 'success') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     } else {
                         w2alert(data["message"] + " " + w2utils.lang("marked as unavaible"));

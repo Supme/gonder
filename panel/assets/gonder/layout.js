@@ -27,9 +27,9 @@ w2ui.layout.content('top', $().w2toolbar({
     onClick: function (event) {
         // console.log('Target: '+ event.target, event);
         if (
-            $('#campaignId').val() != '' ||
-            event.target =='statusButton' ||
-            event.target =='usersButton'
+            $('#campaignId').val() !== '' ||
+            event.target ==='statusButton' ||
+            event.target ==='usersButton'
         ) {
             switch (event.target) {
                 case 'parametersButton':
@@ -123,7 +123,7 @@ function changeAcceptSend(change) {
             dataType: "json",
             data: {"request": JSON.stringify({"cmd": "accept", "id": parseInt($('#campaignId').val()), "select": w2ui['toolbar'].get('acceptSend').checked})}
         }).done(function (data) {
-            if (data['status'] == 'error') {
+            if (data['status'] === 'error') {
                 accept = !accept;
                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
             }
@@ -225,12 +225,11 @@ $('#parameterForm').w2form({
 $('#campaignSendUnsubscribe').click(function(data) {
     if ($('#campaignSendUnsubscribe').is(':checked')) {
         w2confirm(w2utils.lang('Are you sure send mail for unsubscribed?'), function (btn) {
-            if (btn != 'Yes') {
+            if (btn !== 'Yes') {
                 $('#campaignSendUnsubscribe').prop('checked', !$('#campaignSendUnsubscribe').is(':checked'));
             }
         });
     }
 });
-
 // --- /Parameters form ---
 

@@ -179,6 +179,8 @@ func Run(logger *log.Logger) {
 	api.Handle("/api/", apiHandler(apiRequest, true))
 
 	// Reports
+	api.Handle("/report/group", apiHandler(reportsGroupHandlerFunc, true))
+	api.Handle("/report/campaign", apiHandler(reportsCampaignHandlerFunc, true))
 	api.Handle("/report/started", apiHandler(reportStartedCampaign, true))
 	api.Handle("/report/summary", apiHandler(reportSummary, true))
 	api.Handle("/report/clickcount", apiHandler(reportClickCount, true))

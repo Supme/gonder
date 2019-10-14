@@ -32,16 +32,18 @@
                 w2utils.locale('{{.root}}/assets/w2ui/locale/' + locale + '.json?{{.version}}');
                 w2utils.locale('{{.root}}/assets/gonder/locale/' + locale + '.json?{{.version}}');
                 $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
-                    $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
-                        $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
-                            $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
-                            $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
+                    $.getScript('{{.root}}/assets/gonder/helpers.js?{{.version}}', function () {
+                        $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
+                            $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
+                                $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
+                                $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
+                            });
+                            $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
+                            $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
+                            w2utils.settings.dateFormat = "dd/mm/yyyy";
+                            w2utils.settings.timeFormat = "h24:mm";
+                            w2utils.settings.datetimeFormat = "dd/mm/yyyy | h24:mm";
                         });
-                        $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
-                        $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
-                        w2utils.settings.dateFormat = "dd/mm/yyyy";
-                        w2utils.settings.timeFormat = "h24:mm";
-                        w2utils.settings.datetimeFormat = "dd/mm/yyyy | h24:mm";
                     });
                 });
             }

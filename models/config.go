@@ -1,9 +1,9 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/alyu/configparser"
+	"github.com/jmoiron/sqlx"
 	"log"
 	"os"
 	"path/filepath"
@@ -29,7 +29,7 @@ type config struct {
 }
 
 var (
-	Db        *sql.DB
+	Db        *sqlx.DB
 	Config    config
 	LogDir    string
 	ServerPem string

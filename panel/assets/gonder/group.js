@@ -31,7 +31,7 @@ w2ui['bottom'].content('left', $().w2grid({
             data: {"request": JSON.stringify({"cmd": "add"})},
             url: '/api/groups'
         }).done(function(data) {
-            if (data['status'] == 'error') {
+            if (data['status'] === 'error') {
                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
             } else {
                 id = data["recid"];
@@ -43,11 +43,34 @@ w2ui['bottom'].content('left', $().w2grid({
     },
     toolbar: {
         items: [
-            {id: 'sender', type: 'button', caption: w2utils.lang('Senders'), icon: 'w2ui-icon-pencil'}
+            {type: 'break'},
+            {id: 'sender', type: 'button', caption: w2utils.lang('Senders'), icon: 'w2ui-icon-pencil'},
+            {type: 'break'},
+            {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
+                    { id: 'campaigns', text: w2utils.lang('Campaigns')},
+                    { id: 'unsubscribed', text: w2utils.lang('Unsubscribed')}
+                ],
+                text: function (item) {
+                    var el   = this.get('reports:' + item.selected);
+                    return w2utils.lang('Report: ') + el.text;
+                },
+                selected: 'campaigns'
+            },
+            {id: 'download', type: 'button', caption: w2utils.lang('Download')}
         ],
         onClick: function (event) {
-            if (event.target == 'sender') {
-                if (w2ui['group'].getSelection()[0] == undefined) {
+            if (event.target === 'download') {
+                var groupId = w2ui.group.getSelection();
+                if (groupId.length === 0) {
+                    w2alert(w2utils.lang('Select group for download this report.'));
+                    return;
+                }
+                loadLink('/report/group?id='+ w2ui.group.getSelection()[0] + '&type=' + this.get('reports').selected +'&format=csv');
+                return
+            }
+
+            if (event.target === 'sender') {
+                if (w2ui['group'].getSelection()[0] === undefined) {
                     w2alert(w2utils.lang('Select group.'));
                 } else {
                     w2ui['senderGrid'].postData["id"] = parseInt(w2ui['group'].getSelection()[0]);

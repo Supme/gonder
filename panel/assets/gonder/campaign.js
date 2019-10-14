@@ -22,11 +22,34 @@ w2ui['bottom'].content('main', $().w2grid({
     method: 'GET',
     toolbar: {
         items: [
-            {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'}
+            {type: 'break'},
+            {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'},
+            {type: 'break'},
+            {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
+                    { id: 'unsubscribed', text: w2utils.lang('Unsubscribed')},
+                    { id: 'question', text: w2utils.lang('Question')}
+                ],
+                text: function (item) {
+                    var el   = this.get('reports:' + item.selected);
+                    return w2utils.lang('Report: ') + el.text;
+                },
+                selected: 'unsubscribed'
+            },
+            {id: 'download', type: 'button', caption: w2utils.lang('Download')}
         ],
 
         onClick: function (event) {
-            if (event.target == 'clone')
+            if (event.target === 'download') {
+                var campaignId = w2ui.campaign.getSelection();
+                if (campaignId.length === 0) {
+                    w2alert(w2utils.lang('Select campaign for download this report.'));
+                    return;
+                }
+                loadLink('/report/campaign?id='+ w2ui.campaign.getSelection()[0] + '&type=' + this.get('reports').selected +'&format=csv');
+                return
+            }
+
+            if (event.target === 'clone')
             {
                 cloneCampaign(parseInt(w2ui['campaign'].getSelection()[0]));
             }
