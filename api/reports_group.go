@@ -164,7 +164,7 @@ func (rc reportsGroup) unsubscribedCSV(c *models.Group) error {
 			strconv.Itoa(r.CampaignID),
 			r.Email,
 			r.At,
-			r.DataValid,
+			string(r.DataValid),
 		})
 		if err != nil {
 			return err

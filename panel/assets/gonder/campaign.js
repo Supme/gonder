@@ -26,6 +26,7 @@ w2ui['bottom'].content('main', $().w2grid({
             {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'},
             {type: 'break'},
             {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
+                    { id: 'recipients', text: w2utils.lang('Recipients')},
                     { id: 'unsubscribed', text: w2utils.lang('Unsubscribed')},
                     { id: 'question', text: w2utils.lang('Question')}
                 ],
@@ -33,7 +34,7 @@ w2ui['bottom'].content('main', $().w2grid({
                     var el   = this.get('reports:' + item.selected);
                     return w2utils.lang('Report: ') + el.text;
                 },
-                selected: 'unsubscribed'
+                selected: 'recipients'
             },
             {id: 'download', type: 'button', caption: w2utils.lang('Download')}
         ],

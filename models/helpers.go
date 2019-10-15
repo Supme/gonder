@@ -21,6 +21,25 @@ func GetIP(r *http.Request) string {
 	return ip
 }
 
+func sqlReplaceSpecialSymbols(column string) string {
+	return `TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(` + column + `, "\\", "\\\\"), "\"", "\\\""), "\r", "\\r"), "\n", "\\n"), "\t", "\\t"))`
+}
+
+// SQLKeyValueTableToJSON replace JSON_OBJECT for old MySQL/MariaDb
+func SQLKeyValueTableToJSON(keyCol, valCol, tableName, where string) string {
+	return `CONCAT(
+				"{",
+				(SELECT GROUP_CONCAT(
+    	        	"\"",
+					` + sqlReplaceSpecialSymbols(keyCol) + `,
+					"\":\"",
+					` + sqlReplaceSpecialSymbols(valCol) + `,
+					"\""
+				ORDER BY ` + keyCol + ` SEPARATOR ",")
+				FROM ` + tableName + ` WHERE ` + where + `),
+				"}")`
+}
+
 func Conv1st2nd(num int) string {
 	var suffix string
 	var lastOneNum, lastTwoNum int

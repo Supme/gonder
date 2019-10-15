@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"github.com/jmoiron/sqlx"
 	"strconv"
 )
@@ -29,21 +30,29 @@ func (id Group) Campaigns() (*sqlx.Rows, error) {
 }
 
 type GroupUnsubscribed struct {
-	CampaignID int            `db:"campaign_id" json:"campaign_id"`
-	Email      string         `db:"email" json:"email"`
-	At         string         `db:"at" json:"at"`
-	Data       sql.NullString `db:"data" json:"-"`
-	DataValid  string         `json:"data"`
+	CampaignID int             `db:"campaign_id" json:"campaign_id"`
+	Email      string          `db:"email" json:"email"`
+	At         string          `db:"at" json:"at"`
+	Data       sql.NullString  `db:"data" json:"-"`
+	DataValid  json.RawMessage `json:"data"`
 }
 
 func (cq *GroupUnsubscribed) Validate() {
 	if cq.Data.Valid {
-		cq.DataValid = cq.Data.String
+		cq.DataValid = []byte(cq.Data.String)
 	} else {
-		cq.DataValid = "NULL"
+		cq.DataValid = []byte("null")
 	}
 }
 
 func (id Group) Unsubscribed() (*sqlx.Rows, error) {
-	return Db.Queryx("SELECT  u.`campaign_id` AS 'campaign_id', u.`email` AS 'email', u.`date` AS 'at', (SELECT GROUP_CONCAT(e.`name`, ':`', e.`value`, '`' ORDER BY e.`name` SEPARATOR ' | ') FROM `unsubscribe_extra` e WHERE e.`unsubscribe_id`=u.`id`) AS 'data' FROM `unsubscribe` u WHERE u.`group_id`=?", id)
+	return Db.Queryx(`
+		SELECT
+        	u.email,
+        	u.campaign_id,
+			u.date as "at",
+			`+SQLKeyValueTableToJSON("d.name", "d.value", "unsubscribe_extra d", "d.unsubscribe_id=u.id")+` AS "data"
+		FROM unsubscribe u
+		WHERE u.group_id=?`, id)
+
 }

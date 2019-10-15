@@ -44,6 +44,12 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		err = rc.unsubscribedJSON(&campaign)
+	case "recipients":
+		if rFormat == "csv" {
+			err = rc.recipientsCSV(&campaign)
+			break
+		}
+		err = rc.recipientsJSON(&campaign)
 	default:
 		rc.w.WriteHeader(http.StatusNotImplemented)
 	}
@@ -106,7 +112,7 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 			strconv.Itoa(r.ID),
 			r.Email,
 			r.At,
-			r.DataValid,
+			string(r.DataValid),
 		})
 	}
 	csvWriter.Flush()
@@ -164,7 +170,69 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 		err = csvWriter.Write([]string{
 			r.Email,
 			r.At,
-			r.DataValid,
+			string(r.DataValid),
+		})
+	}
+	csvWriter.Flush()
+	return nil
+}
+
+func (rc reportsCampaign) recipientsJSON(c *models.Campaign) error {
+	res := make([]models.CampaignRecipients, 0, 64)
+	q, err := c.Recipients()
+	if err != nil {
+		return err
+	}
+	for q.Next() {
+		var r models.CampaignRecipients
+		err = q.StructScan(&r)
+		if err != nil {
+			return err
+		}
+		r.Validate()
+		res = append(res, r)
+	}
+	rc.w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(rc.w).Encode(res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
+	q, err := c.Recipients()
+	if err != nil {
+		return err
+	}
+	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_recipients.csv")
+	rc.w.Header().Set("Content-Type", "text/csv")
+	csvWriter := csv.NewWriter(rc.w)
+	csvWriter.Comma = ';'
+	csvWriter.UseCRLF = true
+	columns, err := q.Columns()
+	if err != nil {
+		return err
+	}
+	err = csvWriter.Write(columns)
+	if err != nil {
+		return err
+	}
+	for q.Next() {
+		var r models.CampaignRecipients
+		err = q.StructScan(&r)
+		if err != nil {
+			return err
+		}
+		r.Validate()
+		err = csvWriter.Write([]string{
+			strconv.Itoa(r.ID),
+			r.Email,
+			r.Name,
+			r.At,
+			r.StatusValid,
+			strconv.FormatBool(r.Open),
+			string(r.DataValid),
 		})
 	}
 	csvWriter.Flush()
