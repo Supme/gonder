@@ -1,7 +1,10 @@
 package models
 
 import (
+	"encoding/csv"
 	"fmt"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"log"
@@ -10,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,6 +42,26 @@ func SQLKeyValueTableToJSON(keyCol, valCol, tableName, where string) string {
 				ORDER BY ` + keyCol + ` SEPARATOR ",")
 				FROM ` + tableName + ` WHERE ` + where + `),
 				"}")`
+}
+
+func NewCSVWriter(w io.Writer) *csv.Writer {
+	var (
+		f io.Writer
+		c *csv.Writer
+		comma rune
+	)
+	switch strings.TrimSpace(strings.ToLower(Config.APIPanelLocale)) {
+	case "ru-ru":
+		f = transform.NewWriter(w, charmap.Windows1251.NewEncoder())
+		comma = ';'
+	default:
+		f = w
+		comma = ','
+	}
+	c = csv.NewWriter(f)
+	c.Comma = comma
+	c.UseCRLF = true
+	return c
 }
 
 func Conv1st2nd(num int) string {

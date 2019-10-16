@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"gonder/models"
 	"log"
@@ -83,9 +82,7 @@ func (rc reportsGroup) campaignsCSV(c *models.Group) error {
 	}
 	rc.w.Header().Set("Content-Disposition", "attachment; filename=group_"+c.StringID()+"_campaigns.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
-	csvWriter := csv.NewWriter(rc.w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(rc.w)
 	columns, err := q.Columns()
 	if err != nil {
 		return err
@@ -142,9 +139,7 @@ func (rc reportsGroup) unsubscribedCSV(c *models.Group) error {
 	}
 	rc.w.Header().Set("Content-Disposition", "attachment; filename=group_"+c.StringID()+"_unsubscribed.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
-	csvWriter := csv.NewWriter(rc.w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(rc.w)
 	columns, err := q.Columns()
 	if err != nil {
 		return err

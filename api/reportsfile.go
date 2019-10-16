@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"encoding/csv"
 	"encoding/json"
 	"gonder/models"
 	"log"
@@ -60,9 +59,7 @@ func reportRecipientsCsv(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=recipients_"+strconv.FormatInt(campaign, 10)+".csv")
 	w.Header().Set("Content-Type", "text/csv")
 
-	csvWriter := csv.NewWriter(w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(w)
 
 	err = csvWriter.Write([]string{lang.tr(models.Config.APIPanelLocale, "Id"), lang.tr(models.Config.APIPanelLocale, "Email"), lang.tr(models.Config.APIPanelLocale, "Name"), lang.tr(models.Config.APIPanelLocale, "Opened"), lang.tr(models.Config.APIPanelLocale, "Result")})
 	if err != nil {

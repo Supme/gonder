@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"gonder/models"
 	"log"
@@ -90,9 +89,7 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 	}
 	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_question.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
-	csvWriter := csv.NewWriter(rc.w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(rc.w)
 	columns, err := q.Columns()
 	if err != nil {
 		return err
@@ -149,9 +146,7 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 	}
 	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_unsubscribed.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
-	csvWriter := csv.NewWriter(rc.w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(rc.w)
 	columns, err := q.Columns()
 	if err != nil {
 		return err
@@ -207,9 +202,7 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 	}
 	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_recipients.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
-	csvWriter := csv.NewWriter(rc.w)
-	csvWriter.Comma = ';'
-	csvWriter.UseCRLF = true
+	csvWriter := models.NewCSVWriter(rc.w)
 	columns, err := q.Columns()
 	if err != nil {
 		return err
