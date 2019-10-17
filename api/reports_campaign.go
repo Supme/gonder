@@ -49,6 +49,12 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		err = rc.recipientsJSON(&campaign)
+	case "clicks":
+		if rFormat == "csv" {
+			err = rc.clicksCSV(&campaign)
+			break
+		}
+		err = rc.clicksJSON(&campaign)
 	default:
 		rc.w.WriteHeader(http.StatusNotImplemented)
 	}
@@ -60,13 +66,13 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rc reportsCampaign) questionJSON(c *models.Campaign) error {
-	res := make([]models.CampaignQuestion, 0, 64)
-	q, err := c.Question()
+	res := make([]models.CampaignReportQuestion, 0, 64)
+	q, err := c.ReportQuestion()
 	if err != nil {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignQuestion
+		var r models.CampaignReportQuestion
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -83,7 +89,7 @@ func (rc reportsCampaign) questionJSON(c *models.Campaign) error {
 }
 
 func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
-	q, err := c.Question()
+	q, err := c.ReportQuestion()
 	if err != nil {
 		return err
 	}
@@ -99,7 +105,7 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignQuestion
+		var r models.CampaignReportQuestion
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -117,13 +123,13 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 }
 
 func (rc reportsCampaign) unsubscribedJSON(c *models.Campaign) error {
-	res := make([]models.CampaignUnsubscribed, 0, 64)
-	q, err := c.Unsubscribed()
+	res := make([]models.CampaignReportUnsubscribed, 0, 64)
+	q, err := c.ReportUnsubscribed()
 	if err != nil {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignUnsubscribed
+		var r models.CampaignReportUnsubscribed
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -140,7 +146,7 @@ func (rc reportsCampaign) unsubscribedJSON(c *models.Campaign) error {
 }
 
 func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
-	q, err := c.Unsubscribed()
+	q, err := c.ReportUnsubscribed()
 	if err != nil {
 		return err
 	}
@@ -156,7 +162,7 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignUnsubscribed
+		var r models.CampaignReportUnsubscribed
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -173,13 +179,13 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 }
 
 func (rc reportsCampaign) recipientsJSON(c *models.Campaign) error {
-	res := make([]models.CampaignRecipients, 0, 64)
-	q, err := c.Recipients()
+	res := make([]models.CampaignReportRecipients, 0, 64)
+	q, err := c.ReportRecipients()
 	if err != nil {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignRecipients
+		var r models.CampaignReportRecipients
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -196,7 +202,7 @@ func (rc reportsCampaign) recipientsJSON(c *models.Campaign) error {
 }
 
 func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
-	q, err := c.Recipients()
+	q, err := c.ReportRecipients()
 	if err != nil {
 		return err
 	}
@@ -212,7 +218,7 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 		return err
 	}
 	for q.Next() {
-		var r models.CampaignRecipients
+		var r models.CampaignReportRecipients
 		err = q.StructScan(&r)
 		if err != nil {
 			return err
@@ -226,6 +232,63 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 			r.StatusValid,
 			strconv.FormatBool(r.Open),
 			string(r.DataValid),
+		})
+	}
+	csvWriter.Flush()
+	return nil
+}
+
+func (rc reportsCampaign) clicksJSON(c *models.Campaign) error {
+	res := make([]models.CampaignReportClicks, 0, 64)
+	q, err := c.ReportClicks()
+	if err != nil {
+		return err
+	}
+	for q.Next() {
+		var r models.CampaignReportClicks
+		err = q.StructScan(&r)
+		if err != nil {
+			return err
+		}
+		r.Validate()
+		res = append(res, r)
+	}
+	rc.w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(rc.w).Encode(res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rc reportsCampaign) clicksCSV(c *models.Campaign) error {
+	q, err := c.ReportClicks()
+	if err != nil {
+		return err
+	}
+	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_clicks.csv")
+	rc.w.Header().Set("Content-Type", "text/csv")
+	csvWriter := models.NewCSVWriter(rc.w)
+	columns, err := q.Columns()
+	if err != nil {
+		return err
+	}
+	err = csvWriter.Write(columns)
+	if err != nil {
+		return err
+	}
+	for q.Next() {
+		var clx models.CampaignReportClicks
+		err = q.StructScan(&clx)
+		if err != nil {
+			return err
+		}
+		clx.Validate()
+		err = csvWriter.Write([]string{
+			strconv.Itoa(clx.ID),
+			clx.Email,
+			clx.At,
+			clx.URL,
 		})
 	}
 	csvWriter.Flush()

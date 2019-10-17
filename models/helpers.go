@@ -46,8 +46,8 @@ func SQLKeyValueTableToJSON(keyCol, valCol, tableName, where string) string {
 
 func NewCSVWriter(w io.Writer) *csv.Writer {
 	var (
-		f io.Writer
-		c *csv.Writer
+		f     io.Writer
+		c     *csv.Writer
 		comma rune
 	)
 	switch strings.TrimSpace(strings.ToLower(Config.APIPanelLocale)) {

@@ -27,6 +27,7 @@ w2ui['bottom'].content('main', $().w2grid({
             {type: 'break'},
             {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
                     { id: 'recipients', text: w2utils.lang('Recipients')},
+                    { id: 'clicks', text: w2utils.lang('Clicks')},
                     { id: 'unsubscribed', text: w2utils.lang('Unsubscribed')},
                     { id: 'question', text: w2utils.lang('Question')}
                 ],

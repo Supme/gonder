@@ -17,19 +17,19 @@ func (id Campaign) StringID() string {
 	return strconv.Itoa(id.IntID())
 }
 
-type CampaignRecipients struct {
-	ID        int             `db:"id" json:"id"`
-	Email     string          `db:"email" json:"email"`
-	Name      string          `db:"name" json:"name"`
-	At        string          `db:"at" json:"at"`
-	Status    sql.NullString  `db:"status" json:"-"`
-	StatusValid    string  `json:"status"`
-	Open      bool            `db:"open" json:"open"`
-	Data      sql.NullString  `db:"data" json:"-"`
-	DataValid json.RawMessage `json:"data"`
+type CampaignReportRecipients struct {
+	ID          int             `db:"id" json:"id"`
+	Email       string          `db:"email" json:"email"`
+	Name        string          `db:"name" json:"name"`
+	At          string          `db:"at" json:"at"`
+	Status      sql.NullString  `db:"status" json:"-"`
+	StatusValid string          `json:"status"`
+	Open        bool            `db:"open" json:"open"`
+	Data        sql.NullString  `db:"data" json:"-"`
+	DataValid   json.RawMessage `json:"data"`
 }
 
-func (cq *CampaignRecipients) Validate() {
+func (cq *CampaignReportRecipients) Validate() {
 	if cq.Data.Valid {
 		cq.DataValid = []byte(cq.Data.String)
 	} else {
@@ -42,7 +42,7 @@ func (cq *CampaignRecipients) Validate() {
 	}
 }
 
-func (id Campaign) Recipients() (*sqlx.Rows, error) {
+func (id Campaign) ReportRecipients() (*sqlx.Rows, error) {
 	return Db.Queryx(`
 		SELECT  
   			r.id,
@@ -56,14 +56,14 @@ func (id Campaign) Recipients() (*sqlx.Rows, error) {
  		WHERE r.removed=0 AND r.campaign_id=?`, id)
 }
 
-type CampaignUnsubscribed struct {
+type CampaignReportUnsubscribed struct {
 	Email     string          `db:"email" json:"email"`
 	At        string          `db:"at" json:"at"`
 	Data      sql.NullString  `db:"data" json:"-"`
 	DataValid json.RawMessage `json:"data"`
 }
 
-func (cq *CampaignUnsubscribed) Validate() {
+func (cq *CampaignReportUnsubscribed) Validate() {
 	if cq.Data.Valid {
 		cq.DataValid = []byte(cq.Data.String)
 	} else {
@@ -71,7 +71,7 @@ func (cq *CampaignUnsubscribed) Validate() {
 	}
 }
 
-func (id Campaign) Unsubscribed() (*sqlx.Rows, error) {
+func (id Campaign) ReportUnsubscribed() (*sqlx.Rows, error) {
 	return Db.Queryx(`
 		SELECT
         	u.email,
@@ -81,7 +81,7 @@ func (id Campaign) Unsubscribed() (*sqlx.Rows, error) {
 		WHERE u.campaign_id=?`, id)
 }
 
-type CampaignQuestion struct {
+type CampaignReportQuestion struct {
 	ID        int             `db:"id" json:"id"`
 	Email     string          `db:"email" json:"email"`
 	At        string          `db:"at" json:"at"`
@@ -89,7 +89,7 @@ type CampaignQuestion struct {
 	DataValid json.RawMessage `json:"data"`
 }
 
-func (cq *CampaignQuestion) Validate() {
+func (cq *CampaignReportQuestion) Validate() {
 	if cq.Data.Valid {
 		cq.DataValid = []byte(cq.Data.String)
 	} else {
@@ -97,7 +97,7 @@ func (cq *CampaignQuestion) Validate() {
 	}
 }
 
-func (id Campaign) Question() (*sqlx.Rows, error) {
+func (id Campaign) ReportQuestion() (*sqlx.Rows, error) {
 	return Db.Queryx(`
 		SELECT
 			q.recipient_id AS id,
@@ -107,4 +107,27 @@ func (id Campaign) Question() (*sqlx.Rows, error) {
 		FROM question q
 		LEFT JOIN recipient r ON q.recipient_id=r.id
 		WHERE r.campaign_id=?`, id)
+}
+
+type CampaignReportClicks struct {
+	ID    int    `db:"id" json:"id"`
+	Email string `db:"email" json:"email"`
+	At    string `db:"at" json:"at"`
+	URL   string `db:"url" json:"url"`
+}
+
+func (cq *CampaignReportClicks) Validate() {}
+
+func (id Campaign) ReportClicks() (*sqlx.Rows, error) {
+	return Db.Queryx(`
+		SELECT
+			r.id,
+			r.email,
+			j.date as at,
+			j.url
+		FROM jumping j INNER JOIN recipient r ON j.recipient_id=r.id
+		WHERE r.removed=0
+			AND j.url NOT IN ('`+OpenTrace+`','`+WebVersion+`','`+Unsubscribe+`')
+			AND j.campaign_id=?
+		ORDER BY r.id, id`, id)
 }
