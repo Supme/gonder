@@ -155,12 +155,12 @@ func (ua *UserAgent) Parse(str string) {
 	ua.IP = split[0]
 	if ua.isGoogle(ua.IP) {
 		ua.IsBot = true
-		ua.Platform = "Google bot"
+		ua.BrowserName = "Google bot"
 		return
 	}
 	if ua.isMailRu(ua.IP) {
 		ua.IsBot = true
-		ua.Platform = "MailRu bot"
+		ua.BrowserName = "MailRu bot"
 		return
 	}
 	agent := user_agent.New(split[1])

@@ -7,6 +7,7 @@ require (
 	github.com/alyu/configparser v0.0.0-20180327070247-c505e6011694
 	github.com/boombuler/barcode v1.0.0
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
+	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gorilla/websocket v1.4.1
 	github.com/gravitational/tail v1.0.1
@@ -25,3 +26,5 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
+
+go 1.13
