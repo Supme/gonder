@@ -2,7 +2,6 @@ package models
 
 import "strconv"
 
-
 type Recipient int
 
 func (id Recipient) IntID() int {
@@ -12,7 +11,6 @@ func (id Recipient) IntID() int {
 func (id Recipient) StringID() string {
 	return strconv.Itoa(id.IntID())
 }
-
 
 type RecipientStatus int
 

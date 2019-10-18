@@ -29,7 +29,8 @@ w2ui['bottom'].content('main', $().w2grid({
                     { id: 'recipients', text: w2utils.lang('Recipients')},
                     { id: 'clicks', text: w2utils.lang('Clicks')},
                     { id: 'unsubscribed', text: w2utils.lang('Unsubscribed')},
-                    { id: 'question', text: w2utils.lang('Question')}
+                    { id: 'question', text: w2utils.lang('Question')},
+                    { id: 'useragent', text: w2utils.lang('User agent')}
                 ],
                 text: function (item) {
                     var el   = this.get('reports:' + item.selected);
