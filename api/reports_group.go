@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"gonder/models"
 	"log"
 	"net/http"
@@ -68,7 +67,7 @@ func (rc reportsGroup) campaignsJSON(c *models.Group) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
@@ -125,7 +124,7 @@ func (rc reportsGroup) unsubscribedJSON(c *models.Group) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}

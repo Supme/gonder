@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"gonder/models"
 	"log"
 	"net/http"
@@ -63,11 +64,14 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		err = rc.userAgentJSON(&campaign)
 	default:
 		rc.w.WriteHeader(http.StatusNotImplemented)
+		rc.w.Header().Set("Content-Type", "application/json")
+		models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("this type not implemented"))
 	}
 	if err != nil {
 		log.Print(err)
 		rc.w.WriteHeader(http.StatusInternalServerError)
-		return
+		rc.w.Header().Set("Content-Type", "application/json")
+		models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("server error"))
 	}
 }
 
@@ -87,7 +91,7 @@ func (rc reportsCampaign) questionJSON(c *models.Campaign) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
@@ -144,7 +148,7 @@ func (rc reportsCampaign) unsubscribedJSON(c *models.Campaign) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
@@ -200,7 +204,7 @@ func (rc reportsCampaign) recipientsJSON(c *models.Campaign) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
