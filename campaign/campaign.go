@@ -77,6 +77,7 @@ func Run(logger *log.Logger) {
 			}(id)
 			continue
 		}
+		models.Prometheus.Campaign.Started.Set(float64(Sending.Count()))
 		time.Sleep(time.Second * 10)
 	}
 }
@@ -238,28 +239,13 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
 				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "stream").Inc()
 				continue
 			}
 
 			wg.Add(1)
 			_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
 			checkErr(err)
-
-			if !models.Config.RealSend {
-				var res string
-				wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
-				time.Sleep(wait)
-				if rand.Intn(2) == 0 {
-					res = "421 Test send"
-				} else {
-					res = "Ok Test send"
-				}
-				_, err := updateRecipientStatus.Exec(res, r.ID)
-				checkErr(err)
-				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, wait.String())
-				wg.Done()
-				continue
-			}
 
 			bldr := new(smtpSender.Builder)
 			bldr.SetFrom(c.FromName, c.FromEmail)
@@ -292,6 +278,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), models.GetStatusCodeFromSendResult(result.Err), "stream").Inc()
 				wg.Done()
 			})
 			if !models.Config.RealSend {
@@ -340,6 +327,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				checkErr(err)
 				campLog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "resend").Inc()
 				continue
 			}
 
@@ -378,6 +366,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), models.GetStatusCodeFromSendResult(result.Err), "resend").Inc()
 				wg.Done()
 			})
 			if !models.Config.RealSend {
@@ -407,8 +396,10 @@ func fakeSend(email smtpSender.Email) error {
 		time.Sleep(wait)
 		if rand.Intn(4) == 0 {
 			res = errors.New("421 Test send")
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", models.GetDomainFromEmail(email.To), "421", "test").Inc()
 		} else {
 			res = errors.New("Ok Test send")
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", models.GetDomainFromEmail(email.To), "250", "test").Inc()
 		}
 		atomic.AddInt64(&fakeStream, -1)
 		email.ResultFunc(smtpSender.Result{

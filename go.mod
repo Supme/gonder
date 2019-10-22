@@ -15,6 +15,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mssola/user_agent v0.5.0
+	github.com/prometheus/client_golang v1.2.1
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible
 	github.com/tdewolff/test v1.0.4 // indirect
@@ -24,7 +25,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
 
 go 1.13

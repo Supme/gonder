@@ -141,3 +141,22 @@ func NewLogfile(name string) (io.Writer, error) {
 
 	return logfile, nil
 }
+
+func GetDomainFromEmail(email string) string {
+	if splt := strings.Split(email, "@"); len(splt) == 2 {
+		return strings.ToLower(splt[1])
+	}
+	return ""
+}
+
+func GetStatusCodeFromSendResult(res error) string {
+	if res == nil {
+		return "250"
+	}
+	code := strings.SplitN(res.Error(), " ", 2)[0]
+	_, err := strconv.Atoi(code)
+	if err == nil {
+		return code
+	}
+	return res.Error()
+}

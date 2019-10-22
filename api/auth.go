@@ -45,7 +45,8 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 			//		}()
 			//	}
 			//}
-			time.Sleep(time.Second * 3)
+			models.Prometheus.Api.AuthRequest.Inc()
+			time.Sleep(time.Second * 1)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Gonder"`)
 			w.WriteHeader(401)
 			return
@@ -56,8 +57,9 @@ func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 		}
-		apiLog.Printf("host: %s user: '%s' %s %s", models.GetIP(r), auth.name, r.Method, uri)
-
+		ip := models.GetIP(r)
+		apiLog.Printf("host: %s user: '%s' %s %s", ip, auth.name, r.Method, uri)
+		models.Prometheus.Api.UserRequest.WithLabelValues(ip).Inc()
 		ctx := context.WithValue(r.Context(), "Auth", auth)
 		fn(w, r.WithContext(ctx))
 	}

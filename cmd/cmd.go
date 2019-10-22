@@ -79,6 +79,8 @@ func Run() {
 		os.Exit(1)
 	}
 
+	models.InitPrometheus()
+
 	apiLog, err := models.NewLogger(models.APILog)
 	if err != nil {
 		log.Print(err)

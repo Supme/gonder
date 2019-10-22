@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tdewolff/minify"
 	minifyCSS "github.com/tdewolff/minify/css"
 	minifyHTML "github.com/tdewolff/minify/html"
@@ -219,6 +220,8 @@ func Run(logger *log.Logger) {
 	api.HandleFunc("/status/ws/api.log", CheckAuth(apiStatus))
 	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmStatus))
 	api.HandleFunc("/status/ws/main.log", CheckAuth(mainStatus))
+
+	api.Handle("/metrics", promhttp.Handler())
 
 	apiLog.Println("API listening on port " + models.Config.APIPort + "...")
 	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.ServerPem, models.ServerKey, api))

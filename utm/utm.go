@@ -47,7 +47,7 @@ func Run(logger *log.Logger) {
 			log.Println(err)
 			return
 		}
-
+		models.Prometheus.UTM.Request.WithLabelValues("root").Inc()
 	})
 
 	// robots.txt
@@ -113,6 +113,7 @@ func Run(logger *log.Logger) {
 							log.Println(err)
 							return
 						}
+						models.Prometheus.UTM.Request.WithLabelValues("unsubscribe_success").Inc()
 					}
 				}
 				return
@@ -133,6 +134,7 @@ func Run(logger *log.Logger) {
 						log.Println(err)
 						return
 					}
+					models.Prometheus.UTM.Request.WithLabelValues("unsubscribe_accept").Inc()
 				}
 			}
 		}
@@ -186,6 +188,7 @@ func Run(logger *log.Logger) {
 				}
 
 			}
+			models.Prometheus.UTM.Request.WithLabelValues("unsubscribe_success").Inc()
 		}
 	})
 
@@ -211,6 +214,7 @@ func Run(logger *log.Logger) {
 		}
 		url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(data, 2)
 		http.Redirect(w, r, strings.TrimSpace(url[len(url)-1]), http.StatusFound)
+		models.Prometheus.UTM.Request.WithLabelValues("redirect").Inc()
 	})
 
 	utm.HandleFunc("/web/", func(w http.ResponseWriter, r *http.Request) {
@@ -246,6 +250,7 @@ func Run(logger *log.Logger) {
 		if err != nil {
 			log.Println(err)
 		}
+		models.Prometheus.UTM.Request.WithLabelValues("web").Inc()
 	})
 
 	// StatPng
@@ -276,6 +281,7 @@ func Run(logger *log.Logger) {
 			log.Println(err)
 			return
 		}
+		models.Prometheus.UTM.Request.WithLabelValues("open").Inc()
 	})
 
 	// QRcode generator
@@ -316,6 +322,7 @@ func Run(logger *log.Logger) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			models.Prometheus.UTM.Request.WithLabelValues("qr").Inc()
 		}
 	})
 
@@ -361,6 +368,7 @@ func Run(logger *log.Logger) {
 					return
 				}
 			}
+			models.Prometheus.UTM.Request.WithLabelValues("question").Inc()
 		}
 	})
 
