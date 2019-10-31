@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/csv"
 	"fmt"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -52,7 +53,7 @@ func NewCSVWriter(w io.Writer) *csv.Writer {
 	)
 	switch strings.TrimSpace(strings.ToLower(Config.APIPanelLocale)) {
 	case "ru-ru":
-		f = transform.NewWriter(w, charmap.Windows1251.NewEncoder())
+		f = transform.NewWriter(w, encoding.ReplaceUnsupported(charmap.Windows1251.NewEncoder()))
 		comma = ';'
 	default:
 		f = w

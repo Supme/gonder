@@ -103,6 +103,9 @@ func (rc reportsGroup) campaignsCSV(c *models.Group) error {
 			r.Start,
 			r.End,
 		})
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil
