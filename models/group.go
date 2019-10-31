@@ -48,11 +48,10 @@ func (cq *GroupUnsubscribed) Validate() {
 func (id Group) Unsubscribed() (*sqlx.Rows, error) {
 	return Db.Queryx(`
 		SELECT
-        	u.email,
         	u.campaign_id,
+			u.email,
 			u.date as "at",
 			`+SQLKeyValueTableToJSON("d.name", "d.value", "unsubscribe_extra d", "d.unsubscribe_id=u.id")+` AS "data"
 		FROM unsubscribe u
 		WHERE u.group_id=?`, id)
-
 }
