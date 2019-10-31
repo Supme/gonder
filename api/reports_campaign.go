@@ -334,7 +334,7 @@ func (rc reportsCampaign) userAgentCSV(c *models.Campaign) error {
 	if err != nil {
 		return err
 	}
-	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_clicks.csv")
+	rc.w.Header().Set("Content-Disposition", "attachment; filename=campaign_"+c.StringID()+"_uac.csv")
 	rc.w.Header().Set("Content-Type", "text/csv")
 	csvWriter := models.NewCSVWriter(rc.w)
 	err = csvWriter.Write([]string{
