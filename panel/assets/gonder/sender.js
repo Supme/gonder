@@ -13,6 +13,7 @@ $().w2grid({
         { field: 'email', caption: w2utils.lang('Email'), size: '50%' },
         { field: 'name', caption: w2utils.lang('Name'), size: '50%'},
         { field: 'utmURL', hidden: true },
+        { field: 'bimiSelector', hidden: true },
         { field: 'dkimSelector', hidden: true },
         { field: 'dkimKey', hidden: true },
         { field: 'dkimUse', hidden: true }
@@ -24,7 +25,7 @@ $().w2grid({
         var form = w2ui.senderForm;
         event.onComplete = function () {
             var sel = grid.getSelection();
-            if (sel.length == 1) {
+            if (sel.length === 1) {
                 form.recid  = sel[0];
                 form.record = $.extend(true, {}, grid.get(sel[0]));
                 form.refresh();
@@ -42,6 +43,7 @@ $().w2form({
         { name: 'name', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40"' } },
         { name: 'email', type: 'email', required: true, html: { caption: w2utils.lang('Email'), attr: 'size="30"' } },
         { name: 'utmURL', type: 'text', html: { caption: w2utils.lang('Utm url'), attr: 'size="40" maxlength="100"' } },
+        { name: 'bimiSelector', type: 'text', html: { caption: w2utils.lang('BIMI Selector'), attr: 'size="20" maxlength="20"' } },
         { name: 'dkimSelector', type: 'text', html: { caption: w2utils.lang('DKIM Selector'), attr: 'size="20" maxlength="20"' } },
         { name: 'dkimKey', type: 'textarea', html: { caption: w2utils.lang('DKIM Private Key'), attr: 'style="width: 420px; height: 280px"' } },
         { name: 'dkimUse', type: 'checkbox', html: { caption: w2utils.lang('Use DKIM') } }
@@ -55,7 +57,7 @@ $().w2form({
             if (errors.length > 0) return;
             var cmd;
             var i = this;
-            if (i.recid == 0) {
+            if (i.recid === 0) {
                 cmd = 'add'
             } else {
                 cmd = 'save'
@@ -67,10 +69,11 @@ $().w2form({
                 data: {"request":
                     JSON.stringify({
                         "cmd": cmd,
-                        "id": cmd == 'save'?parseInt(i.record.recid):parseInt(w2ui['group'].getSelection()[0]),
+                        "id": cmd === 'save'?parseInt(i.record.recid):parseInt(w2ui['group'].getSelection()[0]),
                         "email": i.record.email,
                         "name": i.record.name,
                         "utmURL": i.record.utmURL,
+                        "bimiSelector": i.record.bimiSelector,
                         "dkimSelector": i.record.dkimSelector,
                         "dkimKey": i.record.dkimKey,
                         "dkimUse": i.record.dkimUse
@@ -78,10 +81,10 @@ $().w2form({
                 )}
             }).done(function (data) {
 
-                if (data['status'] == 'error') {
+                if (data['status'] === 'error') {
                     w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                 } else {
-                    if (i.recid == 0) {
+                    if (i.recid === 0) {
                         i.record.recid = data["recid"];
                         w2ui.senderGrid.add($.extend(true, { recid: data["recid"] }, i.record));
                     } else {

@@ -13,6 +13,7 @@ type sndr struct {
 	Email        string `json:"email"`
 	Name         string `json:"name"`
 	UtmURL       string `json:"utmURL"`
+	BimiSelector string `json:"bimiSelector"`
 	DkimSelector string `json:"dkimSelector"`
 	DkimKey      string `json:"dkimKey"`
 	DkimUse      bool   `json:"dkimUse"`
@@ -31,7 +32,7 @@ func sender(req request) (js []byte, err error) {
 			var f sndr
 			var fs sndrs
 			fs.Records = []sndr{}
-			query, err := models.Db.Query("SELECT `id`, `email`, `name`, `utm_url`, `dkim_selector`, `dkim_key`, `dkim_use` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", req.ID, req.Limit, req.Offset)
+			query, err := models.Db.Query("SELECT `id`, `email`, `name`, `utm_url`, `bimi_selector`, `dkim_selector`, `dkim_key`, `dkim_use` FROM `sender` WHERE `group_id`=? LIMIT ? OFFSET ?", req.ID, req.Limit, req.Offset)
 			if err != nil {
 				log.Println(err)
 				return js, err
@@ -39,7 +40,7 @@ func sender(req request) (js []byte, err error) {
 			defer query.Close()
 
 			for query.Next() {
-				err = query.Scan(&f.ID, &f.Email, &f.Name, &f.UtmURL, &f.DkimSelector, &f.DkimKey, &f.DkimUse)
+				err = query.Scan(&f.ID, &f.Email, &f.Name, &f.UtmURL, &f.BimiSelector, &f.DkimSelector, &f.DkimKey, &f.DkimUse)
 				if err != nil {
 					log.Println(err)
 					return nil, err
@@ -68,7 +69,7 @@ func sender(req request) (js []byte, err error) {
 				return js, err
 			}
 			if req.auth.GroupRight(group) {
-				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=?, `utm_url`=?, `dkim_selector`=?, `dkim_key`=?, `dkim_use`=? WHERE `id`=?", req.Email, req.Name, req.UtmURL, req.DkimSelector, req.DkimKey, req.DkimUse, req.ID)
+				_, err = models.Db.Exec("UPDATE `sender` SET `email`=?, `name`=?, `utm_url`=?, `bimi_selector`=?, `dkim_selector`=?, `dkim_key`=?, `dkim_use`=? WHERE `id`=?", req.Email, req.Name, req.UtmURL, req.BimiSelector, req.DkimSelector, req.DkimKey, req.DkimUse, req.ID)
 				if err != nil {
 					log.Println(err)
 					return js, err
@@ -81,7 +82,7 @@ func sender(req request) (js []byte, err error) {
 
 	case "add":
 		if req.auth.Right("save-groups") && req.auth.GroupRight(req.ID) {
-			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `utm_url`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ? ,?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.UtmURL, req.DkimSelector, req.DkimKey, req.DkimUse)
+			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `utm_url`, `bimi_selector`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ? ,?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.UtmURL, req.BimiSelector, req.DkimSelector, req.DkimKey, req.DkimUse)
 			if err != nil {
 				log.Println(err)
 				return js, err

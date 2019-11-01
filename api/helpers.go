@@ -59,6 +59,8 @@ type request struct {
 
 	Recipients recips `json:"recipients,omitempty"`
 
+	BimiSelector string `json:"bimiSelector"`
+
 	DkimSelector string `json:"dkimSelector"`
 	DkimKey      string `json:"dkimKey"`
 	DkimUse      int8   `json:"dkimUse"`

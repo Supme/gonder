@@ -27,6 +27,7 @@ type campaign struct {
 	FromEmail       string
 	FromName        string
 	FromDomain      string
+	BimiSelector    string
 	DkimSelector    string
 	DkimPrivateKey  []byte
 	DkimUse         bool
@@ -91,10 +92,11 @@ func getCampaign(id string) (campaign, error) {
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`, t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`,t2.`bimi_selector`,t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
 		&c.FromName,
 		&utmURL,
+		&c.BimiSelector,
 		&c.DkimSelector,
 		&c.DkimPrivateKey,
 		&c.DkimUse,
@@ -249,6 +251,9 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 
 			bldr := new(smtpSender.Builder)
 			bldr.SetFrom(c.FromName, c.FromEmail)
+			if c.BimiSelector != "" {
+				bldr.AddHeader("BIMI-Selector: v=BIMI1; s="+c.BimiSelector+";")
+			}
 			bldr.SetTo(r.Name, r.Email)
 			bldr.AddHeader(
 				"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.utmURL, "mail", r.Params)+"\nPrecedence: bulk",
@@ -337,6 +342,9 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 
 			bldr := new(smtpSender.Builder)
 			bldr.SetFrom(c.FromName, c.FromEmail)
+			if c.BimiSelector != "" {
+				bldr.AddHeader("BIMI-Selector: v=BIMI1; s="+c.BimiSelector+";")
+			}
 			bldr.SetTo(r.Name, r.Email)
 			bldr.AddHeader(
 				"List-Unsubscribe: "+r.unsubscribeEmailHeaderURL()+"\nPrecedence: bulk",
