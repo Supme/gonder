@@ -31,6 +31,7 @@ and success response example:
 - [Helpers](#Helpers)
 - [Recipients](#Recipients)
 - [Reports](#Reports)
+- [AdvancedReports](#AdvancedReports)
 
 ### Groups
 ___
@@ -847,5 +848,118 @@ response show count clicks to links
   }
 ]
 ```
-
 </details>
+
+
+
+### AdvancedReports
+___
+
+All responses can be in json (default) or csv format. For csv use "format=csv" parameter by request.
+
+<details> 
+
+<summary>List campaigns in group</summary>
+
+request example ```/report/group?id=3&type=campaigns```
+
+response:
+```json
+{
+ "status":"ok",
+ "message":[
+  {
+   "id":1,
+   "name":"Test campaign",
+   "subject":"⚡Gonder test",
+   "start":"2019-10-08 11:00:00",
+   "end":"2019-11-01 18:00:00"
+  },{
+   "id":2,
+   "name":"Test campaign 2",
+   "subject":"Test 2",
+   "start":"2019-04-22 14:30:00",
+   "end":"2019-10-24 15:00:00"
+  }
+ ]
+}
+```
+</details>
+
+<details> 
+
+<summary>Unsubscribed recipient in group</summary>
+
+request example ```/report/group?id=3&type=unsubscribed```
+
+response:
+```json
+{
+ "status":"ok",
+ "message":[
+  {
+   "campaign_id":1,
+   "email":"alice@domain.tld",
+   "at":"2019-10-03 12:13:49",
+   "data":null
+  },{
+   "campaign_id":2,"email":"bob@domain.tld",
+   "at":"2019-10-03 13:28:12",
+   "data":{"Unsubscribed":"from header link"}
+  }
+ ]
+}
+```
+</details>
+
+<details> 
+
+<summary>Recipients with status in campaign</summary>
+
+request example ```/report/campaign?id=1&type=recipients```
+
+response:
+```json
+{
+ "status":"ok",
+ "message":[
+  {
+   "id":127,
+   "email":"alice@domain.tld",
+   "name":"Alice",
+   "at":"2019-10-24 14:43:01",
+   "status":"Ok",
+   "open":false,
+   "data":{"Age":"27","Gender":"f"}
+  },{
+   "id":128,
+   "email":"bob@domain.tld",
+   "name":"Bob",
+   "at":"2019-10-24 14:43:02",
+   "status":"Ok",
+   "open":true,
+   "data":{"Age":"29","Gender":"m"}
+  }
+ ]
+}
+```
+</details>
+
+<details> 
+
+<summary>Recipients clicks (jump to url) in campaign</summary>
+
+request example ```/report/campaign?id=3&type=clicks```
+
+response:
+```json
+ToDo
+```
+</details>
+
+ToDo:
+```
+/report/campaign?id=1&type=unsubscribed
+/report/campaign?id=1&type=question
+/report/campaign?id=2&type=useragent
+```
