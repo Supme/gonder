@@ -874,7 +874,8 @@ response:
    "subject":"⚡Gonder test",
    "start":"2019-10-08 11:00:00",
    "end":"2019-11-01 18:00:00"
-  },{
+  },
+  {
    "id":2,
    "name":"Test campaign 2",
    "subject":"Test 2",
@@ -902,8 +903,10 @@ response:
    "email":"alice@domain.tld",
    "at":"2019-10-03 12:13:49",
    "data":null
-  },{
-   "campaign_id":2,"email":"bob@domain.tld",
+  },
+  {
+   "campaign_id":2,
+   "email":"bob@domain.tld",
    "at":"2019-10-03 13:28:12",
    "data":{"Unsubscribed":"from header link"}
   }
@@ -931,7 +934,8 @@ response:
    "status":"Ok",
    "open":false,
    "data":{"Age":"27","Gender":"f"}
-  },{
+  },
+  {
    "id":128,
    "email":"bob@domain.tld",
    "name":"Bob",
@@ -953,13 +957,126 @@ request example ```/report/campaign?id=3&type=clicks```
 
 response:
 ```json
-ToDo
+{
+ "status":"ok",
+ "message":[
+  {
+   "id":21,
+   "email":"alice@domain.tld",
+   "at":"2019-06-17 13:54:37",
+   "url":"web_version"
+  },
+  {
+   "id":21,
+   "email":"bob@domain.tld",
+   "at":"2019-06-17 14:24:23",
+   "url":"[Gonder git] https://github.com/Supme/gonder/"
+  }
+ ]
+}
 ```
 </details>
 
-ToDo:
+<details>
+
+<summary>Unsubscribed recipients clicks in campaign</summary>
+
+request example ```/report/campaign?id=1&type=unsubscribed```
+
+response:
+```json
+{
+ "status":"ok",
+ "message":[
+  {
+   "email":"alice@domain.tld",
+   "at":"2019-10-03 12:13:49",
+   "data":null
+  },
+  {
+   "email":"bob@domain.tld",
+   "at":"2019-10-03 13:28:12",
+   "data":{"Unsubscribed":"from header link"}
+  }
+ ]
+}
 ```
-/report/campaign?id=1&type=unsubscribed
-/report/campaign?id=1&type=question
-/report/campaign?id=2&type=useragent
+</details>
+
+<details>
+
+<summary>Recipients answer the questions in campaign</summary>
+
+request example ```/report/campaign?id=1&type=question```
+
+response:
+```json
+{
+ "status":"ok",
+ "message":[
+  {
+   "id":5,
+   "email":"alice@domain.tld",
+   "at":"2019-04-05 10:28:17",
+   "data":{"v2":"emailmarketing","v3":"powerBI"}
+  },
+  {
+   "id":9,
+   "email":"bob@domain.tld",
+   "at":"2019-04-09 09:45:34",
+   "data":{"v2":"emailmarketing","v4":"Push-уведомления"}
+  }
+ ]
+}
 ```
+</details>
+
+<details>
+
+<summary>Recipients user agent (email client and web browser)</summary>
+
+request example ```/report/campaign?id=2&type=useragent```
+
+response:
+```json
+{
+"status":"ok",
+ "message":[
+  {
+   "id":44,
+   "email":"alice@domain.tld",
+   "name":"Alice",
+   "client":{
+    "ip":"77.88.31.235",
+    "is_mobile":false,
+    "is_bot":true,
+    "platform":"",
+    "os":"",
+    "engine_name":"",
+    "engine_version":"",
+    "browser_name":"YandexImageResizer",
+    "browser_version":"2.0"
+    },
+   "browser":null
+  },
+  {
+   "id":45,
+   "email":"bob@domain.tld",
+   "name":"Bob",
+     "client":null,
+     "browser":{
+      "ip":"1.2.3.4",
+      "is_mobile":false,
+      "is_bot":false,
+      "platform":"Windows",
+      "os":"Windows 7",
+      "engine_name":"AppleWebKit",
+      "engine_version":"537.36",
+      "browser_name":"Chrome",
+      "browser_version":"76.0.3809.100"
+     }
+  }
+ ]
+}
+```
+</details>
