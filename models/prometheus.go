@@ -32,7 +32,7 @@ func InitPrometheus() {
 	Prometheus.Campaign.SendResult = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "gonder_campaign_send_result",
-		},[]string{"campaign", "domain", "status", "type"})
+		},[]string{"campaign", "status", "type"})
 
 	Prometheus.UTM.Request = prometheus.NewCounterVec(
 		prometheus.CounterOpts{

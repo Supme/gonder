@@ -283,7 +283,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), models.GetStatusCodeFromSendResult(result.Err), "stream").Inc()
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "stream").Inc()
 				wg.Done()
 			})
 			if !models.Config.RealSend {
@@ -374,7 +374,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				_, err := updateRecipientStatus.Exec(res, result.ID)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), models.GetStatusCodeFromSendResult(result.Err), "resend").Inc()
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "resend").Inc()
 				wg.Done()
 			})
 			if !models.Config.RealSend {
