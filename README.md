@@ -9,6 +9,8 @@ Tools mass email lists, personalization, logging receipt, opening referrals.
 
 Written on Golang
 
+![editor_screen](./doc/editor.png)
+
 ### Возможности:
 * Многопоточная рассылка.
 * Профили рассылки (выбор сетевого интерфейса, количества потоков рассылки, паузы между досылками писем по одному и количество попыток доотправок).
