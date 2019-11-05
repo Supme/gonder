@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"gonder/models"
 	"log"
@@ -264,7 +263,7 @@ func (rc reportsCampaign) clicksJSON(c *models.Campaign) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
@@ -321,7 +320,7 @@ func (rc reportsCampaign) userAgentJSON(c *models.Campaign) error {
 		res = append(res, r)
 	}
 	rc.w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(rc.w).Encode(res)
+	err = models.JSONResponse{}.OkWriter(rc.w, res)
 	if err != nil {
 		return err
 	}
