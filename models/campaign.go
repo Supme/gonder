@@ -130,7 +130,7 @@ func (id Campaign) ReportClicks() (*sqlx.Rows, error) {
 			j.url
 		FROM jumping j INNER JOIN recipient r ON j.recipient_id=r.id
 		WHERE r.removed=0
-			AND j.url NOT IN ('`+OpenTrace+`','`+Unsubscribe+`')
+			AND j.url <> '`+Unsubscribe+`'
 			AND j.campaign_id=?
 		ORDER BY r.id, id`, id)
 }
