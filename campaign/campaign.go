@@ -127,7 +127,6 @@ func getCampaign(id string) (campaign, error) {
 	}
 
 	prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
-	//fmt.Println(c.templateHTML)
 	c.templateHTMLFunc = template.New("HTML")
 	c.templateTextFunc = template.New("Text")
 
@@ -221,9 +220,6 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	checkErr(err)
 	defer query.Close()
 
-	updateRecipientStatus, err := c.prepareQueryUpdateRecipientStatus()
-	checkErr(err)
-
 	wg := &sync.WaitGroup{}
 	for query.Next() {
 		select {
@@ -238,7 +234,8 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
-				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
+				//_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
+				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
 				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "stream").Inc()
@@ -246,7 +243,8 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			}
 
 			wg.Add(1)
-			_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			//_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
 			bldr := new(smtpSender.Builder)
@@ -280,7 +278,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				} else {
 					res = result.Err.Error()
 				}
-				_, err := updateRecipientStatus.Exec(res, result.ID)
+				err = models.RecipientGetByStringID(result.ID).UpdateRecipientStatus(res)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
 				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "stream").Inc()
@@ -312,9 +310,6 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 		}
 	}()
 
-	updateRecipientStatus, err := c.prepareQueryUpdateRecipientStatus()
-	checkErr(err)
-
 	wg := &sync.WaitGroup{}
 	for query.Next() {
 		select {
@@ -329,7 +324,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
-				_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
+				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
 				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "resend").Inc()
@@ -337,7 +332,8 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			}
 
 			wg.Add(1)
-			_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			//_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
+			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
 			bldr := new(smtpSender.Builder)
@@ -371,7 +367,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				} else {
 					res = result.Err.Error()
 				}
-				_, err := updateRecipientStatus.Exec(res, result.ID)
+				err = models.RecipientGetByStringID(result.ID).UpdateRecipientStatus(res)
 				checkErr(err)
 				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
 				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "resend").Inc()
