@@ -211,9 +211,9 @@ End:
 	close(c.Finish)
 }
 
-func (c *campaign) prepareQueryUpdateRecipientStatus() (*sql.Stmt, error) {
-	return models.Db.Prepare("UPDATE recipient SET status=?, date=NOW() WHERE id=?")
-}
+//func (c *campaign) prepareQueryUpdateRecipientStatus() (*sql.Stmt, error) {
+//	return models.Db.Prepare("UPDATE recipient SET status=?, date=NOW() WHERE id=?")
+//}
 
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.ID)
@@ -238,12 +238,10 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "stream").Inc()
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, "unsubscribed", "stream").Inc()
 				continue
 			}
 
-			wg.Add(1)
-			//_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
 			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
@@ -271,19 +269,10 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			if c.DkimUse {
 				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
 			}
-			email := bldr.Email(r.ID, func(result smtpSender.Result) {
-				var res string
-				if result.Err == nil {
-					res = "Ok"
-				} else {
-					res = result.Err.Error()
-				}
-				err = models.RecipientGetByStringID(result.ID).UpdateRecipientStatus(res)
-				checkErr(err)
-				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "stream").Inc()
-				wg.Done()
-			})
+
+			email := bldr.Email(r.ID, GetResultFunc(wg, SendTypeStream, c.ID, r.ID, r.Email))
+
+			wg.Add(1)
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
 			} else {
@@ -327,7 +316,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetDomainFromEmail(r.Email), "unsubscribed", "resend").Inc()
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, "unsubscribed", "resend").Inc()
 				continue
 			}
 
@@ -360,19 +349,9 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			if c.DkimUse {
 				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
 			}
-			email := bldr.Email(r.ID, func(result smtpSender.Result) {
-				var res string
-				if result.Err == nil {
-					res = "Ok"
-				} else {
-					res = result.Err.Error()
-				}
-				err = models.RecipientGetByStringID(result.ID).UpdateRecipientStatus(res)
-				checkErr(err)
-				campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", c.ID, r.ID, r.Email, res, result.Duration.String())
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, models.GetStatusCodeFromSendResult(result.Err), "resend").Inc()
-				wg.Done()
-			})
+
+			email := bldr.Email(r.ID, GetResultFunc(wg, SendTypeResend, c.ID, r.ID, r.Email))
+
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
 			} else {
@@ -400,10 +379,10 @@ func fakeSend(email smtpSender.Email) error {
 		time.Sleep(wait)
 		if rand.Intn(4) == 0 {
 			res = errors.New("421 Test send")
-			models.Prometheus.Campaign.SendResult.WithLabelValues("", models.GetDomainFromEmail(email.To), "421", "test").Inc()
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", "421", "test").Inc()
 		} else {
 			res = errors.New("Ok Test send")
-			models.Prometheus.Campaign.SendResult.WithLabelValues("", models.GetDomainFromEmail(email.To), "250", "test").Inc()
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", "250", "test").Inc()
 		}
 		atomic.AddInt64(&fakeStream, -1)
 		email.ResultFunc(smtpSender.Result{

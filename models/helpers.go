@@ -143,7 +143,8 @@ func NewLogfile(name string) (io.Writer, error) {
 	return logfile, nil
 }
 
-func GetDomainFromEmail(email string) string {
+// ToDo wrong algoritm for RecipientName <name@domain.tld>
+func Bad_GetDomainFromEmail(email string) string {
 	if splt := strings.Split(email, "@"); len(splt) == 2 {
 		return strings.ToLower(splt[1])
 	}

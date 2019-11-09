@@ -3,10 +3,41 @@ package campaign
 import (
 	"bytes"
 	"database/sql"
+	"github.com/Supme/smtpSender"
 	"gonder/models"
 	"log"
 	"sync"
 )
+
+type SendType string
+
+const (
+	SendTypeStream SendType = "stream"
+	SendTypeResend SendType = "resend"
+)
+
+func (s SendType) String() string {
+	return string(s)
+}
+
+func GetResultFunc(wg *sync.WaitGroup, sendType SendType, campaignID, recipientID, recipientEmail string) func(result smtpSender.Result){
+	return func(result smtpSender.Result) {
+		var res string
+		if result.Err == nil {
+			res = "Ok"
+		} else {
+			res = result.Err.Error()
+		}
+		err := models.RecipientGetByStringID(result.ID).UpdateRecipientStatus(res)
+		if err != nil {
+			log.Print(err)
+		}
+		campLog.Printf("Campaign %s for recipient id %s email %s is %s send time %s", campaignID, recipientID, recipientEmail, res, result.Duration.String())
+		models.Prometheus.Campaign.SendResult.WithLabelValues(campaignID, models.GetStatusCodeFromSendResult(result.Err), sendType.String()).Inc()
+		wg.Done()
+	}
+}
+
 
 type sending struct {
 	campaigns map[string]campaign

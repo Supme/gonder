@@ -74,7 +74,7 @@ func init() {
 func apiHandler(fn http.HandlerFunc, checkAuth bool) http.Handler {
 	var handler http.Handler
 	if checkAuth {
-		handler = CheckAuth(fn)
+		handler = AuthHandler(fn)
 	} else {
 		handler = fn
 	}
@@ -216,10 +216,10 @@ func Run(logger *log.Logger) {
 
 	api.HandleFunc("/logout", Logout)
 
-	api.HandleFunc("/status/ws/campaign.log", CheckAuth(campaignStatus))
-	api.HandleFunc("/status/ws/api.log", CheckAuth(apiStatus))
-	api.HandleFunc("/status/ws/utm.log", CheckAuth(utmStatus))
-	api.HandleFunc("/status/ws/main.log", CheckAuth(mainStatus))
+	api.HandleFunc("/status/ws/campaign.log", AuthHandler(campaignStatus))
+	api.HandleFunc("/status/ws/api.log", AuthHandler(apiStatus))
+	api.HandleFunc("/status/ws/utm.log", AuthHandler(utmStatus))
+	api.HandleFunc("/status/ws/main.log", AuthHandler(mainStatus))
 
 	api.Handle("/metrics", promhttp.Handler())
 

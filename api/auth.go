@@ -18,10 +18,10 @@ type Auth struct {
 	unitID int64
 }
 
-func CheckAuth(fn http.HandlerFunc) http.HandlerFunc {
-	auth := new(Auth)
+func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var authorize bool
+		auth := new(Auth)
 		user, password, _ := r.BasicAuth()
 		auth.userID, auth.unitID, authorize = check(user, password)
 		// ToDo rate limit bad auth or/and user requests
