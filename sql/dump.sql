@@ -1,24 +1,32 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 
+CREATE TABLE `version` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `number` varchar(20) NOT NULL,
+  `at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO `version` (`number`) VALUES ('0.16.3');
+
 CREATE TABLE IF NOT EXISTS `attachment` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `campaign_id` int(11) NOT NULL,
   `path` text NOT NULL,
   PRIMARY KEY (id),
   KEY `campaign_id` (`campaign_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `auth_right` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(32) NOT NULL,
   PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `auth_unit` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` text NOT NULL,
   PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `auth_unit_right` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -27,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `auth_unit_right` (
   PRIMARY KEY (id),
   KEY `auth_unit_id` (`auth_unit_id`),
   KEY `auth_right_id` (`auth_right_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `auth_user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -35,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `auth_user` (
   `name` text NOT NULL,
   `password` text NOT NULL COMMENT 'sha256',
   PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `auth_user_group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -44,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `auth_user_group` (
   PRIMARY KEY (id),
   KEY `auth_user_id` (`auth_user_id`),
   KEY `group_id` (`group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `campaign` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -63,14 +71,14 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   PRIMARY KEY (id),
   KEY `group_id` (`group_id`),
   KEY `from_id` (`sender_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `group` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
   `template` VARCHAR(100),
   PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `jumping` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -81,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `jumping` (
   PRIMARY KEY (id),
   KEY `campaign_id` (`campaign_id`),
   KEY `recipient_id` (`recipient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `parameter` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -90,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `parameter` (
   `value` text NOT NULL,
   PRIMARY KEY (id),
   KEY `recipient_id` (`recipient_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `recipient` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -105,7 +113,7 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   PRIMARY KEY (id),
   KEY `campaign_id` (`campaign_id`),
   INDEX `date_status` (`date`, `status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sender` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -113,12 +121,13 @@ CREATE TABLE IF NOT EXISTS `sender` (
   `email` VARCHAR(100) NOT NULL,
   `name` VARCHAR(100) NOT NULL,
   `utm_url` VARCHAR(100) NOT NULL DEFAULT '',
+  `bimi_selector` VARCHAR(20) NOT NULL DEFAULT '',
   `dkim_selector` VARCHAR(20) NOT NULL,
   `dkim_key` VARCHAR(2000) NOT NULL,
   `dkim_use` BOOLEAN NOT NULL,
   PRIMARY KEY (id),
   KEY `group_id` (`group_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `unsubscribe` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -129,7 +138,7 @@ CREATE TABLE IF NOT EXISTS `unsubscribe` (
   PRIMARY KEY (id),
   KEY `group_id` (`group_id`),
   KEY `campaign_id` (`campaign_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `unsubscribe_extra` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -138,7 +147,7 @@ CREATE TABLE `unsubscribe_extra` (
   `value` text NOT NULL,
   PRIMARY KEY (id),
   KEY `unsubscribe_id` (`unsubscribe_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `question` (
   `id` int(11) NOT NULL,
@@ -231,7 +240,6 @@ ALTER TABLE `question_data`
 ALTER TABLE `question_data`
   ADD CONSTRAINT `question_data_ibfk_1`
     FOREIGN KEY (`question_id`) REFERENCES `question` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
 
 INSERT INTO `auth_right` (`id`, `name`) VALUES
   (1, 'get-groups'),
