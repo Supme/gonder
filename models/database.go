@@ -44,7 +44,7 @@ func CheckDb() error {
 	}
 
 	// in the future, here, if necessary, will check the version of the application and the database
-	if version.Compare(Version, dbVersion, ">") {
+	if version.Compare(Version, dbVersion, "<") {
 		if err = dbQueryFrom("sql/update/0.16.3.sql"); err != nil {
 			return fmt.Errorf("update database to version %s: %s", Version, err)
 		}
