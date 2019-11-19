@@ -1,4 +1,4 @@
-var cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateHTML"), {
+var cmHTML = CodeMirror.fromTextArea(document.getElementById("campaignTemplateHTML"), {
     lineNumbers: true,
     mode: {
         name: "htmlmixed",
@@ -8,6 +8,15 @@ var cm = CodeMirror.fromTextArea(document.getElementById("campaignTemplateHTML")
     theme: "dracula"
 });
 
+var cmAMP = CodeMirror.fromTextArea(document.getElementById("campaignTemplateAMP"), {
+    lineNumbers: true,
+    mode: {
+        name: "htmlmixed",
+        scriptTypes: [{matches: /\/x-handlebars-template|\/x-mustache/i,mode: null}]
+    },
+    selectionPointer: true,
+    theme: "dracula"
+});
 
 $('#templateTabs').w2tabs({
     name: 'templateTabs',
@@ -16,6 +25,7 @@ $('#templateTabs').w2tabs({
         { id: 'preview', caption: w2utils.lang('Preview') },
         { id: 'html', caption: w2utils.lang('HTML') },
         { id: 'text', caption: w2utils.lang('Text') },
+        { id: 'amp', caption: w2utils.lang('AMP') },
         { id: 'help', caption: w2utils.lang('Help') }
     ],
     onClick: function (event) {
@@ -30,6 +40,9 @@ $('#templateTabs').w2tabs({
             case "text":
                 templateShowText();
                 break;
+            case "amp":
+                templateShowAMP();
+                break;
             case "help":
                 templateShowHelp();
                 break;
@@ -37,35 +50,51 @@ $('#templateTabs').w2tabs({
     }
 });
 
+
+function templateShowAMP() {
+    $("#campaignTemplatePreviewContainer").hide();
+    $("#campaignTemplateHelpContainer").hide();
+    $("#campaignTemplateHTMLContainer").hide();
+    $("#campaignTemplateTextContainer").hide();
+    $("#campaignTemplateAMPContainer").show();
+    cmHTML.refresh();
+    cmAMP.refresh();
+}
+
 function templateShowText() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
     $("#campaignTemplateHTMLContainer").hide();
+    $("#campaignTemplateAMPContainer").hide();
     $("#campaignTemplateTextContainer").show();
-    cm.refresh();
+    cmHTML.refresh();
+    cmAMP.refresh();
 }
 
 function templateShowHTML() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
     $("#campaignTemplateTextContainer").hide();
+    $("#campaignTemplateAMPContainer").hide();
     $("#campaignTemplateHTMLContainer").show();
-    cm.refresh();
+    cmHTML.refresh();
+    cmAMP.refresh();
 }
 
 function templateShowPreview() {
     $("#campaignTemplateHTMLContainer").hide();
     $("#campaignTemplateHelpContainer").hide();
     $("#campaignTemplateTextContainer").hide();
-    $('#campaignTemplatePreview').html(cm.getValue());
+    $("#campaignTemplateAMPContainer").hide();
+    $('#campaignTemplatePreview').html(cmHTML.getValue());
     $("#campaignTemplatePreviewContainer").show();
-
 }
 
 function templateShowHelp() {
     $("#campaignTemplatePreviewContainer").hide();
     $("#campaignTemplateHTMLContainer").hide();
     $("#campaignTemplateTextContainer").hide();
+    $("#campaignTemplateAMPContainer").hide();
     $("#campaignTemplateHelpContainer").show();
 }
 
@@ -102,7 +131,7 @@ function MakeTextFromHTML(withImg) {
     }
 
     $("#campaignTemplateText").val(
-        htmlToPlainText(cm.getValue().replace(/(?=<!--)([\s\S]*?)-->/g, ''), config).replace(/(&\S{2,16};)/g, function(str, num) {
+        htmlToPlainText(cmHTML.getValue().replace(/(?=<!--)([\s\S]*?)-->/g, ''), config).replace(/(&\S{2,16};)/g, function(str, num) {
             return $("<span />", { html: num }).text();
         })
     );

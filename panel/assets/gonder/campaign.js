@@ -59,7 +59,7 @@ w2ui['bottom'].content('main', $().w2grid({
         }
     },
 
-    onAdd: function (event) {
+    onAdd: function () {
         addCampaign(parseInt(w2ui['group'].getSelection()[0]));
     },
 
@@ -80,7 +80,7 @@ function cloneCampaign(campaignId) {
         w2alert(w2utils.lang('Select campaign for clone.'));
     } else {
         w2confirm(w2utils.lang('Are you sure you want to clone a campaign?'), function (btn) {
-            if (btn == 'Yes') {
+            if (btn === 'Yes') {
                 var id, name;
                 $.ajax({
                     type: "GET",
@@ -89,7 +89,7 @@ function cloneCampaign(campaignId) {
                     data: {"request": JSON.stringify({"cmd": "clone", "id": campaignId})},
                     url: '/api/campaigns'
                 }).done(function(data) {
-                    if (data['status'] == 'error') {
+                    if (data['status'] === 'error') {
                         w2alert(w2utils.lang(data["message"]));
                     } else {
                         id = data["recid"];
@@ -115,7 +115,7 @@ function addCampaign(groupId) {
             data: {"request": JSON.stringify({"cmd": "add", "id": groupId})},
             url: '/api/campaigns'
         }).done(function(data) {
-            if (data['status'] == 'error') {
+            if (data['status'] === 'error') {
                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
             } else {
                 id = data["recid"];
@@ -146,10 +146,12 @@ function getCampaign(recid, name) {
     $("#campaignCompressHTML").prop("checked", campaignData.compressHTML);
     $("#campaignTemplateHTML").val(campaignData.templateHTML);
     $("#campaignTemplateText").val(campaignData.templateText);
+    $("#campaignTemplateAMP").val(campaignData.templateAMP);
 
     setAcceptSend(campaignData.accepted);
 
-    cm.setValue(campaignData.templateHTML);
+    cmHTML.setValue(campaignData.templateHTML);
+    cmAMP.setValue(campaignData.templateAMP);
 
     w2ui['recipient'].postData["campaign"] = parseInt(recid);
     w2ui.layout.unlock('main');
@@ -172,7 +174,8 @@ function getCampaignData(campaignId) {
         compressHTML: false,
         accepted: false,
         templateHTML: "",
-        templateText: ""
+        templateText: "",
+        templateAMP: ""
     };
     $.ajax({
         type: "GET",
@@ -193,6 +196,7 @@ function getCampaignData(campaignId) {
         campaignData.accepted = data["accepted"];
         campaignData.templateHTML = data["templateHTML"];
         campaignData.templateText = data["templateText"];
+        campaignData.templateAMP = data["templateAMP"];
     });
     $.ajax({
         type: "GET",
@@ -213,7 +217,7 @@ function getCampaignData(campaignId) {
         async: false,
         url: '/api/senderlist',
         dataType: "json",
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})},
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})}
     }).done(function(data) {
         campaignData.senders = data;
         campaignData.senders.forEach(function(v) {
@@ -258,8 +262,9 @@ function saveCampaign() {
                                 "endDate": getTimestamp($("#campaignEndDate").val(), $("#campaignEndTime").val()),
                                 "compressHTML": $("#campaignCompressHTML").is(":checked"),
                                 "sendUnsubscribe": $("#campaignSendUnsubscribe").is(":checked"),
-                                "templateHTML": cm.getValue(),
-                                "templateText": $("#campaignTemplateText").val()
+                                "templateHTML": cmHTML.getValue(),
+                                "templateText": $("#campaignTemplateText").val(),
+                                "templateAMP": cmAMP.getValue()
                             }
                         }
                     )}

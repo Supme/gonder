@@ -43,6 +43,8 @@ type campaign struct {
 	compressHTML     bool
 	templateText     string
 	templateTextFunc *template.Template
+	templateAMP      string
+	templateAMPFunc  *template.Template
 
 	utmURL string
 
@@ -92,7 +94,7 @@ func getCampaign(id string) (campaign, error) {
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`,t2.`bimi_selector`,t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
+	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`,t2.`bimi_selector`,t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,`template_amp`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
 		&c.FromEmail,
 		&c.FromName,
 		&utmURL,
@@ -103,6 +105,7 @@ func getCampaign(id string) (campaign, error) {
 		&subject,
 		&c.templateHTML,
 		&c.templateText,
+		&c.templateAMP,
 		&c.compressHTML,
 		&c.ProfileID,
 		&c.SendUnsubscribe,
@@ -129,6 +132,8 @@ func getCampaign(id string) (campaign, error) {
 	prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
 	c.templateHTMLFunc = template.New("HTML")
 	c.templateTextFunc = template.New("Text")
+	prepareHTMLTemplate(&c.templateAMP, false)
+	c.templateAMPFunc = template.New("AMP")
 
 	var attachments *sql.Rows
 	attachments, err = models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.ID)
@@ -211,10 +216,6 @@ End:
 	close(c.Finish)
 }
 
-//func (c *campaign) prepareQueryUpdateRecipientStatus() (*sql.Stmt, error) {
-//	return models.Db.Prepare("UPDATE recipient SET status=?, date=NOW() WHERE id=?")
-//}
-
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.ID)
 	checkErr(err)
@@ -245,32 +246,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
-			bldr := new(smtpSender.Builder)
-			bldr.SetFrom(c.FromName, c.FromEmail)
-			if c.BimiSelector != "" {
-				bldr.AddHeader("BIMI-Selector: v=BIMI1; s="+c.BimiSelector+";")
-			}
-			bldr.SetTo(r.Name, r.Email)
-			bldr.AddHeader(
-				"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.utmURL, "mail", r.Params)+"\nPrecedence: bulk",
-				"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
-				"X-Postmaster-Msgtype: campaign"+c.ID,
-			)
-			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
-				log.Print(err)
-			}
-			if c.templateText != "" {
-				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
-			}
-			if err := bldr.AddAttachment(c.Attachments...); err != nil {
-				log.Print(err)
-			}
-			if c.DkimUse {
-				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
-			}
-
-			email := bldr.Email(r.ID, GetResultFunc(wg, SendTypeStream, c.ID, r.ID, r.Email))
+			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeStream, c.ID, r.ID, r.Email))
 
 			wg.Add(1)
 			if !models.Config.RealSend {
@@ -325,32 +301,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
-			bldr := new(smtpSender.Builder)
-			bldr.SetFrom(c.FromName, c.FromEmail)
-			if c.BimiSelector != "" {
-				bldr.AddHeader("BIMI-Selector: v=BIMI1; s="+c.BimiSelector+";")
-			}
-			bldr.SetTo(r.Name, r.Email)
-			bldr.AddHeader(
-				"List-Unsubscribe: "+r.unsubscribeEmailHeaderURL()+"\nPrecedence: bulk",
-				"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
-				"X-Postmaster-Msgtype: campaign"+c.ID,
-			)
-			bldr.AddSubjectFunc(c.subjectTemplFunc(r))
-			if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
-				log.Print(err)
-			}
-			if c.templateText != "" {
-				bldr.AddTextFunc(c.textTemplFunc(r, false, false))
-			}
-			if err := bldr.AddAttachment(c.Attachments...); err != nil {
-				log.Print(err)
-			}
-			if c.DkimUse {
-				bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
-			}
-
-			email := bldr.Email(r.ID, GetResultFunc(wg, SendTypeResend, c.ID, r.ID, r.Email))
+			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeResend, c.ID, r.ID, r.Email))
 
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
@@ -394,20 +345,51 @@ func fakeSend(email smtpSender.Email) error {
 	return nil
 }
 
-func (c *campaign) HasResend() int {
+func (c campaign) getBuilder(r Recipient) *smtpSender.Builder {
+	bldr := new(smtpSender.Builder)
+	bldr.SetFrom(c.FromName, c.FromEmail)
+	if c.BimiSelector != "" {
+		bldr.AddHeader("BIMI-Selector: v=BIMI1; s=" + c.BimiSelector + ";")
+	}
+	bldr.SetTo(r.Name, r.Email)
+	bldr.AddHeader(
+		"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.utmURL, "mail", r.Params)+"\nPrecedence: bulk",
+		"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
+		"X-Postmaster-Msgtype: campaign"+c.ID,
+	)
+	bldr.AddSubjectFunc(c.subjectTemplFunc(r))
+	if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
+		log.Print(err)
+	}
+	if c.templateText != "" {
+		bldr.AddTextFunc(c.textTemplFunc(r, false))
+	}
+	if c.templateAMP != "" {
+		bldr.AddAMPFunc(c.ampTemplFunc(r, false))
+	}
+	if err := bldr.AddAttachment(c.Attachments...); err != nil {
+		log.Print(err)
+	}
+	if c.DkimUse {
+		bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
+	}
+	return bldr
+}
+
+func (c campaign) HasResend() int {
 	var count int
 	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND removed=0 AND "+softBounceWhere, c.ID).Scan(&count)
 	checkErr(err)
 	return count
 }
 
-func (c *campaign) subjectTemplFunc(r Recipient) func(io.Writer) error {
+func (c campaign) subjectTemplFunc(r Recipient) func(io.Writer) error {
 	return func(w io.Writer) error {
 		return c.subjectTmplFunc.Execute(w, r.Params)
 	}
 }
 
-func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Writer) error {
+func (c campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Writer) error {
 	return func(w io.Writer) error {
 		if preview {
 			if web {
@@ -449,46 +431,44 @@ func (c *campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wr
 	}
 }
 
-func (c *campaign) textTemplFunc(r Recipient, web bool, preview bool) func(io.Writer) error {
+func (c campaign) textTemplFunc(r Recipient, web bool) func(io.Writer) error {
 	return func(w io.Writer) error {
-		if preview {
-			if web {
-				r.Params["WebUrl"] = nil
-			} else {
-				r.Params["WebUrl"] = "/preview?id=" + r.ID + "&type=web"
-			}
-			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-			r.Params["UnsubscribeUrl"] = "/unsubscribe?recipientId=" + r.ID
-			_, err := c.templateTextFunc.Funcs(
-				template.FuncMap{
-					"RedirectUrl": func(p map[string]interface{}, u string) string {
-						url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
-						return strings.TrimSpace(url[len(url)-1])
-					},
-					// ToDo more functions (example QRcode generator)
-				}).Parse(c.templateText)
-			if err != nil {
-				log.Print(err)
-			}
+		if web {
+			r.Params["WebUrl"] = nil
 		} else {
-			if web {
-				r.Params["WebUrl"] = nil
-			} else {
-				r.Params["WebUrl"] = models.EncodeUTM("web", c.utmURL, "", r.Params)
-			}
-			_, err := c.templateTextFunc.Funcs(
-				template.FuncMap{
-					"RedirectUrl": func(p map[string]interface{}, u string) string {
-						return models.EncodeUTM("redirect", c.utmURL, u, p)
-					},
-					// ToDo more functions (example QRcode generator)
-				}).Parse(c.templateText)
-			if err != nil {
-				log.Print(err)
-			}
+			r.Params["WebUrl"] = models.EncodeUTM("web", c.utmURL, "", r.Params)
+		}
+		_, err := c.templateTextFunc.Funcs(
+			template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", c.utmURL, u, p)
+				},
+				// ToDo more functions (example QRcode generator)
+			}).Parse(c.templateText)
+		if err != nil {
+			log.Print(err)
+		}
+		return c.templateTextFunc.Execute(w, r.Params)
+	}
+}
+
+func (c campaign) ampTemplFunc(r Recipient, web bool) func(io.Writer) error {
+	return func(w io.Writer) error {
+		if web {
+			r.Params["WebUrl"] = nil
+		}
+		_, err := c.templateAMPFunc.Funcs(
+			template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", c.utmURL, u, p)
+				},
+				// ToDo more functions (example QRcode generator)
+			}).Parse(c.templateAMP)
+		if err != nil {
+			log.Print(err)
 		}
 
-		return c.templateTextFunc.Execute(w, r.Params)
+		return c.templateAMPFunc.Execute(w, r.Params)
 	}
 }
 

@@ -23,6 +23,7 @@ type campaignData struct {
 	Accepted        bool   `json:"accepted"`
 	TemplateHTML    string `json:"templateHTML"`
 	TemplateText    string `json:"templateText"`
+	TemplateAMP    string `json:"templateAMP"`
 }
 
 type request struct {

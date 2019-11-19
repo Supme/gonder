@@ -102,7 +102,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		groupID    int64
 		start, end mysql.NullTime
 	)
-	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
+	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
 
 	err := query.Scan(
 		&groupID,
@@ -112,6 +112,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		&cData.Subject,
 		&cData.TemplateHTML,
 		&cData.TemplateText,
+		&cData.TemplateAMP,
 		&start,
 		&end,
 		&cData.CompressHTML,
@@ -130,6 +131,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		cData.Subject,
 		cData.TemplateHTML,
 		cData.TemplateText,
+		cData.TemplateAMP,
 		start,
 		end,
 		cData.CompressHTML,

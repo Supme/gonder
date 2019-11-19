@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `subject` varchar(300) NOT NULL,
   `template_html` mediumtext NOT NULL,
   `template_text` mediumtext NOT NULL,
+  `template_amp` mediumtext NOT NULL,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
   `send_unsubscribe` tinyint(1) NOT NULL DEFAULT '0',
