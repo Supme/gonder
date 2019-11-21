@@ -3,10 +3,10 @@ module gonder
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1
-	github.com/Supme/smtpSender v0.0.9-0.20191118125902-22a5fc0dc39b
+	github.com/Supme/smtpSender v0.0.9
 	github.com/alyu/configparser v0.0.0-20180327070247-c505e6011694
 	github.com/boombuler/barcode v1.0.0
-	github.com/emersion/go-msgauth v0.3.1 // indirect
+	github.com/emersion/go-msgauth v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1
@@ -21,8 +21,8 @@ require (
 	github.com/tdewolff/parse v2.3.4+incompatible
 	github.com/tdewolff/test v1.0.4 // indirect
 	github.com/tealeg/xlsx v1.0.3
-	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f // indirect
-	golang.org/x/net v0.0.0-20191116160921-f9c825593386 // indirect
+	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba // indirect
+	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191024073052-e66fe6eb8e0c // indirect
 	golang.org/x/text v0.3.2

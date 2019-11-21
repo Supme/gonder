@@ -132,7 +132,7 @@ func getCampaign(id string) (campaign, error) {
 	prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
 	c.templateHTMLFunc = template.New("HTML")
 	c.templateTextFunc = template.New("Text")
-	prepareHTMLTemplate(&c.templateAMP, false)
+	prepareAMPTemplate(&c.templateAMP)
 	c.templateAMPFunc = template.New("AMP")
 
 	var attachments *sql.Rows
@@ -530,4 +530,36 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 	})
 
 	*htmlTmpl = tmp
+}
+
+func prepareAMPTemplate(ampTmpl *string) {
+	tmp := *ampTmpl
+	part := make([]string, 5)
+
+	// add StatPng if not exist
+	if !strings.Contains(tmp, "{{.StatPng}}") {
+		if !strings.Contains(tmp, "</body>") {
+			tmp = tmp + "<amp-img src=\"{{.StatPng}}\" width=\"10px\" height=\"10px\" alt=\"\"></amp-img>"
+		} else {
+			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.StatPng}}\" width=\"10px\" height=\"10px\" alt=\"\"></amp-img></body>", -1)
+		}
+	}
+
+	// make absolute URL
+	tmp = reReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = reReplaceRelativeSrc.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
+	})
+	tmp = reReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = reReplaceRelativeHref.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
+	})
+
+	// replace http and https href link to utm redirect
+	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = reReplaceLink.FindStringSubmatch(str)
+		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
+	})
+
+	*ampTmpl = tmp
 }

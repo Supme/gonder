@@ -131,7 +131,6 @@ func users(req request) (js []byte, err error) {
 			// Add user
 			row := models.Db.QueryRow("SELECT 1 FROM `auth_user` WHERE `name`=?", req.Record.Name).Scan()
 			if row == sql.ErrNoRows {
-				fmt.Print(req.Record)
 				if req.Record.Password == "" {
 					return nil, errors.New("Password can not be empty")
 				}
