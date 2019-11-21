@@ -21,7 +21,7 @@ func reportsGroupHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := r.Context().Value("Auth").(*Auth)
-	if !user.CampaignRight(id) {
+	if !user.GroupRight(id) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
