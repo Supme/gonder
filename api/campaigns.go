@@ -123,7 +123,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 		return c, err
 	}
 	cData.Name = "[Clone] " + cData.Name
-	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`accepted`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
 		groupID,
 		cData.ProfileID,
 		cData.SenderID,
