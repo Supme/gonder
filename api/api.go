@@ -14,6 +14,7 @@ package api
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
@@ -26,7 +27,6 @@ import (
 	"gonder/bindata"
 	"gonder/models"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"mime"
 	"net/http"
@@ -178,7 +178,8 @@ func Run(logger *log.Logger) {
 
 	// API
 	api.Handle("/api/", apiHandler(apiRequest, true))
-
+	// Recipient
+	api.Handle("/recipient/upload", apiHandler(RecipientUploadHandlerFunc, true))
 	// Reports
 	api.Handle("/report/group", apiHandler(reportsGroupHandlerFunc, true))
 	api.Handle("/report/campaign", apiHandler(reportsCampaignHandlerFunc, true))
@@ -230,28 +231,25 @@ func Run(logger *log.Logger) {
 func apiRequest(w http.ResponseWriter, r *http.Request) {
 	var (
 		js      []byte
-		request []byte
+		req request
 		err     error
 	)
 	if r.FormValue("request") != "" {
-		request = []byte(r.FormValue("request"))
+		fmt.Println("this value request")
+		req, err = parseRequest([]byte(r.FormValue("request")))
 	} else {
-		request, err = ioutil.ReadAll(r.Body)
+		fmt.Println("this body request")
+		err = json.NewDecoder(r.Body).Decode(&req)
 		defer r.Body.Close()
 		if err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	if len(request) == 0 {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
-	req, err := parseRequest(request)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write([]byte(fmt.Sprintf(`{"status": "error", "message": %s}`, strconv.Quote(err.Error()))))
@@ -260,7 +258,6 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
 	req.auth = r.Context().Value("Auth").(*Auth)
 
 	switch r.URL.Path {
@@ -275,7 +272,7 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 	case "/api/profilelist":
 		js, err = profilesList(req)
 	case "/api/recipients":
-		js, err = recipients(req)
+		js, err = recipientsReq(req)
 	case "/api/sender":
 		js, err = sender(req)
 	case "/api/senderlist":

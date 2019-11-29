@@ -50,7 +50,7 @@ type request struct {
 	Campaign    int64        `json:"campaign,omitempty"`
 	Recipient   int64        `json:"recipient,omitempty"`
 	FileName    string       `json:"fileName,omitempty"`
-	FileContent string       `json:"fileContent,omitempty"`
+	FileContent []byte       `json:"fileContent,omitempty"`
 	ID          int64        `json:"id,omitempty"`
 	Email       string       `json:"email,omitempty"`
 	Name        string       `json:"name,omitempty"`
@@ -104,10 +104,10 @@ type request struct {
 
 func parseRequest(js []byte) (request, error) {
 	var req request
-	err := json.Unmarshal(js, &req)
+	err := json.Unmarshal([]byte(js), &req)
 	if err != nil {
 		apiLog.Print(err)
-		err = fmt.Errorf("parse request %s", err)
+		err = fmt.Errorf("parse request unmarshal %s", err)
 	}
 	return req, err
 }

@@ -538,30 +538,7 @@ or error
 </details>
 
 
-<details> 
-
-<summary>Upload recipients file list</summary>
-
-```json
-{
-  "cmd":"upload",
-  "campaign":2,
-  "fileName":"my_subscribers.xlsx",
-  "fileContent":"base64 coded file content"
-}
-```
-response:
-```json
-{
-  "status": "success",
-  "message": "/tmp/gonder_recipient_load_763792762"
-}
-```
-
-</details>
-
-
-<details> 
+<details>
 
 <summary>Upload recipients file progress</summary>
 

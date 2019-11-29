@@ -11,11 +11,101 @@ import (
 	"gonder/models"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 )
+
+func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1024 * 1024 * 30) // ToDo config variable?
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		models.JSONResponse{}.ErrorWriter(w, err)
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user := r.Context().Value("Auth").(*Auth)
+	if !user.Right("upload-recipients") || !user.CampaignRight(id) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if isAccepted(int64(id)) {
+		models.JSONResponse{}.OkWriter(w,"Cannot add recipients to an accepted campaign.")
+		return
+	}
+	var content []byte
+	fmt.Println("start decode content" )
+	content, err = base64.StdEncoding.DecodeString(r.FormValue("content"))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Printf("copy content len %i to file\r\n", len(content))
+	file, err := ioutil.TempFile("", "gonder_recipient_upload_")
+	if err != nil {
+		log.Println(err)
+		models.JSONResponse{}.ErrorWriter(w, err)
+		return
+	}
+	_, err = file.Write(content)
+	if err != nil {
+		models.JSONResponse{}.ErrorWriter(w, err)
+		return
+	}
+	filename := file.Name()
+	err = file.Close()
+	if err != nil {
+		log.Println(err)
+		models.JSONResponse{}.ErrorWriter(w, err)
+		return
+	}
+	apiLog.Print(user.name, " upload file ", r.FormValue("name"))
+
+	switch path.Ext(r.FormValue("name")) {
+	case ".csv":
+		go func() {
+			progress.Lock()
+			progress.cnt[file.Name()] = 0
+			progress.Unlock()
+			err = recipientCsv(int64(id), filename)
+			if err != nil {
+				apiLog.Println(err)
+			}
+			progress.Lock()
+			delete(progress.cnt, filename)
+			progress.Unlock()
+		}()
+		models.JSONResponse{}.OkWriter(w, filename)
+
+	case ".xlsx":
+		go func() {
+			progress.Lock()
+			progress.cnt[file.Name()] = 0
+			progress.Unlock()
+			err = recipientXlsx(int64(id), filename)
+			if err != nil {
+				apiLog.Println(err)
+			}
+			progress.Lock()
+			delete(progress.cnt, filename)
+			progress.Unlock()
+		}()
+		models.JSONResponse{}.OkWriter(w, filename)
+
+	default:
+		models.JSONResponse{}.ErrorWriter(w, fmt.Errorf("this not csv or xlsx file"))
+	}
+}
 
 type recipTable struct {
 	ID     int64  `json:"recid"`
@@ -55,7 +145,7 @@ type safeProgress struct {
 
 var progress = safeProgress{cnt: map[string]int{}}
 
-func recipients(req request) (js []byte, err error) {
+func recipientsReq(req request) (js []byte, err error) {
 	if req.Recipient == 0 {
 		switch req.Cmd {
 		case "get":
@@ -76,74 +166,6 @@ func recipients(req request) (js []byte, err error) {
 			err = addRecipients(req.Campaign, req.Recipients)
 			if err != nil {
 				return js, err
-			}
-
-		case "upload":
-			if req.auth.Right("upload-recipients") && req.auth.CampaignRight(req.Campaign) {
-				if isAccepted(req.Campaign) {
-					return js, errors.New("Cannot add recipients to an accepted campaign.")
-				}
-				var content []byte
-				content, err = base64.StdEncoding.DecodeString(req.FileContent)
-				if err != nil {
-					log.Println(err)
-					return js, err
-				}
-				file, err := ioutil.TempFile("", "gonder_recipient_load_")
-				if err != nil {
-					log.Println(err)
-					return js, err
-				}
-				_, err = file.Write(content)
-				if err != nil {
-					log.Println(err)
-					return js, err
-				}
-				filename := file.Name()
-				err = file.Close()
-				if err != nil {
-					log.Println(err)
-					return js, err
-				}
-				apiLog.Print(req.auth.name, " upload file ", req.FileName)
-
-				switch path.Ext(req.FileName) {
-				case ".csv":
-					go func() {
-						progress.Lock()
-						progress.cnt[file.Name()] = 0
-						progress.Unlock()
-						err = recipientCsv(req.Campaign, filename)
-						if err != nil {
-							apiLog.Println(err)
-						}
-						progress.Lock()
-						delete(progress.cnt, filename)
-						progress.Unlock()
-					}()
-					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
-
-				case ".xlsx":
-					go func() {
-						progress.Lock()
-						progress.cnt[file.Name()] = 0
-						progress.Unlock()
-						err = recipientXlsx(req.Campaign, filename)
-						if err != nil {
-							apiLog.Println(err)
-						}
-						progress.Lock()
-						delete(progress.cnt, filename)
-						progress.Unlock()
-					}()
-					js = []byte(fmt.Sprintf(`{"status": "success", "message": "%s"}`, filename))
-
-				default:
-					return js, errors.New("This not csv or xlsx file")
-				}
-
-			} else {
-				return js, errors.New("Forbidden upload recipients")
 			}
 
 		case "progress":

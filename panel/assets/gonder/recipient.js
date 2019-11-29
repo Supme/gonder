@@ -86,17 +86,14 @@ $('#recipientUploadButton').click(
             w2ui.layout.lock('main', "<span id='uploadProgress'>"+ w2utils.lang("Uploading 0%") + "</span>", true);
             $.each($('#recipientUploadFile').data('selected'), function(index, file){
                 $.ajax({
-                    url: "api/recipients",
+                    url: "/recipient/upload",
                     type: "POST",
                     dataType: "json",
                     data: {
-                        "request": JSON.stringify({
-                            "cmd": "upload",
-                            "campaign": parseInt($('#campaignId').val()),
-                            "fileName": file.name,
-                            "fileContent": file.content
-                        })
-                    }
+                            "id": parseInt($('#campaignId').val()),
+                            "name": file.name,
+                            "content": file.content
+                        }
                 }).done(function(data) {
                     if (data['status'] === 'error') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
