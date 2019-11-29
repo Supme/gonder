@@ -235,10 +235,8 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		err     error
 	)
 	if r.FormValue("request") != "" {
-		fmt.Println("this value request")
 		req, err = parseRequest([]byte(r.FormValue("request")))
 	} else {
-		fmt.Println("this body request")
 		err = json.NewDecoder(r.Body).Decode(&req)
 		defer r.Body.Close()
 		if err != nil {
