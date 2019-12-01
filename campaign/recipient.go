@@ -62,10 +62,6 @@ func (r *Recipient) unsubscribed() bool {
 	return unsubscribeCount != 0
 }
 
-func (r *Recipient) unsubscribeEmailHeaderURL() string {
-	return models.EncodeUTM("unsubscribe", r.utmURL, "mail", map[string]interface{}{"RecipientId": r.ID, "RecipientEmail": r.Email})
-}
-
 func (r Recipient) WebHTML(web bool, preview bool) func(io.Writer) error {
 	camp, err := getCampaign(r.CampaignID)
 	checkErr(err)

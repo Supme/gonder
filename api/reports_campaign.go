@@ -63,14 +63,18 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		err = rc.userAgentJSON(&campaign)
 	default:
 		rc.w.WriteHeader(http.StatusNotImplemented)
-		rc.w.Header().Set("Content-Type", "application/json")
-		models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("this type not implemented"))
+		err = models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("this type not implemented"))
+		if err != nil {
+			apiLog.Print(err)
+		}
 	}
 	if err != nil {
 		log.Print(err)
 		rc.w.WriteHeader(http.StatusInternalServerError)
-		rc.w.Header().Set("Content-Type", "application/json")
-		models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("server error"))
+		err = models.JSONResponse{}.ErrorWriter(rc.w, fmt.Errorf("server error"))
+		if err != nil {
+			apiLog.Print(err)
+		}
 	}
 }
 
@@ -82,19 +86,13 @@ func (rc reportsCampaign) questionJSON(c *models.Campaign) error {
 	}
 	for q.Next() {
 		var r models.CampaignReportQuestion
-		err = q.StructScan(&r)
-		if err != nil {
+		if err := q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
@@ -109,14 +107,12 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err = csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var r models.CampaignReportQuestion
-		err = q.StructScan(&r)
-		if err != nil {
+		if err := q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
@@ -126,6 +122,9 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 			r.At,
 			string(r.DataValid),
 		})
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil
@@ -139,19 +138,13 @@ func (rc reportsCampaign) unsubscribedJSON(c *models.Campaign) error {
 	}
 	for q.Next() {
 		var r models.CampaignReportUnsubscribed
-		err = q.StructScan(&r)
-		if err != nil {
+		if err := q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
@@ -166,14 +159,12 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err := csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var r models.CampaignReportUnsubscribed
-		err = q.StructScan(&r)
-		if err != nil {
+		if err := q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
@@ -182,6 +173,9 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 			r.At,
 			string(r.DataValid),
 		})
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil
@@ -195,19 +189,13 @@ func (rc reportsCampaign) recipientsJSON(c *models.Campaign) error {
 	}
 	for q.Next() {
 		var r models.CampaignReportRecipients
-		err = q.StructScan(&r)
-		if err != nil {
+		if err = q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
@@ -222,14 +210,12 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err = csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var r models.CampaignReportRecipients
-		err = q.StructScan(&r)
-		if err != nil {
+		if err := q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
@@ -242,6 +228,9 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 			strconv.FormatBool(r.Open),
 			string(r.DataValid),
 		})
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil
@@ -255,19 +244,13 @@ func (rc reportsCampaign) clicksJSON(c *models.Campaign) error {
 	}
 	for q.Next() {
 		var r models.CampaignReportClicks
-		err = q.StructScan(&r)
-		if err != nil {
+		if err = q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsCampaign) clicksCSV(c *models.Campaign) error {
@@ -282,14 +265,12 @@ func (rc reportsCampaign) clicksCSV(c *models.Campaign) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err = csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var clx models.CampaignReportClicks
-		err = q.StructScan(&clx)
-		if err != nil {
+		if err = q.StructScan(&clx); err != nil {
 			return err
 		}
 		clx.Validate()
@@ -299,6 +280,9 @@ func (rc reportsCampaign) clicksCSV(c *models.Campaign) error {
 			clx.At,
 			clx.URL,
 		})
+		if err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil
@@ -319,12 +303,7 @@ func (rc reportsCampaign) userAgentJSON(c *models.Campaign) error {
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsCampaign) userAgentCSV(c *models.Campaign) error {
@@ -346,8 +325,7 @@ func (rc reportsCampaign) userAgentCSV(c *models.Campaign) error {
 	}
 	for q.Next() {
 		var ua models.CampaignReportUserAgent
-		err = q.StructScan(&ua)
-		if err != nil {
+		if err = q.StructScan(&ua); err != nil {
 			return err
 		}
 		ua.Validate()
@@ -377,7 +355,9 @@ func (rc reportsCampaign) userAgentCSV(c *models.Campaign) error {
 			csvRow[19] = ua.BrowserParsed.BrowserName
 			csvRow[20] = ua.BrowserParsed.BrowserVersion
 		}
-		err = csvWriter.Write(csvRow)
+		if err = csvWriter.Write(csvRow); err != nil {
+			return err
+		}
 	}
 	csvWriter.Flush()
 	return nil

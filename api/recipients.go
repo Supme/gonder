@@ -20,11 +20,13 @@ import (
 )
 
 func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 1024 * 1024 * 30) // ToDo config variable?
-	err := r.ParseForm()
-	if err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, 1024*1024*30) // ToDo config variable?
+	if err := r.ParseForm(); err != nil {
 		log.Println(err)
-		models.JSONResponse{}.ErrorWriter(w, err)
+		e := models.JSONResponse{}.ErrorWriter(w, err)
+		if e != nil {
+			apiLog.Print(e)
+		}
 		return
 	}
 
@@ -40,33 +42,41 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if isAccepted(int64(id)) {
-		models.JSONResponse{}.OkWriter(w,"Cannot add recipients to an accepted campaign.")
+		e := models.JSONResponse{}.OkWriter(w, "Cannot add recipients to an accepted campaign.")
+		if e != nil {
+			apiLog.Print(e)
+		}
 		return
 	}
 	var content []byte
-	fmt.Println("start decode content" )
 	content, err = base64.StdEncoding.DecodeString(r.FormValue("content"))
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	fmt.Printf("copy content len %i to file\r\n", len(content))
 	file, err := ioutil.TempFile("", "gonder_recipient_upload_")
 	if err != nil {
 		log.Println(err)
-		models.JSONResponse{}.ErrorWriter(w, err)
+		e := models.JSONResponse{}.ErrorWriter(w, err)
+		if e != nil {
+			apiLog.Print(e)
+		}
 		return
 	}
-	_, err = file.Write(content)
-	if err != nil {
-		models.JSONResponse{}.ErrorWriter(w, err)
+	if _, err = file.Write(content); err != nil {
+		e := models.JSONResponse{}.ErrorWriter(w, err)
+		if e != nil {
+			apiLog.Print(e)
+		}
 		return
 	}
 	filename := file.Name()
-	err = file.Close()
-	if err != nil {
+	if err = file.Close(); err != nil {
 		log.Println(err)
-		models.JSONResponse{}.ErrorWriter(w, err)
+		e := models.JSONResponse{}.ErrorWriter(w, err)
+		if e != nil {
+			apiLog.Print(e)
+		}
 		return
 	}
 	apiLog.Print(user.name, " upload file ", r.FormValue("name"))
@@ -77,33 +87,40 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			progress.Lock()
 			progress.cnt[file.Name()] = 0
 			progress.Unlock()
-			err = recipientCsv(int64(id), filename)
-			if err != nil {
+			if err = recipientCsv(int64(id), filename); err != nil {
 				apiLog.Println(err)
 			}
 			progress.Lock()
 			delete(progress.cnt, filename)
 			progress.Unlock()
 		}()
-		models.JSONResponse{}.OkWriter(w, filename)
+		e := models.JSONResponse{}.OkWriter(w, filename)
+		if e != nil {
+			apiLog.Print(e)
+		}
 
 	case ".xlsx":
 		go func() {
 			progress.Lock()
 			progress.cnt[file.Name()] = 0
 			progress.Unlock()
-			err = recipientXlsx(int64(id), filename)
-			if err != nil {
+			if err = recipientXlsx(int64(id), filename); err != nil {
 				apiLog.Println(err)
 			}
 			progress.Lock()
 			delete(progress.cnt, filename)
 			progress.Unlock()
 		}()
-		models.JSONResponse{}.OkWriter(w, filename)
+		e := models.JSONResponse{}.OkWriter(w, filename)
+		if e != nil {
+			apiLog.Print(e)
+		}
 
 	default:
-		models.JSONResponse{}.ErrorWriter(w, fmt.Errorf("this not csv or xlsx file"))
+		e := models.JSONResponse{}.ErrorWriter(w, fmt.Errorf("this not csv or xlsx file"))
+		if e != nil {
+			apiLog.Print(e)
+		}
 	}
 }
 

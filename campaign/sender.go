@@ -20,7 +20,7 @@ func (s SendType) String() string {
 	return string(s)
 }
 
-func GetResultFunc(wg *sync.WaitGroup, sendType SendType, campaignID, recipientID, recipientEmail string) func(result smtpSender.Result){
+func GetResultFunc(wg *sync.WaitGroup, sendType SendType, campaignID, recipientID, recipientEmail string) func(result smtpSender.Result) {
 	return func(result smtpSender.Result) {
 		var res string
 		if result.Err == nil {
@@ -37,7 +37,6 @@ func GetResultFunc(wg *sync.WaitGroup, sendType SendType, campaignID, recipientI
 		wg.Done()
 	}
 }
-
 
 type sending struct {
 	campaigns map[string]campaign
@@ -162,7 +161,9 @@ func (s *sending) checkNext() (string, error) {
 func (s *sending) removeStarted(id string) {
 	s.mu.Lock()
 	if _, ok := s.campaigns[id]; ok {
-		delete(s.campaigns, id)
+		if s.campaigns != nil {
+			delete(s.campaigns, id)
+		}
 	}
 	s.mu.Unlock()
 }

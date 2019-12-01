@@ -23,7 +23,7 @@ type campaignData struct {
 	Accepted        bool   `json:"accepted"`
 	TemplateHTML    string `json:"templateHTML"`
 	TemplateText    string `json:"templateText"`
-	TemplateAMP    string `json:"templateAMP"`
+	TemplateAMP     string `json:"templateAMP"`
 }
 
 type request struct {
@@ -68,7 +68,7 @@ type request struct {
 
 	Record struct {
 		// Save/Add user
-		ID       int64  `json:"id,null"`
+		ID       int64  `json:"id,omitempty"`
 		Name     string `json:"name,omitempty"`
 		Password string `json:"password,omitempty"`
 		Unit     struct {

@@ -124,7 +124,7 @@ func Run(logger *log.Logger) {
 
 	api.Handle(models.Config.APIPanelPath, apiHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-
+			w.Header().Add("Cache-Control", "no-store")
 			err = indexTmpl.Execute(w, map[string]string{
 				"version": models.Version,
 				"locale":  models.Config.APIPanelLocale,
@@ -143,7 +143,7 @@ func Run(logger *log.Logger) {
 				http.NotFound(w, r)
 				return
 			}
-			w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d, public, must-revalidate, proxy-revalidate", 3600*24*7))
+			w.Header().Add("Cache-Control", "no-store")
 
 			filePath := path.Join("panel", r.URL.Path)
 
@@ -230,9 +230,9 @@ func Run(logger *log.Logger) {
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {
 	var (
-		js      []byte
+		js  []byte
 		req request
-		err     error
+		err error
 	)
 	if r.FormValue("request") != "" {
 		req, err = parseRequest([]byte(r.FormValue("request")))

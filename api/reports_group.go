@@ -60,18 +60,12 @@ func (rc reportsGroup) campaignsJSON(c *models.Group) error {
 	}
 	for q.Next() {
 		var r models.GroupCampaign
-		err = q.StructScan(&r)
-		if err != nil {
+		if err = q.StructScan(&r); err != nil {
 			return err
 		}
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsGroup) campaignsCSV(c *models.Group) error {
@@ -86,14 +80,12 @@ func (rc reportsGroup) campaignsCSV(c *models.Group) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err = csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var r models.GroupCampaign
-		err = q.StructScan(&r)
-		if err != nil {
+		if err = q.StructScan(&r); err != nil {
 			return err
 		}
 		err = csvWriter.Write([]string{
@@ -126,12 +118,7 @@ func (rc reportsGroup) unsubscribedJSON(c *models.Group) error {
 		r.Validate()
 		res = append(res, r)
 	}
-	rc.w.Header().Set("Content-Type", "application/json")
-	err = models.JSONResponse{}.OkWriter(rc.w, res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return models.JSONResponse{}.OkWriter(rc.w, res)
 }
 
 func (rc reportsGroup) unsubscribedCSV(c *models.Group) error {
@@ -146,14 +133,12 @@ func (rc reportsGroup) unsubscribedCSV(c *models.Group) error {
 	if err != nil {
 		return err
 	}
-	err = csvWriter.Write(columns)
-	if err != nil {
+	if err = csvWriter.Write(columns); err != nil {
 		return err
 	}
 	for q.Next() {
 		var r models.GroupUnsubscribed
-		err = q.StructScan(&r)
-		if err != nil {
+		if err = q.StructScan(&r); err != nil {
 			return err
 		}
 		r.Validate()

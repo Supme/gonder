@@ -2,7 +2,7 @@ package models
 
 import (
 	"encoding/json"
-	"io"
+	"net/http"
 )
 
 type JSONResponse struct {
@@ -10,10 +10,12 @@ type JSONResponse struct {
 	Message interface{} `json:"message"`
 }
 
-func (jr JSONResponse) OkWriter(w io.Writer, message interface{}) error {
+func (jr JSONResponse) OkWriter(w http.ResponseWriter, message interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(JSONResponse{Status: "ok", Message: message})
 }
 
-func (jr JSONResponse) ErrorWriter(w io.Writer, err error) error {
+func (jr JSONResponse) ErrorWriter(w http.ResponseWriter, err error) error {
+	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(JSONResponse{Status: "error", Message: err.Error()})
 }

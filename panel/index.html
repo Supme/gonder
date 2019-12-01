@@ -18,115 +18,115 @@
     <script src="{{.root}}/assets/codemirror/css.js?{{.version}}"></script>
     <script src="{{.root}}/assets/codemirror/htmlmixed.js?{{.version}}"></script>
     <script src="{{.root}}/assets/textversionjs/textversion.js?{{.version}}"></script>
-
-    <script type="application/javascript">
-        var root = "{{.root}}";
-        var locale = "{{.locale}}";
-        var version ="{{.version}}";
-
-        $(document).ready(
-            function () {
-                $.ajaxSetup({
-                    cache: true
-                });
-                w2utils.locale('{{.root}}/assets/w2ui/locale/' + locale + '.json?{{.version}}');
-                w2utils.locale('{{.root}}/assets/gonder/locale/' + locale + '.json?{{.version}}');
-                $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
-                    $.getScript('{{.root}}/assets/gonder/helpers.js?{{.version}}', function () {
-                        $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
-                            $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
-                                $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
-                                $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
-                            });
-                            $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
-                            $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
-                            w2utils.settings.dateFormat = "dd/mm/yyyy";
-                            w2utils.settings.timeFormat = "h24:mm";
-                            w2utils.settings.datetimeFormat = "dd/mm/yyyy | h24:mm";
-                        });
-                    });
-                });
-            }
-        );
-    </script>
-    <script src="{{.root}}/assets/gonder/status.js?{{.version}}"></script>
 </head>
 <body>
 
-    <div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
+<div id="layout" style="position: absolute; width: 99%; height: 99%;"></div>
 
-    <div id="mainbox" style="height: 100%; visibility: hidden;">
-        <div id="parameter" style="display: none">
-                <div id="parameterForm" style="float:left; width: 450px;"></div>
-                <div id="parameterTemplatePreviewContainer" style="float: left; height: 100%;">
-                    <div id="parameterTemplatePreview" style="position: absolute; margin: 0px 1px; border: 1px solid silver; width: calc(100% - 452px); height: 100%; overflow-y: scroll; background-color: #fff;"></div>
-                </div>
-        </div>
-        <div id="template" style="display: none">
-            <div id="templateTabs"></div>
-            <div id="templateContent">
-                <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
-                    <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 26px;">
-                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(360)">360px</button>
-                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(420)">420px</button>
-                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(768)">768px</button>
-                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1024)">1024px</button>
-                        <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1280)">1280px</button>
-                    </div>
-                    <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid silver; width: 768px; height: calc(100% - 65px); overflow-y: scroll;"></div>
-                </div>
-                <div id="campaignTemplateHTMLContainer" style="display: none;">
-                    <div style="position: absolute; width: 100%; height: calc(100% - 30px);">
-                        <textarea id="campaignTemplateHTML"></textarea>
-                    </div>
-                </div>
-                <div id="campaignTemplateTextContainer" style="display: none;">
-                    <div id="campaignTemplateTextButton" style="margin: 5px; height: 26px;">
-                        <button class="w2ui-btn" onclick="MakeTextFromHTML(false);">{{tr "Make from HTML"}}</button>
-                        <button class="w2ui-btn" onclick="MakeTextFromHTML(true);">{{tr "Make from HTML with IMG tag"}}</button>
-                    </div>
-                    <div style="position: absolute; width: 100%; height: calc(100% - 68px); ">
-                        <textarea id="campaignTemplateText" style="width:100%;height:100%;resize: none;"></textarea>
-                    </div>
-                </div>
-                <div id="campaignTemplateAMPContainer" style="display: none;">
-                    <div style="position: absolute; width: 100%; height: calc(100% - 30px);">
-                        <textarea id="campaignTemplateAMP"></textarea>
-                    </div>
-                </div>
-                <div id="campaignTemplateHelpContainer" style="display: none;">
-                    <div id="campaignTemplateHelp" style="margin: 10px;">
-                        {{tr "Template help"}}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="recipient" style="width: 100%; height: 100%; position: absolute; top: 0px; left: 0px; display: none;">
-            <div id="campaignRecipient" style="height: 90%; min-height: 300px; max-height: 650px"></div>
-            <div id="recipientUpload">
-                <div class="w2ui-field w2ui-span3">
-                    <label></label>
-                    <div>
-                        <input id="recipientUploadFile" style="width: 350px;">
-                        <button id="recipientUploadButton" class="btn">Upload</button>
-                        <button id="recipientClearButton" class="btn">Clear</button>
-                        <button id="recipientResend" class="btn">Resend by 4xx code</button>
-                        <button id="recipientDeduplicate" class="btn">Deduplicate</button>
-                        <button id="recipientUnavaible" class="btn">Mark unavaible</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="users" style="height: 100%; display: none;"></div>
-        <div id="status" style="height: 100%; display: none;">
-            <div>
-                <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
-                <input id="statusLogUtm" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('utm.log');"> Utm
-                <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
-                <input id="statusLogMain" type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
-            </div>
-            <div id="statusLog" style="overflow-y: auto; height:95%; border:1px solid rgb(223, 223, 223); background: #fff; padding: 5px; font-size: 12px;">Select log</div>
+<div id="mainbox" style="height: 100%; visibility: hidden;">
+    <div id="parameter" style="display: none">
+        <div id="parameterForm" style="float:left; width: 450px;"></div>
+        <div id="parameterTemplatePreviewContainer" style="float: left; height: 100%;">
+            <div id="parameterTemplatePreview" style="position: absolute; margin: 0px 1px; border: 1px solid silver; width: calc(100% - 452px); height: 100%; overflow-y: scroll; background-color: #fff;"></div>
         </div>
     </div>
+    <div id="template" style="display: none">
+        <div id="templateTabs"></div>
+        <div id="templateContent">
+            <div id="campaignTemplatePreviewContainer" style="height: 100%; display: none;">
+                <div id="campaignTemplatePreviewSize" style="margin: 5px; height: 26px;">
+                    <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(360)">360px</button>
+                    <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(420)">420px</button>
+                    <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(768)">768px</button>
+                    <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1024)">1024px</button>
+                    <button class="w2ui-btn" onclick="$('#campaignTemplatePreview').width(1280)">1280px</button>
+                </div>
+                <div id="campaignTemplatePreview" style="position: absolute; margin: 0px 5px; border: 1px solid silver; width: 768px; height: calc(100% - 65px); overflow-y: scroll;"></div>
+            </div>
+            <div id="campaignTemplateHTMLContainer" style="display: none;">
+                <div style="position: absolute; width: 100%; height: calc(100% - 30px);">
+                    <textarea id="campaignTemplateHTML"></textarea>
+                </div>
+            </div>
+            <div id="campaignTemplateTextContainer" style="display: none;">
+                <div id="campaignTemplateTextButton" style="margin: 5px; height: 26px;">
+                    <button class="w2ui-btn" onclick="MakeTextFromHTML(false);">{{tr "Make from HTML"}}</button>
+                    <button class="w2ui-btn" onclick="MakeTextFromHTML(true);">{{tr "Make from HTML with IMG tag"}}</button>
+                </div>
+                <div style="position: absolute; width: 100%; height: calc(100% - 68px); ">
+                    <textarea id="campaignTemplateText" style="width:100%;height:100%;resize: none;"></textarea>
+                </div>
+            </div>
+            <div id="campaignTemplateAMPContainer" style="display: none;">
+                <div style="position: absolute; width: 100%; height: calc(100% - 30px);">
+                    <textarea id="campaignTemplateAMP"></textarea>
+                </div>
+            </div>
+            <div id="campaignTemplateHelpContainer" style="display: none;">
+                <div id="campaignTemplateHelp" style="margin: 10px;">
+                    {{tr "Template help"}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="recipient" style="width: 100%; height: 100%; position: absolute; top: 0px; left: 0px; display: none;">
+        <div id="campaignRecipient" style="height: 90%; min-height: 300px; max-height: 650px"></div>
+        <div id="recipientUpload">
+            <div class="w2ui-field w2ui-span3">
+                <label></label>
+                <div>
+                    <input id="recipientUploadFile" style="width: 350px;">
+                    <button id="recipientUploadButton" class="btn">Upload</button>
+                    <button id="recipientClearButton" class="btn">Clear</button>
+                    <button id="recipientResend" class="btn">Resend by 4xx code</button>
+                    <button id="recipientDeduplicate" class="btn">Deduplicate</button>
+                    <button id="recipientUnavaible" class="btn">Mark unavaible</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="users" style="height: 100%; display: none;"></div>
+    <div id="status" style="height: 100%; display: none;">
+        <div>
+            <input id="statusLogCampaign" type="radio" name="statusLogName" value="campaign" onclick="startStatusLog('campaign.log');"> Campaign
+            <input id="statusLogUtm" type="radio" name="statusLogName" value="statistic" onclick="startStatusLog('utm.log');"> Utm
+            <input id="statusLogApi" type="radio" name="statusLogName" value="api" onclick="startStatusLog('api.log');"> API
+            <input id="statusLogMain" type="radio" name="statusLogName" value="main" onclick="startStatusLog('main.log');"> Main
+        </div>
+        <div id="statusLog" style="overflow-y: auto; height:95%; border:1px solid rgb(223, 223, 223); background: #fff; padding: 5px; font-size: 12px;">Select log</div>
+    </div>
+</div>
+
+<script type="application/javascript">
+    var root = "{{.root}}";
+    var locale = "{{.locale}}";
+    var version ="{{.version}}";
+    $(document).ready(
+        function () {
+            $.ajaxSetup({
+                cache: true
+            });
+            w2utils.locale('{{.root}}/assets/w2ui/locale/' + locale + '.json?{{.version}}');
+            w2utils.locale('{{.root}}/assets/gonder/locale/' + locale + '.json?{{.version}}');
+            $.getScript('{{.root}}/assets/gonder/status.js?{{.version}}');
+            $.getScript('{{.root}}/assets/gonder/layout.js?{{.version}}', function() {
+                $.getScript('{{.root}}/assets/gonder/helpers.js?{{.version}}', function () {
+                    $.getScript('{{.root}}/assets/gonder/template.js?{{.version}}', function () {
+                        $.getScript('{{.root}}/assets/gonder/group.js?{{.version}}', function () {
+                            $.getScript('{{.root}}/assets/gonder/sender.js?{{.version}}');
+                            $.getScript('{{.root}}/assets/gonder/campaign.js?{{.version}}');
+                        });
+                        $.getScript('{{.root}}/assets/gonder/recipient.js?{{.version}}');
+                        $.getScript('{{.root}}/assets/gonder/users.js?{{.version}}');
+                        w2utils.settings.dateFormat = "dd/mm/yyyy";
+                        w2utils.settings.timeFormat = "h24:mm";
+                        w2utils.settings.datetimeFormat = "dd/mm/yyyy | h24:mm";
+                    });
+                });
+            });
+        }
+    );
+</script>
+
 </body>
 </html>

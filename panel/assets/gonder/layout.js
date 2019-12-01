@@ -15,8 +15,6 @@ w2ui.layout.content('top', $().w2toolbar({
         { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'icon-page' },
         { type: 'radio', id: 'editorButton', group: '1', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil' },
         { type: 'radio', id: 'recipientsButton', group: '1', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns' },
-        // { type: 'break' },
-        // { type: 'button', id: 'saveButton', text: w2utils.lang('Save'), img: 'w2ui-icon-check'},
         { type: 'break' },
         { type: 'check', id: 'acceptSend', group: '1', text: w2utils.lang('Accept send'), style: '.checked {background: #ddff00}' },
         { type: 'spacer' },

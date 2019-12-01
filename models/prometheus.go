@@ -7,8 +7,8 @@ var Prometheus struct {
 		AuthRequest prometheus.Counter
 		UserRequest *prometheus.CounterVec
 	}
-	Campaign struct{
-		Started     prometheus.Gauge
+	Campaign struct {
+		Started    prometheus.Gauge
 		SendResult *prometheus.CounterVec
 	}
 	UTM struct {
@@ -24,7 +24,7 @@ func InitPrometheus() {
 	Prometheus.Api.UserRequest = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "gonder_api_user_request",
-		},[]string{"ip"})
+		}, []string{"ip"})
 	Prometheus.Campaign.Started = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "gonder_campaign_started",
@@ -32,12 +32,12 @@ func InitPrometheus() {
 	Prometheus.Campaign.SendResult = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "gonder_campaign_send_result",
-		},[]string{"campaign", "status", "type"})
+		}, []string{"campaign", "status", "type"})
 
 	Prometheus.UTM.Request = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "gonder_utm_request",
-		},[]string{"type"})
+		}, []string{"type"})
 
 	prometheus.MustRegister(
 		Prometheus.Api.AuthRequest,
@@ -45,5 +45,5 @@ func InitPrometheus() {
 		Prometheus.Campaign.Started,
 		Prometheus.Campaign.SendResult,
 		Prometheus.UTM.Request,
-		)
+	)
 }
