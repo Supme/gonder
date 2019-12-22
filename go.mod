@@ -10,6 +10,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/gorilla/websocket v1.4.1
 	github.com/gravitational/tail v1.0.1
 	github.com/jmoiron/sqlx v1.2.0
@@ -20,17 +21,13 @@ require (
 	github.com/tdewolff/parse v2.3.4+incompatible
 	github.com/tdewolff/test v1.0.4 // indirect
 	github.com/tealeg/xlsx v1.0.5
-	github.com/tealeg/xlsx/v2 v2.0.1 // indirect
 	golang.org/x/crypto v0.0.0-20191119213627-4f8c1d86b1ba // indirect
 	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191024073052-e66fe6eb8e0c // indirect
 	golang.org/x/text v0.3.2
-	golang.org/x/tools v0.0.0-20191024074452-7defa796fec0 // indirect
-	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
 	google.golang.org/appengine v1.6.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
 
-go 1.12
+go 1.13

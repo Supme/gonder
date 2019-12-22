@@ -160,14 +160,22 @@ func (c *campaign) send() {
 	checkErr(err)
 
 	campLog.Printf("Start campaign id %s.", c.ID)
-	c.streamSend(pipe)
+
+	for models.CampaignGetByStringID(c.ID).HasNotSent() {
+		select {
+		case <-c.Stop:
+			goto Done
+		default:
+			c.streamSend(pipe)
+		}
+	}
 
 	select {
 	case <-c.Stop:
 		campLog.Printf("Campaign %s stoped", c.ID)
 		goto End
 	default:
-		resend := c.HasResend()
+		resend := models.CampaignGetByStringID(c.ID).CountResend()
 		if resend > 0 && c.ResendCount > 0 {
 			campLog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
 		}
@@ -177,7 +185,7 @@ func (c *campaign) send() {
 				case <-c.Stop:
 					goto Done
 				default:
-					resend := c.HasResend()
+					resend := models.CampaignGetByStringID(c.ID).CountResend()
 					if resend == 0 {
 						goto Finish
 					}
@@ -235,7 +243,6 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			if r.unsubscribed() && !c.SendUnsubscribe {
-				//_, err := updateRecipientStatus.Exec(models.StatusUnsubscribe, r.ID)
 				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)

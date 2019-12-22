@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/jmoiron/sqlx"
 	"github.com/mssola/user_agent"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -18,6 +19,52 @@ func (id Campaign) IntID() int {
 
 func (id Campaign) StringID() string {
 	return strconv.Itoa(id.IntID())
+}
+
+func CampaignGetByID(id int) Campaign {
+	return Campaign(id)
+}
+
+func CampaignGetByStringID(id string) Campaign {
+	intID, err := strconv.Atoi(id)
+	if err != nil {
+		log.Print(err)
+	}
+	return Campaign(intID)
+}
+
+func (id Campaign) notSent() int {
+	var cnt int
+	err := Db.QueryRow("SELECT COUNT(`id`) FROM recipient WHERE `status` IS NULL AND removed=0 AND campaign_id=?", id).Scan(&cnt)
+	if err != nil {
+		log.Print(err)
+	}
+	return cnt
+}
+
+func (id Campaign) HasNotSent() bool {
+	return id.notSent() > 0
+}
+
+func (id Campaign) CountNotSent() int {
+	return id.notSent()
+}
+
+func (id Campaign) resend() int {
+	var cnt int
+	err := Db.QueryRow("SELECT COUNT(`id`) FROM recipient WHERE `campaign_id`=? AND removed=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", id).Scan(&cnt)
+	if err != nil {
+		log.Print(err)
+	}
+	return cnt
+}
+
+func (id Campaign) CountResend() int {
+	return id.resend()
+}
+
+func (id Campaign) HasResend() bool {
+	return id.resend() > 0
 }
 
 type CampaignReportRecipients struct {

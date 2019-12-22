@@ -4,6 +4,7 @@ admin_email = me@supme.ru
 gonder_email = gonder@supme.ru
 
 [database]
+#string = dbusername:dbuserpassword@unix(/var/run/mysqld/mysqld.sock)/databasename
 string = dbusername:dbuserpassword@tcp(127.0.0.1:3306)/databasename
 connections = 25
 

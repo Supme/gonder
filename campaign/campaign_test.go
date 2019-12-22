@@ -84,7 +84,7 @@ var (
     <p>
       Если Вы не желаете получать информацию, пожалуйста, <a href="{{.UnsubscribeUrl}}" style="color: #9e9e9e;" target="_blank"> откажитесь от подписки</a>
     </p>
-  <img src='{{.StatPng}}' border='0px' width='10px' height='10px' alt=''/></body>
+  <img src="{{.StatPng}}" border="0" width="10" height="10" alt=""/></body>
 </html>
 `
 )
