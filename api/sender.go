@@ -82,7 +82,7 @@ func sender(req request) (js []byte, err error) {
 
 	case "add":
 		if req.auth.Right("save-groups") && req.auth.GroupRight(req.ID) {
-			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `utm_url`, `bimi_selector`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ? ,?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.UtmURL, req.BimiSelector, req.DkimSelector, req.DkimKey, req.DkimUse)
+			res, err := models.Db.Exec("INSERT INTO `sender` (`group_id`, `email`, `name`, `utm_url`, `bimi_selector`, `dkim_selector`, `dkim_key`, `dkim_use`) VALUES (?, ? ,?, ?, ?, ?, ?, ?);", req.ID, req.Email, req.Name, req.UtmURL, req.BimiSelector, req.DkimSelector, req.DkimKey, req.DkimUse)
 			if err != nil {
 				log.Println(err)
 				return js, err
