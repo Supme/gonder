@@ -162,3 +162,7 @@ func GetStatusCodeFromSendResult(res error) string {
 	}
 	return res.Error()
 }
+
+func IsEmptyString(s string) bool {
+	return strings.TrimSpace(s) == ""
+}

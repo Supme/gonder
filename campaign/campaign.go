@@ -70,7 +70,7 @@ func Run(logger *log.Logger) {
 			Sending.Stop(camp...)
 		}
 		if id, err := Sending.checkNext(); err == nil {
-			fmt.Println("check next campaign for send id:", id)
+			//fmt.Println("check next campaign for send id:", id)
 			camp, err := getCampaign(id)
 			checkErr(err)
 			Sending.add(camp)
@@ -129,11 +129,17 @@ func getCampaign(id string) (campaign, error) {
 		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
 	}
 
-	prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
-	c.templateHTMLFunc = template.New("HTML")
-	c.templateTextFunc = template.New("Text")
-	prepareAMPTemplate(&c.templateAMP)
-	c.templateAMPFunc = template.New("AMP")
+	if !models.IsEmptyString(c.templateHTML) {
+		prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
+		c.templateHTMLFunc = template.New("HTML")
+	}
+	if !models.IsEmptyString(c.templateText) {
+		c.templateTextFunc = template.New("Text")
+	}
+	if !models.IsEmptyString(c.templateAMP) {
+		prepareAMPTemplate(&c.templateAMP)
+		c.templateAMPFunc = template.New("AMP")
+	}
 
 	var attachments *sql.Rows
 	attachments, err = models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.ID)
@@ -368,10 +374,10 @@ func (c campaign) getBuilder(r Recipient) *smtpSender.Builder {
 	if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
 		log.Print(err)
 	}
-	if c.templateText != "" {
+	if !models.IsEmptyString(c.templateText) {
 		bldr.AddTextFunc(c.textTemplFunc(r, false))
 	}
-	if c.templateAMP != "" {
+	if !models.IsEmptyString(c.templateAMP) {
 		bldr.AddAMPFunc(c.ampTemplFunc(r, false))
 	}
 	if err := bldr.AddAttachment(c.Attachments...); err != nil {
