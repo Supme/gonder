@@ -16,6 +16,7 @@ package utm
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"github.com/boombuler/barcode"
 	"github.com/boombuler/barcode/qr"
 	"gonder/campaign"
@@ -326,7 +327,92 @@ func Run(logger *log.Logger) {
 		}
 	})
 
+	// AMP files with CORS
+	utm.HandleFunc("/ampfiles/", func(w http.ResponseWriter, r *http.Request) {
+		if !ampCors(w, r) {
+			return
+		}
+		http.StripPrefix("/ampfiles/", http.FileServer(http.Dir(models.Config.UTMFilesDir))).ServeHTTP(w, r)
+	})
+
+	// AMP form
+	utm.HandleFunc("/ampform/", func(w http.ResponseWriter, r *http.Request) {
+		if !ampCors(w, r) {
+			return
+		}
+
+		splitURL := strings.Split(r.URL.Path, "/")
+		if len(splitURL) != 3 {
+			return
+		}
+		message, _, err := models.DecodeUTM(splitURL[2])
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+		var data = map[string]string{}
+		for name, value := range r.PostForm {
+			data[name] = strings.Join(value, "|")
+		}
+
+		if err := message.Form(data); err != nil {
+			log.Println(err)
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+
+		models.JSONResponse{}.OkWriter(w, "")
+	})
+
+	// Form
+	utm.HandleFunc("/form/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			splitURL := strings.Split(r.URL.Path, "/")
+			if len(splitURL) != 3 {
+				return
+			}
+			message, _, err := models.DecodeUTM(splitURL[2])
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+			if t, err := message.GetTemplate("form.html"); err != nil {
+				log.Println(err)
+				http.Error(w, "", http.StatusInternalServerError)
+			} else {
+				if err := r.ParseForm(); err != nil {
+					log.Println(err)
+					return
+				}
+				var data = map[string]string{}
+				for name, value := range r.PostForm {
+					data[name] = strings.Join(value, "|")
+				}
+				if err := message.Form(data); err != nil {
+					log.Println(err)
+					http.Error(w, "", http.StatusInternalServerError)
+					return
+				}
+				err = t.Execute(w, map[string]string{
+					"CampaignId":     message.CampaignID,
+					"RecipientId":    message.RecipientID,
+					"RecipientEmail": message.RecipientEmail,
+					"RecipientName":  message.RecipientName,
+				})
+				if err != nil {
+					log.Println(err)
+					return
+				}
+			}
+			models.Prometheus.UTM.Request.WithLabelValues("form").Inc()
+		}
+	})
+
 	// Question
+	// ToDo remove "question" and migrate to "form"
 	utm.HandleFunc("/question/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -352,7 +438,7 @@ func Run(logger *log.Logger) {
 				for name, value := range r.PostForm {
 					data[name] = strings.Join(value, "|")
 				}
-				if err := message.Question(data); err != nil {
+				if err := message.Form(data); err != nil {
 					log.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
 					return
@@ -373,6 +459,7 @@ func Run(logger *log.Logger) {
 	})
 
 	utmLog.Print("UTM listening on port " + models.Config.UTMPort + "...")
+
 	log.Fatal(http.ListenAndServe(":"+models.Config.UTMPort, muxLog(utm)))
 }
 
@@ -381,4 +468,31 @@ func muxLog(handler http.Handler) http.Handler {
 		utmLog.Printf("host: %s %s %s", models.GetIP(r), r.Method, r.RequestURI)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+// AMP CORS
+// ToDo https://github.com/ampproject/wg-amp4email/issues/7
+func ampCors(w http.ResponseWriter, r *http.Request) bool {
+	jsonResponse := models.JSONResponse{}
+	// fake check
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		w.WriteHeader(http.StatusForbidden)
+		jsonResponse.ErrorWriter(w, errors.New("wrong origin"))
+		return false
+	}
+	w.Header().Add("Access-Control-Allow-Origin", origin)
+
+	r.ParseMultipartForm(0)
+
+	sourceOrigin := r.Form.Get("__amp_source_origin")
+	if sourceOrigin == "" {
+		w.WriteHeader(http.StatusForbidden)
+		jsonResponse.ErrorWriter(w, errors.New("wrong source origin"))
+		return false
+	}
+	w.Header().Add("AMP-Access-Control-Allow-Source-Origin", sourceOrigin)
+	w.Header().Add("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+
+	return true
 }

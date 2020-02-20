@@ -51,7 +51,7 @@ func (m *Message) Unsubscribe(extra map[string]string) error {
 	return err
 }
 
-func (m *Message) Question(data map[string]string) error {
+func (m *Message) Form(data map[string]string) error {
 	r, err := Db.Exec("INSERT INTO question (`recipient_id`) VALUE (?)", m.RecipientID)
 	if err != nil {
 		log.Print(err)

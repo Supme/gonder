@@ -49,7 +49,10 @@ func GetRecipient(id string) (Recipient, error) {
 	recipient.Params["RecipientName"] = recipient.Name
 	recipient.Params["WebUrl"] = models.EncodeUTM("web", recipient.utmURL, "", recipient.Params)
 	recipient.Params["StatPng"] = models.EncodeUTM("open", recipient.utmURL, "", recipient.Params)
+	// ToDo remove QuestionUrl and migrate to FormUrl
 	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", recipient.utmURL, "", recipient.Params)
+	recipient.Params["FormUrl"] = models.EncodeUTM("form", recipient.utmURL, "", recipient.Params)
+	recipient.Params["AmpFormUrl"] = models.EncodeUTM("ampform", recipient.utmURL, "", recipient.Params)
 	recipient.Params["UnsubscribeUrl"] = models.EncodeUTM("unsubscribe", recipient.utmURL, "web", recipient.Params)
 
 	return recipient, nil
