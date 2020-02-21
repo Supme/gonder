@@ -362,7 +362,10 @@ func Run(logger *log.Logger) {
 			return
 		}
 
-		models.JSONResponse{}.OkWriter(w, "")
+		err = models.JSONResponse{}.OkWriter(w, "")
+		if err != nil {
+			log.Print(err)
+		}
 	})
 
 	// Form
@@ -478,21 +481,29 @@ func ampCors(w http.ResponseWriter, r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
 		w.WriteHeader(http.StatusForbidden)
-		jsonResponse.ErrorWriter(w, errors.New("wrong origin"))
+		if err := jsonResponse.ErrorWriter(w, errors.New("wrong origin")); err != nil {
+			log.Print(err)
+		}
 		return false
 	}
 	w.Header().Add("Access-Control-Allow-Origin", origin)
 
-	r.ParseMultipartForm(0)
+	if err := r.ParseMultipartForm(0); err != nil {
+		log.Print(err)
+	}
 
 	sourceOrigin := r.Form.Get("__amp_source_origin")
 	if sourceOrigin == "" {
 		w.WriteHeader(http.StatusForbidden)
-		jsonResponse.ErrorWriter(w, errors.New("wrong source origin"))
+		if err := jsonResponse.ErrorWriter(w, errors.New("wrong source origin")); err != nil {
+			log.Print(err)
+		}
 		return false
 	}
 	w.Header().Add("AMP-Access-Control-Allow-Source-Origin", sourceOrigin)
+	//w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 	w.Header().Add("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+	//w.Header().Add("Access-Control-Allow-Credentials", "true")
 
 	return true
 }
