@@ -93,10 +93,7 @@ func Run(logger *log.Logger) {
 
 	apiLog = logger
 
-	lang, err = newLang(
-		models.WorkDir("/panel/assets/w2ui/locale/*.json"),
-		models.WorkDir("/panel/assets/gonder/locale/*.json"),
-	)
+	lang, err = newLang()
 	if err != nil {
 		apiLog.Printf("error loading languages: %s", err)
 	}
