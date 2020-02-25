@@ -48,7 +48,9 @@ func GetRecipient(id string) (Recipient, error) {
 	recipient.Params["RecipientEmail"] = recipient.Email
 	recipient.Params["RecipientName"] = recipient.Name
 	recipient.Params["WebUrl"] = models.EncodeUTM("web", recipient.utmURL, "", recipient.Params)
-	recipient.Params["StatPng"] = models.EncodeUTM("open", recipient.utmURL, "", recipient.Params)
+	recipient.Params["SiteUrl"] = recipient.utmURL
+	recipient.Params["StatUrl"] = models.EncodeUTM("open", recipient.utmURL, "", recipient.Params)
+	// QuestionUrl deprecated
 	// ToDo remove QuestionUrl and migrate to FormUrl
 	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", recipient.utmURL, "", recipient.Params)
 	recipient.Params["FormUrl"] = models.EncodeUTM("form", recipient.utmURL, "", recipient.Params)

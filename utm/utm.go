@@ -254,7 +254,7 @@ func Run(logger *log.Logger) {
 		models.Prometheus.UTM.Request.WithLabelValues("web").Inc()
 	})
 
-	// StatPng
+	// StatUrl
 	utm.HandleFunc("/open/", func(w http.ResponseWriter, r *http.Request) {
 		splitURL := strings.Split(r.URL.Path, "/")
 		if len(splitURL) != 3 {

@@ -203,7 +203,7 @@ func Run(logger *log.Logger) {
 		}
 	})
 
-	api.HandleFunc("/{{.StatPng}}", func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/{{.StatUrl}}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/gif")
 		blank, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		_, err = w.Write(blank)

@@ -410,7 +410,7 @@ func (c campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wri
 			} else {
 				r.Params["WebUrl"] = "/preview?id=" + r.ID + "&type=web"
 			}
-			r.Params["StatPng"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+			r.Params["StatUrl"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 			r.Params["UnsubscribeUrl"] = "/unsubscribe?recipientId=" + r.ID
 			r.Params["QuestionUrl"] = "/question?recipientId=" + r.ID
 			_, err := c.templateHTMLFunc.Funcs(
@@ -517,12 +517,12 @@ func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
 
 	part := make([]string, 5)
 
-	// add StatPng if not exist
-	if !strings.Contains(tmp, "{{.StatPng}}") {
+	// add StatUrl if not exist
+	if !strings.Contains(tmp, "{{.StatUrl}}") {
 		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<img src=\"{{.StatPng}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/>"
+			tmp = tmp + "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/>"
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<img src=\"{{.StatPng}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/></body>", -1)
 		}
 	}
 
@@ -549,12 +549,12 @@ func prepareAMPTemplate(ampTmpl *string) {
 	tmp := *ampTmpl
 	part := make([]string, 5)
 
-	// add StatPng if not exist
-	if !strings.Contains(tmp, "{{.StatPng}}") {
+	// add StatUrl if not exist
+	if !strings.Contains(tmp, "{{.StatUrl}}") {
 		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<amp-img src=\"{{.StatPng}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img>"
+			tmp = tmp + "<amp-img src=\"{{.StatUrl}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img>"
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.StatPng}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.StatUrl}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img></body>", -1)
 		}
 	}
 
