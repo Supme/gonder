@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `client_agent` varchar(300),
   `web_agent` varchar(300),
+  `amp_open` tinyint(1) NOT NULL DEFAULT '0',
   `removed` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (id),
   KEY `campaign_id` (`campaign_id`),

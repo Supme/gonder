@@ -55,6 +55,7 @@ func DecodeUTM(base64data string) (message Message, data string, err error) {
 	var param utm
 
 	decode, err := base64.URLEncoding.DecodeString(base64data)
+
 	if err != nil {
 		return message, data, err
 	}
@@ -62,13 +63,16 @@ func DecodeUTM(base64data string) (message Message, data string, err error) {
 	if err != nil {
 		return message, data, err
 	}
+
 	data = param.Data
 	err = message.New(param.ID)
 	if err != nil {
 		return message, data, err
 	}
+
 	if param.Email != message.RecipientEmail {
 		return message, data, errors.New("Not valid recipient")
 	}
+
 	return message, data, nil
 }

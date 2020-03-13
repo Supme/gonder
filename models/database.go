@@ -55,6 +55,12 @@ func CheckDb() error {
 		}
 	}
 
+	if version.Compare("0.18.0", dbVersion, ">") {
+		if err = dbQueryFrom("sql/update/0.18.0.sql"); err != nil {
+			return fmt.Errorf("update database to version %s: %s", Version, err)
+		}
+	}
+
 	// update the version in the database when it changes
 	if version.Compare(Version, dbVersion, ">") {
 		if _, err := Db.Exec("INSERT INTO `version` (`number`) VALUES (?)", Version); err != nil {

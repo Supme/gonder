@@ -266,11 +266,42 @@ func Run(logger *log.Logger) {
 			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
-		_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.OpenTrace)
+		_, err = models.Db.Exec("INSERT INTO `jumping` (`campaign_id`, `recipient_id`, `url`) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.OpenTrace)
 		if err != nil {
 			log.Print(err)
 		}
 		_, err = models.Db.Exec("UPDATE `recipient` SET `client_agent`= ? WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
+		if err != nil {
+			log.Print(err)
+		}
+		w.Header().Set("Content-Type", "image/gif")
+		//png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAADUlEQVQY02NgGAXIAAABEAAB7JfjegAAAABJRU5ErkJggg==iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAADUExURUxpcU3H2DoAAAABdFJOUwBA5thmAAAAEklEQVQ4y2NgGAWjYBSMAuwAAAQgAAFWu83mAAAAAElFTkSuQmCC")
+		gif, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+		_, err = w.Write(gif)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		models.Prometheus.UTM.Request.WithLabelValues("open").Inc()
+	})
+
+	// AmpStatUrl
+	utm.HandleFunc("/ampopen/", func(w http.ResponseWriter, r *http.Request) {
+		splitURL := strings.Split(r.URL.Path, "/")
+		if len(splitURL) != 3 {
+			return
+		}
+		message, _, err := models.DecodeUTM(splitURL[2])
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+		_, err = models.Db.Exec("INSERT INTO `jumping` (`campaign_id`, `recipient_id`, `url`) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.OpenTrace)
+		if err != nil {
+			log.Print(err)
+		}
+		_, err = models.Db.Exec("UPDATE `recipient` SET `client_agent`= ?, `amp_open`=1 WHERE `id`=? AND `client_agent` IS NULL", models.GetIP(r)+" "+r.UserAgent(), message.RecipientID)
 		if err != nil {
 			log.Print(err)
 		}

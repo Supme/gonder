@@ -50,6 +50,7 @@ func GetRecipient(id string) (Recipient, error) {
 	recipient.Params["WebUrl"] = models.EncodeUTM("web", recipient.utmURL, "", recipient.Params)
 	recipient.Params["SiteUrl"] = recipient.utmURL
 	recipient.Params["StatUrl"] = models.EncodeUTM("open", recipient.utmURL, "", recipient.Params)
+	recipient.Params["AmpStatUrl"] = models.EncodeUTM("ampopen", recipient.utmURL, "", recipient.Params)
 	// QuestionUrl deprecated
 	// ToDo remove QuestionUrl and migrate to FormUrl
 	recipient.Params["QuestionUrl"] = models.EncodeUTM("question", recipient.utmURL, "", recipient.Params)

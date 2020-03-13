@@ -549,12 +549,12 @@ func prepareAMPTemplate(ampTmpl *string) {
 	tmp := *ampTmpl
 	part := make([]string, 5)
 
-	// add StatUrl if not exist
-	if !strings.Contains(tmp, "{{.StatUrl}}") {
+	// add AmpStatUrl if not exist
+	if !strings.Contains(tmp, "{{.AmpStatUrl}}") {
 		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<amp-img src=\"{{.StatUrl}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img>"
+			tmp = tmp + "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img>"
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.StatUrl}}\" width=\"10\" height=\"10\" alt=\"\"></amp-img></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img></body>", -1)
 		}
 	}
 
