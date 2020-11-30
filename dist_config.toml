@@ -1,5 +1,5 @@
 [main]
-default_profile_id = 1
+default_profile_id = 0
 admin_email = me@supme.ru
 gonder_email = gonder@supme.ru
 
@@ -25,12 +25,12 @@ panel_path = /panel
 panel_locale = ru-ru
 
 # default profile, which can be overridden by explicitly entering the configuration
-#[[profile]]
-#id = 0
-#name = Default
-#stream = 10
-#resend_count = 2
-#resend_delay = 1200
+[[profile]]
+id = 0
+name = Default
+stream = 10
+resend_count = 2
+resend_delay = 1200
 
 [[profile]]
 id = 1

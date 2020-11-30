@@ -156,7 +156,7 @@ func addCampaign(groupID int64) (camp, error) {
 	c := camp{}
 	c.Name = "New campaign"
 	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
-	row, err := models.Db.Exec("INSERT INTO `campaign`(`group_id`, `name`, `start_time`, `end_time`) VALUES (?, ?, ?, ?)", groupID, c.Name, t, t)
+	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`) VALUES (?,?,?,'','','','',?,?)", groupID, models.Config.DefaultProfileID, c.Name, t, t)
 	if err != nil {
 		log.Println(err)
 		return c, err

@@ -6,7 +6,7 @@ CREATE TABLE `version` (
   `at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-INSERT INTO `version` (`number`) VALUES ('0.16.3');
+INSERT INTO `version` (`number`) VALUES ('0.18.1');
 
 CREATE TABLE IF NOT EXISTS `attachment` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `campaign` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) NOT NULL,
   `profile_id` int(11) NOT NULL,
-  `sender_id` int(11) NOT NULL,
+  `sender_id` int(11) NOT NULL DEFAULT '0',
   `name` varchar(300) NOT NULL,
   `subject` varchar(300) NOT NULL,
   `template_html` mediumtext NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `recipient` (
   `campaign_id` int(11) NOT NULL,
   `email` varchar(100) NOT NULL,
   `name` varchar(100) NOT NULL,
-  `status` varchar(2000) NULL DEFAULT NULL,
+  `status` varchar(765) NULL DEFAULT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `client_agent` varchar(300),
   `web_agent` varchar(300),
