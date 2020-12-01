@@ -131,14 +131,43 @@ func getCampaign(id string) (campaign, error) {
 
 	if !models.IsEmptyString(c.templateHTML) {
 		prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
-		c.templateHTMLFunc = template.New("HTML")
+		c.templateHTMLFunc, err = template.New("HTML").Funcs(
+			template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", c.utmURL, u, p)
+				},
+				// ToDo more functions (example QRcode generator)
+			}).Parse(c.templateHTML)
+		if err != nil {
+			return c, fmt.Errorf("error parse campaign '%s' HTML template: %s", c.ID, err)
+		}
 	}
+
 	if !models.IsEmptyString(c.templateText) {
-		c.templateTextFunc = template.New("Text")
+		c.templateTextFunc, err = template.New("Text").Funcs(
+			template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", c.utmURL, u, p)
+				},
+				// ToDo more functions (example QRcode generator)
+			}).Parse(c.templateText)
+		if err != nil {
+			return c, fmt.Errorf("error parse campaign '%s' text template: %s", c.ID, err)
+		}
 	}
+
 	if !models.IsEmptyString(c.templateAMP) {
 		prepareAMPTemplate(&c.templateAMP)
-		c.templateAMPFunc = template.New("AMP")
+		c.templateAMPFunc, err = template.New("AMP").Funcs(
+			template.FuncMap{
+				"RedirectUrl": func(p map[string]interface{}, u string) string {
+					return models.EncodeUTM("redirect", c.utmURL, u, p)
+				},
+				// ToDo more functions (example QRcode generator)
+			}).Parse(c.templateAMP)
+		if err != nil {
+			return c, fmt.Errorf("error parse campaign '%s' AMP template: %s", c.ID, err)
+		}
 	}
 
 	var attachments *sql.Rows
@@ -428,16 +457,6 @@ func (c campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wri
 			if web {
 				r.Params["WebUrl"] = nil
 			}
-			_, err := c.templateHTMLFunc.Funcs(
-				template.FuncMap{
-					"RedirectUrl": func(p map[string]interface{}, u string) string {
-						return models.EncodeUTM("redirect", c.utmURL, u, p)
-					},
-					// ToDo more functions (example QRcode generator)
-				}).Parse(c.templateHTML)
-			if err != nil {
-				log.Print(err)
-			}
 		}
 
 		return c.templateHTMLFunc.Execute(w, r.Params)
@@ -451,16 +470,6 @@ func (c campaign) textTemplFunc(r Recipient, web bool) func(io.Writer) error {
 		} else {
 			r.Params["WebUrl"] = models.EncodeUTM("web", c.utmURL, "", r.Params)
 		}
-		_, err := c.templateTextFunc.Funcs(
-			template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", c.utmURL, u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateText)
-		if err != nil {
-			log.Print(err)
-		}
 		return c.templateTextFunc.Execute(w, r.Params)
 	}
 }
@@ -470,17 +479,6 @@ func (c campaign) ampTemplFunc(r Recipient, web bool) func(io.Writer) error {
 		if web {
 			r.Params["WebUrl"] = nil
 		}
-		_, err := c.templateAMPFunc.Funcs(
-			template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", c.utmURL, u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateAMP)
-		if err != nil {
-			log.Print(err)
-		}
-
 		return c.templateAMPFunc.Execute(w, r.Params)
 	}
 }
