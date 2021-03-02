@@ -7,13 +7,13 @@ $('#campaignRecipient').w2grid({
     },
     multiSearch: true,
     searches: [
-        { field: 'recid', caption: w2utils.lang('Id'), type: 'int' },
-        { field: 'email', caption: w2utils.lang('Email'), type: 'text' },
-        { field: 'name', caption: w2utils.lang('Name'), type: 'text' },
-        { field: 'result', caption: w2utils.lang('Result'), type: 'text' }
+        { field: 'recid', label: w2utils.lang('Id'), type: 'int' },
+        { field: 'email', label: w2utils.lang('Email'), type: 'text' },
+        { field: 'name', label: w2utils.lang('Name'), type: 'text' },
+        { field: 'result', label: w2utils.lang('Result'), type: 'text' }
     ],
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), sortable: true, size: '100px', resizable: true,
+        { field: 'recid', text: w2utils.lang('Id'), sortable: true, size: '100px', resizable: true,
             info: {
                 render : function (rec) {
                     var table;
@@ -33,13 +33,14 @@ $('#campaignRecipient').w2grid({
                 }
             }
         },
-        { field: 'email', caption: w2utils.lang('Email'), sortable: true, size: '150px', resizable: true },
-        { field: 'name', caption: w2utils.lang('Name'), sortable: true, size: '150px', resizable: true },
-        { field: 'open', caption: w2utils.lang('Opened'), sortable: true, size: '65px', resizable: false, render: 'toggle', style: 'text-align: center' },
-        { field: 'result', caption: w2utils.lang('Result'), sortable: true, size: '100%', resizable: true }
+        { field: 'email', text: w2utils.lang('Email'), sortable: true, size: '150px', resizable: true },
+        { field: 'name', text: w2utils.lang('Name'), sortable: true, size: '150px', resizable: true },
+        { field: 'open', text: w2utils.lang('Opened'), sortable: true, size: '65px', resizable: false, render: 'toggle', style: 'text-align: center' },
+        { field: 'result', text: w2utils.lang('Result'), sortable: true, size: '100%', resizable: true }
     ],
     multiSelect: false,
     method: 'GET',
+    postData: { cmd:"get" },
 
     onDblClick: function (event) {
         preview = window.open(
@@ -52,7 +53,7 @@ $('#campaignRecipient').w2grid({
 
     toolbar: {
         items: [
-            {id: 'csv', type: 'button', caption: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
+            {id: 'csv', type: 'button', text: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
         ],
         onClick: function (event) {
             if (event.target === "csv") {

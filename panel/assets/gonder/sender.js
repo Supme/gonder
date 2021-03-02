@@ -10,8 +10,8 @@ $().w2layout({
 $().w2grid({
     name: 'senderGrid',
     columns: [
-        { field: 'email', caption: w2utils.lang('Email'), size: '50%' },
-        { field: 'name', caption: w2utils.lang('Name'), size: '50%'},
+        { field: 'email', text: w2utils.lang('Email'), size: '50%' },
+        { field: 'name', text: w2utils.lang('Name'), size: '50%'},
         { field: 'utmURL', hidden: true },
         { field: 'bimiSelector', hidden: true },
         { field: 'dkimSelector', hidden: true },
@@ -19,6 +19,7 @@ $().w2grid({
         { field: 'dkimUse', hidden: true }
     ],
     method: 'GET',
+    postData: { cmd:"get" },
     url: '/api/sender',
     onClick: function(event) {
         var grid = this;
@@ -39,14 +40,14 @@ $().w2form({
     header: w2utils.lang('Edit record'),
     name: 'senderForm',
     fields: [
-        { name: 'recid', type: 'text', html: { caption: 'ID', attr: 'size="10" readonly' } },
-        { name: 'name', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" maxlength="40"' } },
-        { name: 'email', type: 'email', required: true, html: { caption: w2utils.lang('Email'), attr: 'size="30"' } },
-        { name: 'utmURL', type: 'text', html: { caption: w2utils.lang('Utm url'), attr: 'size="40" maxlength="100"' } },
-        { name: 'bimiSelector', type: 'text', html: { caption: w2utils.lang('BIMI Selector'), attr: 'size="20" maxlength="20"' } },
-        { name: 'dkimSelector', type: 'text', html: { caption: w2utils.lang('DKIM Selector'), attr: 'size="20" maxlength="20"' } },
-        { name: 'dkimKey', type: 'textarea', html: { caption: w2utils.lang('DKIM Private Key'), attr: 'style="width: 420px; height: 280px"' } },
-        { name: 'dkimUse', type: 'checkbox', html: { caption: w2utils.lang('Use DKIM') } }
+        { field: 'recid', type: 'text', html: { label: 'ID', attr: 'size="10" readonly' } },
+        { field: 'name', type: 'text', html: { label: 'Name', attr: 'size="40" maxlength="40"' } },
+        { field: 'email', type: 'email', required: true, html: { label: 'Email', attr: 'size="30"' } },
+        { field: 'utmURL', type: 'text', html: { label: 'Utm url', attr: 'size="40" maxlength="100"' } },
+        { field: 'bimiSelector', type: 'text', html: { label: 'BIMI Selector', attr: 'size="20" maxlength="20"' } },
+        { field: 'dkimSelector', type: 'text', html: { label: 'DKIM Selector', attr: 'size="20" maxlength="20"' } },
+        { field: 'dkimKey', type: 'textarea', html: { label: 'DKIM Private Key', attr: 'style="width: 420px; height: 280px"' } },
+        { field: 'dkimUse', type: 'checkbox', html: { label: 'Use DKIM' } }
     ],
     actions: {
         Reset: function () {

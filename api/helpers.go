@@ -104,7 +104,7 @@ type request struct {
 
 func parseRequest(js []byte) (request, error) {
 	var req request
-	err := json.Unmarshal([]byte(js), &req)
+	err := json.Unmarshal(js, &req)
 	if err != nil {
 		apiLog.Print(err)
 		err = fmt.Errorf("parse request unmarshal %s", err)
@@ -121,50 +121,58 @@ func createSQLPart(req request, queryStr string, whereParams []interface{}, mapp
 	params = whereParams
 	if len(req.Search) != 0 {
 		result = append(result, "AND")
-		if strings.ToUpper(req.SearchLogic) == "OR" {
+		switch strings.ToUpper(req.SearchLogic) {
+		case "OR":
 			searchLogic = " OR "
-		} else if strings.ToUpper(req.SearchLogic) == "AND" {
+		case "AND":
 			searchLogic = " AND "
-		} else {
+		default:
 			searchLogic = " OR "
 		}
 		for _, s := range req.Search {
 			if filed, ok := mapping[s.Field]; ok {
 				if s.Value != "" {
 					var qs string
-					if strings.ToLower(s.Type) == "int" {
-						if strings.ToLower(s.Operator) == "more" {
+					switch strings.ToLower(s.Type) {
+					case "int":
+						switch strings.ToLower(s.Operator) {
+						case "more", ">":
 							params = append(params, fmt.Sprintf("%v", s.Value))
 							qs = "`" + filed + "`>?"
-						} else if strings.ToLower(s.Operator) == "less" {
+						case ">=":
+							params = append(params, fmt.Sprintf("%v", s.Value))
+							qs = "`" + filed + "`>=?"
+						case "less", "<":
 							params = append(params, fmt.Sprintf("%v", s.Value))
 							qs = "`" + filed + "`<?"
-						} else if strings.ToLower(s.Operator) == "between" {
+						case "<=":
+							params = append(params, fmt.Sprintf("%v", s.Value))
+							qs = "`" + filed + "`<=?"
+						case "between":
 							i := reflect.ValueOf(s.Value).Interface().([]interface{})
 							params = append(params, i[0])
 							params = append(params, i[1])
 							qs = "`" + filed + "` BETWEEN ? AND ?"
-
-						} else {
+						default:
 							params = append(params, fmt.Sprintf("%v", s.Value))
 							qs = "`" + filed + "`=?"
 						}
-					} else if strings.ToLower(s.Type) == "text" {
-						if strings.ToLower(s.Operator) == "begins" {
+					case "text":
+						switch strings.ToLower(s.Operator) {
+						case "begins":
 							params = append(params, reflect.ValueOf(s.Value).Interface().(string)+"%")
 							qs = "`" + filed + "` LIKE ?"
-						} else if strings.ToLower(s.Operator) == "ends" {
+						case "ends":
 							params = append(params, "%"+reflect.ValueOf(s.Value).Interface().(string))
 							qs = "`" + filed + "` LIKE ?"
-						} else if strings.ToLower(s.Operator) == "contains" {
+						case "contains":
 							params = append(params, "%"+reflect.ValueOf(s.Value).Interface().(string)+"%")
 							qs = "`" + filed + "` LIKE ?"
-						} else {
+						default:
 							params = append(params, reflect.ValueOf(s.Value).Interface().(string))
 							qs = "`" + filed + "`=?"
 						}
 					}
-
 					srhStr = append(srhStr, qs)
 				}
 			} else {

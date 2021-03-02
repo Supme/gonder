@@ -22,11 +22,11 @@ $('#templateTabs').w2tabs({
     name: 'templateTabs',
     active: 'preview',
     tabs: [
-        { id: 'preview', caption: w2utils.lang('Preview') },
-        { id: 'html', caption: w2utils.lang('HTML') },
-        { id: 'text', caption: w2utils.lang('Text') },
-        { id: 'amp', caption: w2utils.lang('AMP') },
-        { id: 'help', caption: w2utils.lang('Help') }
+        { id: 'preview', text: w2utils.lang('Preview') },
+        { id: 'html', text: w2utils.lang('HTML') },
+        { id: 'text', text: w2utils.lang('Text') },
+        { id: 'amp', text: w2utils.lang('AMP') },
+        { id: 'help', text: w2utils.lang('Help') }
     ],
     onClick: function (event) {
         switch (event.target)

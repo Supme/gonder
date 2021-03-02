@@ -1,5 +1,5 @@
 // --- Group table ---
-w2ui['bottom'].content('left', $().w2grid({
+w2ui['bottom'].html('left', $().w2grid({
     name: 'group',
     header: w2utils.lang('Group'),
     keyboard : false,
@@ -12,17 +12,24 @@ w2ui['bottom'].content('left', $().w2grid({
         toolbarSearch: false
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
-        { field: 'name', caption: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' }}
+        { field: 'recid', text: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
+        { field: 'name', text: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' }}
     ],
     multiSelect: false,
     sortData: [{ field: 'recid', direction: 'DESC' }],
     url: '/api/groups',
     method: 'GET',
+    postData: { cmd:"get" },
+
     onSelect: function (event) {
         w2ui['campaign'].postData["id"] = parseInt(event.recid);
         w2ui['campaign'].reload();
     },
+
+    onSave: function(event) {
+        w2ui['group'].postData["cmd"] = "save";
+    },
+
     onAdd: function (event) {
         var id, name;
         $.ajax({
@@ -44,7 +51,7 @@ w2ui['bottom'].content('left', $().w2grid({
     toolbar: {
         items: [
             {type: 'break'},
-            {id: 'sender', type: 'button', caption: w2utils.lang('Senders'), icon: 'w2ui-icon-pencil'},
+            {id: 'sender', type: 'button', text: w2utils.lang('Senders'), icon: 'w2ui-icon-pencil'},
             {type: 'break'},
             {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
                     { id: 'campaigns', text: w2utils.lang('Campaigns')},
@@ -56,7 +63,7 @@ w2ui['bottom'].content('left', $().w2grid({
                 },
                 selected: 'campaigns'
             },
-            {id: 'download', type: 'button', caption: w2utils.lang('Download')}
+            {id: 'download', type: 'button', text: w2utils.lang('Download')}
         ],
         onClick: function (event) {
             if (event.target === 'download') {
@@ -83,8 +90,8 @@ w2ui['bottom'].content('left', $().w2grid({
                         onOpen  : function (event) {
                             event.onComplete = function () {
                                 $('#w2ui-popup #senderPopup').w2render('senderEditor');
-                                w2ui.senderEditor.content('left', w2ui['senderGrid']);
-                                w2ui.senderEditor.content('main', w2ui['senderForm']);
+                                w2ui.senderEditor.html('left', w2ui['senderGrid']);
+                                w2ui.senderEditor.html('main', w2ui['senderForm']);
                             };
                         },
                         onToggle: function (event) {

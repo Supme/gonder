@@ -8,7 +8,7 @@ $('#layout').w2layout({
     ]
 });
 
-w2ui.layout.content('top', $().w2toolbar({
+w2ui.layout.html('top', $().w2toolbar({
     name: 'toolbar',
     right : 'v' + version,
     items: [
@@ -65,8 +65,8 @@ w2ui.layout.content('top', $().w2toolbar({
     }
 }));
 
-w2ui.layout.content('main', $('#mainbox').html());
-w2ui.layout.content('bottom', $().w2layout({
+w2ui.layout.html('main', $('#mainbox').html());
+w2ui.layout.html('bottom', $().w2layout({
     name: 'bottom',
     panels: [
         { type: 'left', size: '50%', resizable: true },
@@ -201,17 +201,17 @@ function switchToStatus() {
 $('#parameterForm').w2form({
     name: 'parameter',
     fields: [
-        { name: 'campaignId', type: 'text', html: { caption: w2utils.lang('Id'), attr: 'size="4" readonly' } },
-        { name: 'campaignName', type: 'text', html: { caption: w2utils.lang('Name'), attr: 'size="40" readonly' } },
-        { name: 'campaignProfileId', type: 'list', html: { caption: w2utils.lang('Profile'), attr: 'size="40"' }, minLength: 0},
-        { name: 'campaignSubject', type: 'text', html: { caption: w2utils.lang('Subject'), attr: 'size="40" autocomplete="off"' } },
-        { name: 'campaignSenderId', type: 'list', html: { caption: w2utils.lang('Sender'), attr: 'size="40"' }, minLength: 0},
-        { name: 'campaignStartDate', type: 'date', html: { caption: w2utils.lang('Start date'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
-        { name: 'campaignStartTime', type: 'time', html: { caption: w2utils.lang('Start time'), attr: 'size="10" autocomplete="off"'}, options: {format: w2utils.settings.timeFormat} },
-        { name: 'campaignEndDate', type: 'date', html: { caption: w2utils.lang('End date'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
-        { name: 'campaignEndTime', type: 'time', html: { caption: w2utils.lang('End time'), attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.timeFormat} },
-        { name: 'campaignCompressHTML', type: 'checkbox', html: { caption: w2utils.lang('Compress HTML') } },
-        { name: 'campaignSendUnsubscribe', type: 'checkbox', html: { caption: w2utils.lang('Send unsubscribe') } },
+        { field: 'campaignId', type: 'text', html: { label: 'Id', attr: 'size="4" readonly' } },
+        { field: 'campaignName', type: 'text', html: { label: 'Name', attr: 'size="40" readonly' } },
+        { field: 'campaignProfileId', type: 'list', html: { label: 'Profile', attr: 'size="40"' }, minLength: 0},
+        { field: 'campaignSubject', type: 'text', html: { label: 'Subject', attr: 'size="40" autocomplete="off"' } },
+        { field: 'campaignSenderId', type: 'list', html: { label:'Sender', attr: 'size="40"' }, minLength: 0},
+        { field: 'campaignStartDate', type: 'date', html: { label:'Start date', attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
+        { field: 'campaignStartTime', type: 'time', html: { label: 'Start time', attr: 'size="10" autocomplete="off"'}, options: {format: w2utils.settings.timeFormat} },
+        { field: 'campaignEndDate', type: 'date', html: { label: 'End date', attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
+        { field: 'campaignEndTime', type: 'time', html: { label: 'End time', attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.timeFormat} },
+        { field: 'campaignCompressHTML', type: 'checkbox', html: { label: 'Compress HTML' } },
+        { field: 'campaignSendUnsubscribe', type: 'checkbox', html: { label: 'Send unsubscribe' } },
     ],
     actions: {
         Save: function () {

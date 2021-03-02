@@ -1,5 +1,5 @@
 // --- Campaign table ---
-w2ui['bottom'].content('main', $().w2grid({
+w2ui['bottom'].html('main', $().w2grid({
     name: 'campaign',
     header: w2utils.lang('Campaign'),
     keyboard : false,
@@ -13,17 +13,18 @@ w2ui['bottom'].content('main', $().w2grid({
         toolbarSearch: true
     },
     columns: [
-        { field: 'recid', caption: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
-        { field: 'name', caption: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' } }
+        { field: 'recid', text: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
+        { field: 'name', text: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' } }
     ],
     multiSelect: false,
     sortData: [{ field: 'recid', direction: 'DESC' }],
     url: '/api/campaigns',
     method: 'GET',
+    postData: { cmd:"get" },
     toolbar: {
         items: [
             {type: 'break'},
-            {id: 'clone', type: 'button', caption: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'},
+            {id: 'clone', type: 'button', text: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'},
             {type: 'break'},
             {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
                     { id: 'recipients', text: w2utils.lang('Recipients')},
@@ -38,7 +39,7 @@ w2ui['bottom'].content('main', $().w2grid({
                 },
                 selected: 'recipients'
             },
-            {id: 'download', type: 'button', caption: w2utils.lang('Download')}
+            {id: 'download', type: 'button', text: w2utils.lang('Download')}
         ],
 
         onClick: function (event) {
@@ -69,7 +70,7 @@ w2ui['bottom'].content('main', $().w2grid({
     },
 
     onSave: function(event) {
-        //console.log(event);
+        w2ui['campaign'].postData["cmd"] = "save";
     }
 }));
 // --- /Campaign table ---
