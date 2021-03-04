@@ -11,7 +11,8 @@ $().w2grid({
         toolbarSearch: false
     },
     columns: [
-        {field: 'name', text: w2utils.lang('Name'), size: '50%', sortable: true}
+        {field: 'name', text: w2utils.lang('Name'), size: '50%', sortable: true},
+        {field: 'blocked', text: w2utils.lang('Blocked'), size: '65px', resizable: false, render: 'toggle'}
     ],
     multiSelect: false,
     sortData: [{field: 'recid', direction: 'ASC'}],
@@ -23,15 +24,15 @@ $().w2grid({
 
 function userEditorPopup(event){
     var record = w2ui.userList.get(event.recid);
-
+console.log(event);
     if (event.type === 'dblClick') {
         w2ui.userEditor.record['id'] = parseInt(event.recid);
         setTimeout(function() {
             $(w2ui.userEditor.get('name').el).prop('disabled', true);
-        }, 500);
+            $(w2ui.userEditor.get('blocked').el).prop("checked", record.blocked);
+        }, 250);
         w2ui.userEditor.record['name'] = record.name;
     }
-    if (event.type === 'add'){}
 
     w2popup.open({
         name: "userEditor",
@@ -94,7 +95,8 @@ $().w2form({
         { field: 'name', html: { label: 'Name' }, type: 'text' },
         { field: 'password', html: { label: 'Password'}, type: 'pass' },
         { field: 'unit', html: { label: 'Unit' }, type: 'list'},
-        { field: 'group', html: { label: 'Group' }, type: 'enum' }//, required: true}
+        { field: 'group', html: { label: 'Group' }, type: 'enum' },
+        { field: 'blocked', html: { label: 'Blocked' }, type: 'checkbox' }
     ],
     url: 'api/users',
     method: 'POST',
@@ -104,11 +106,14 @@ $().w2form({
     },
     actions: {
         save: function () {
-            if (this.record.group == undefined) this.record.group = [];
-            this.save(this.record.id == undefined?{cmd:'add'}:undefined, function () {
-                w2ui['userList'].reload();
-                w2popup.close();
-            });
+            if (this.record.group === undefined) this.record.group = [];
+            this.save(
+                this.record.id === undefined?{cmd:'add'}:undefined,
+                function () {
+                    w2ui['userList'].reload();
+                    w2popup.close();
+                }
+            );
         }
     }
 });
@@ -232,7 +237,7 @@ $().w2form({
     },
     actions: {
         save: function () {
-            this.save(this.record.id == undefined?{cmd:'add'}:undefined, function () {
+            this.save(this.record.id === undefined?{cmd:'add'}:undefined, function () {
                 w2ui['unitList'].reload();
                 w2popup.close();
             });

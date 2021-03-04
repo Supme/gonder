@@ -92,17 +92,17 @@ func addGroup() (grp, error) {
 	return g, nil
 }
 
-func saveGroups(changes []map[string]interface{}, user *Auth) (err error) {
+func saveGroups(changes []map[string]interface{}, auth *Auth) (err error) {
 	var where string
 
-	if user.IsAdmin() {
+	if auth.IsAdmin() {
 		where = "?"
 	} else {
 		where = "id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
 	for _, change := range changes {
-		_, err := models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
+		_, err := models.Db.Exec("UPDATE `group` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], auth.user.ID)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -122,7 +122,7 @@ func getGroups(req request) (grps, error) {
 	gs.Records = []grp{}
 	if !req.auth.IsAdmin() {
 		where = "WHERE id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
-		params = append(params, req.auth.userID)
+		params = append(params, req.auth.user.ID)
 	} else {
 		where = "WHERE 1=1"
 	}

@@ -71,6 +71,7 @@ type request struct {
 		ID       int64  `json:"id,omitempty"`
 		Name     string `json:"name,omitempty"`
 		Password string `json:"password,omitempty"`
+		Blocked  int8   `json:"blocked,omitempty"`
 		Unit     struct {
 			ID int64 `json:"id"`
 		} `json:"unit,omitempty"`

@@ -170,17 +170,17 @@ func addCampaign(groupID int64) (camp, error) {
 	return c, nil
 }
 
-func saveCampaigns(changes []map[string]interface{}, user *Auth) error {
+func saveCampaigns(changes []map[string]interface{}, auth *Auth) error {
 	var where string
 
-	if user.IsAdmin() {
+	if auth.IsAdmin() {
 		where = "?"
 	} else {
 		where = "group_id IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
 	}
 
 	for _, change := range changes {
-		_, err := models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], user.userID)
+		_, err := models.Db.Exec("UPDATE `campaign` SET `name`=? WHERE id=? AND "+where, change["name"], change["recid"], auth.user.ID)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -203,7 +203,7 @@ func getCampaigns(req request) (camps, error) {
 		where = "`group_id`=?"
 	} else {
 		where = "`group_id`=? AND `group_id` IN (SELECT `group_id` FROM `auth_user_group` WHERE `auth_user_id`=?)"
-		params = append(params, req.auth.userID)
+		params = append(params, req.auth.user.ID)
 	}
 	partWhere, partParams, err = createSQLPart(req, where, params, map[string]string{"recid": "id", "name": "name"}, true)
 	if err != nil {

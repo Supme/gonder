@@ -36,8 +36,8 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user := r.Context().Value("Auth").(*Auth)
-	if !user.Right("upload-recipients") || !user.CampaignRight(id) {
+	auth := r.Context().Value("Auth").(*Auth)
+	if !auth.Right("upload-recipients") || !auth.CampaignRight(id) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -79,7 +79,7 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	apiLog.Print(user.name, " upload file ", r.FormValue("name"))
+	apiLog.Print(auth.user.Name, " upload file ", r.FormValue("name"))
 
 	switch path.Ext(r.FormValue("name")) {
 	case ".csv":
@@ -452,7 +452,7 @@ func addRecipients(campaignID int64, recipients recips) error {
 	return err
 }
 
-func resendCampaign(campaignID int64, user *Auth) error {
+func resendCampaign(campaignID int64, auth *Auth) error {
 	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
 	if err != nil {
 		log.Println(err)
@@ -463,7 +463,7 @@ func resendCampaign(campaignID int64, user *Auth) error {
 		log.Println(err)
 		return err
 	}
-	apiLog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", user.name, campaignID, c)
+	apiLog.Printf("User %s resend by 4xx code for campaign %d. Resend count %d", auth.user.Name, campaignID, c)
 	return nil
 }
 

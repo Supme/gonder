@@ -227,7 +227,6 @@ func updateUnitRights(req request) error {
 		queryData = append(queryData, fmt.Sprintf(`(%d, %d)`, req.Record.ID, rights["get-log-utm"]))
 	}
 	data := strings.Join(queryData, ", ")
-	fmt.Println(data)
 
 	_, err = models.Db.Exec("INSERT INTO `auth_unit_right`(`auth_unit_id`, `auth_right_id`) VALUES " + data)
 	if err != nil {
