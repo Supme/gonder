@@ -223,11 +223,13 @@ function openAccountEditor() {
                 $('#w2ui-popup #accountEditorPopup').w2render('accountEditorForm');
                 $('#newPassword').focus(function() {
                     $(this).w2tag(w2utils.lang('the password must be at least 8 characters and must<br>contain at least one uppercase letter, lowercase letter,<br>number and character'), {position: 'bottom'});
-                });
-                $('#newPassword').focusout(function() {
+                }).focusout(function() {
                     $(this).w2tag();
                 });
             }
+        },
+        onClose   : function (event) {
+            w2ui.accountEditorForm.clear();
         }
     });
 }
