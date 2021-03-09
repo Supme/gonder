@@ -19,9 +19,13 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 		auth := new(Auth)
 		username, password, _ := r.BasicAuth()
 		auth.user, err = models.UserGetByNameAndPassword(username, password)
-		if err != nil {
+		if err != nil || auth.user.Blocked {
 			if err != models.ErrUserNotFound || err != models.ErrUserInvalidPassword {
-				log.Print(err)
+				if auth.user != nil && auth.user.Blocked {
+					log.Printf("user %s blocked", username)
+				} else {
+					log.Printf("%s for user %s", err, username)
+				}
 			}
 			// ToDo rate limit bad auth or/and user requests
 			models.Prometheus.Api.AuthRequest.Inc()

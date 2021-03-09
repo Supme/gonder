@@ -12,7 +12,7 @@ w2ui.layout.html('top', $().w2toolbar({
     name: 'toolbar',
     right : 'v' + version,
     items: [
-        { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'icon-page' },
+        { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'w2ui-icon-settings' },
         { type: 'radio', id: 'editorButton', group: '1', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil' },
         { type: 'radio', id: 'recipientsButton', group: '1', text: w2utils.lang('Recipients'), img: 'w2ui-icon-columns' },
         { type: 'break' },
@@ -20,14 +20,20 @@ w2ui.layout.html('top', $().w2toolbar({
         { type: 'spacer' },
         { type: 'radio', id: 'statusButton', group: '1', text: w2utils.lang('Status'), img: 'w2ui-icon-info' },
         { type: 'radio', id: 'usersButton', group: '1', text: w2utils.lang('Users'), img: 'w2ui-icon-columns' },
+        { type: 'menu', id: 'accountMenu', text: 'Account', img: 'w2ui-icon-check', items: [
+                { id: 'edit', text: 'Edit', icon: 'w2ui-icon-pencil' },
+                { id: 'exit', text: 'Exit', icon: 'w2ui-icon-empty', disabled: true }
+            ]},
         { type: 'break' }
     ],
     onClick: function (event) {
-        // console.log('Target: '+ event.target, event);
         if (
             $('#campaignId').val() !== '' ||
-            event.target ==='statusButton' ||
-            event.target ==='usersButton'
+            event.target === 'statusButton' ||
+            event.target === 'usersButton' ||
+            event.target === 'accountMenu' ||
+            event.target === 'accountMenu:edit' ||
+            event.target === 'accountMenu:exit'
         ) {
             switch (event.target) {
                 case 'parametersButton':
@@ -54,7 +60,12 @@ w2ui.layout.html('top', $().w2toolbar({
                 case 'statusButton':
                     switchToStatus();
                     break;
-
+                case 'accountMenu:edit':
+                    openAccountEditor();
+                    break;
+                case 'accountMenu:exit':
+                    window.location.href = '/logout';
+                    break;
             }
             w2ui['layout'].resize();
         } else {
@@ -195,6 +206,59 @@ function switchToStatus() {
     $('#users').hide();
     $('#status').show();
 }
+
+function openAccountEditor() {
+    w2popup.open({
+        name      : 'accountEditor',
+        title     : 'Account editor',
+        body      : '<div id="accountEditorPopup" style="position: absolute; left: 5px; top: 5px; right: 5px; bottom: 5px;"></div>',
+        width     : 500,
+        height    : 215,
+        overflow  : 'hidden',
+        modal     : true,
+        showClose : true,
+        showMax   : false,
+        onOpen    : function (event) {
+            event.onComplete = function () {
+                $('#w2ui-popup #accountEditorPopup').w2render('accountEditorForm');
+                $('#newPassword').focus(function() {
+                    $(this).w2tag(w2utils.lang('the password must be at least 8 characters and must<br>contain at least one uppercase letter, lowercase letter,<br>number and character'), {position: 'bottom'});
+                });
+                $('#newPassword').focusout(function() {
+                    $(this).w2tag();
+                });
+            }
+        }
+    });
+}
+
+$().w2form({
+    name   : 'accountEditorForm',
+    url    : '/api/account',
+    postData: { cmd: "changePassword" },
+    fields : [
+        { field: 'password', type: 'password', required: true, html: { label: 'Current password', attr: 'style="width: 250px"' } },
+        { field: 'newPassword',  type: 'password', required: true, html: { label: 'New password', attr: 'style="width: 250px"' } },
+        { field: 'confirmPassword',  type: 'password', required: true, html: { label: 'Confirm password', attr: 'style="width: 250px"' } }
+    ],
+    actions: {
+        'Change': function (event) {
+            this.save(function(data){
+                if (data.status === "success") {
+                    w2popup.close();
+                    window.location.reload();
+                }
+            });
+        },
+        'Clear': function (event) {
+            console.log('clear', event);
+            this.clear();
+        }
+    }
+})
+
+
+
 // --- /Layout ---
 
 // --- Parameters form ---

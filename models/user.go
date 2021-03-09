@@ -8,8 +8,8 @@ import (
 )
 
 var (
- 	ErrUserInvalidPassword = errors.New("invalid password")
- 	ErrUserNotFound = errors.New("user not found")
+	ErrUserInvalidPassword = errors.New("invalid password")
+	ErrUserNotFound        = errors.New("user not found")
 )
 
 type User struct {
@@ -62,7 +62,7 @@ func UserGetByNameAndPassword(name, password string) (*User, error) {
 		return nil, row.Err()
 	}
 	err := row.StructScan(user)
-	if  err == sql.ErrNoRows {
+	if err == sql.ErrNoRows {
 		return nil, ErrUserNotFound
 	}
 	dbHash := user.Password

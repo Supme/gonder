@@ -55,7 +55,7 @@ func campaign(req request) (js []byte, err error) {
 			}
 
 			start := time.Unix(req.Content.StartDate, 0).UTC() //.Format(time.RFC3339)
-			end := time.Unix(req.Content.EndDate, 0).UTC() //.Format(time.RFC3339)
+			end := time.Unix(req.Content.EndDate, 0).UTC()     //.Format(time.RFC3339)
 
 			_, err = template.New("checkHTML").Funcs(template.FuncMap{
 				"RedirectUrl": func(p map[string]interface{}, u string) string { return "" },

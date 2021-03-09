@@ -24,7 +24,7 @@ $().w2grid({
 
 function userEditorPopup(event){
     var record = w2ui.userList.get(event.recid);
-console.log(event);
+
     if (event.type === 'dblClick') {
         w2ui.userEditor.record['id'] = parseInt(event.recid);
         setTimeout(function() {
@@ -98,7 +98,7 @@ $().w2form({
         { field: 'group', html: { label: 'Group' }, type: 'enum' },
         { field: 'blocked', html: { label: 'Blocked' }, type: 'checkbox' }
     ],
-    url: 'api/users',
+    url: '/api/users',
     method: 'POST',
     onError: function(event){
         // ToDo alert not close...

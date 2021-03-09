@@ -9,7 +9,7 @@ import (
 
 func users(req request) (js []byte, err error) {
 	type users struct {
-		Total   int64      `json:"total"`
+		Total   int64         `json:"total"`
 		Records []models.User `json:"records"`
 	}
 
