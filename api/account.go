@@ -37,7 +37,7 @@ func changeAccountPassword(userID int64, currentPassword, newPassword, confirmPa
 }
 
 func validPassword(p string) error {
-	if len(p) < 8 {
+	if len([]rune(p)) < 8 {
 		return errors.New("the password must be longer than 8 characters")
 	}
 
