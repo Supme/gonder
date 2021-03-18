@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/NYTimes/gziphandler"
+	"github.com/Supme/httpreloader"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tdewolff/minify"
 	minifyCSS "github.com/tdewolff/minify/css"
@@ -31,10 +32,12 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -221,8 +224,26 @@ func Run(logger *log.Logger) {
 
 	api.Handle("/metrics", promhttp.Handler())
 
+
+	server, err := httpreloader.NewServer(":"+models.Config.APIPort, models.ServerPem, models.ServerKey, api)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGHUP)
+		for range c {
+			apiLog.Print("reload certificates")
+			err := server.Reloader.UpdateCertificate(models.ServerPem, models.ServerKey)
+			if err != nil {
+				log.Print(err)
+			}
+		}
+	}()
+
 	apiLog.Println("API listening on port " + models.Config.APIPort + "...")
-	log.Fatal(http.ListenAndServeTLS(":"+models.Config.APIPort, models.ServerPem, models.ServerKey, api))
+	log.Fatal(server.ListenAndServeTLS())
 }
 
 func apiRequest(w http.ResponseWriter, r *http.Request) {

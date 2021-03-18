@@ -3,9 +3,10 @@ Description=Gonder- mass email sender
 After=mariadb.service mysql.service multi-user.target network.target
 
 [Service]
-User=%i
-WorkingDirectory=~
-ExecStart=/home/%i/gonder -c config.ini
+User=gonder
+WorkingDirectory=/home/gonder
+ExecStart=/opt/gonder/start -c /opt/gondertmp/config.toml -k /opt/gondertmp/server.key -p /opt/gondertmp/server.pem -l /opt/gondertmp/log
+ExecReload=/bin/kill -HUP $MAINPID
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 Restart=always
 
