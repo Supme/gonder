@@ -1,6 +1,5 @@
-FROM golang:1.12 as builder
+FROM golang:1.16 as builder
 WORKDIR /app/gonder
-RUN go get -u github.com/go-bindata/go-bindata/...
 ENV GO111MODULE=on
 ADD . /app/gonder
 RUN go generate && \

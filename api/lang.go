@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"gonder/bindata"
+	"gonder/panel"
 	"path/filepath"
 	"strings"
 )
@@ -19,17 +19,17 @@ func newLang() (*languages, error) {
 	l := new(languages)
 	l.storage = map[string]language{}
 
-	for _, path := range []string{"panel/assets/w2ui/locale", "panel/assets/gonder/locale"} {
-		files, err := bindata.AssetDir(path)
+	for _, path := range []string{"assets/w2ui/locale", "assets/gonder/locale"} {
+		files, err := panel.Assets.ReadDir(path)
 		if err != nil {
 			return l, err
 		}
 
 		for _, file := range files {
-			name := strings.ToLower(strings.TrimRight(filepath.Base(file), filepath.Ext(file)))
+			name := strings.ToLower(strings.TrimRight(filepath.Base(file.Name()), filepath.Ext(file.Name())))
 			var phrases language
 
-			data, err := bindata.Asset(filepath.Join(path, file))
+			data, err := panel.Assets.ReadFile(filepath.Join(path, file.Name()))
 			if err != nil {
 				return l, err
 			}

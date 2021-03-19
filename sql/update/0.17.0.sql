@@ -1,1 +1,0 @@
-ALTER TABLE campaign ADD `template_amp` mediumtext DEFAULT '' NOT NULL AFTER template_text;

@@ -25,8 +25,8 @@ import (
 	minifyHTML "github.com/tdewolff/minify/html"
 	minifyJS "github.com/tdewolff/minify/js"
 	minifyJSON "github.com/tdewolff/minify/json"
-	"gonder/bindata"
 	"gonder/models"
+	"gonder/panel"
 	"html/template"
 	"log"
 	"mime"
@@ -38,7 +38,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 var (
@@ -116,7 +115,7 @@ func Run(logger *log.Logger) {
 		"tr": func(s string) template.HTML {
 			return template.HTML(lang.tr(models.Config.APIPanelLocale, s))
 		},
-	}).Parse(string(bindata.MustAsset("panel/index.html")))
+	}).Parse(panel.Index)
 	if err != nil {
 		log.Panic(err)
 		return
@@ -145,27 +144,35 @@ func Run(logger *log.Logger) {
 			}
 			w.Header().Add("Cache-Control", "no-store")
 
-			filePath := path.Join("panel", r.URL.Path)
+			//filePath := path.Join("panel", r.URL.Path)
+			//
+			//if _, err := os.Stat(filePath); err == nil {
+			//	http.ServeFile(w, r, path.Join(filePath))
+			//	return
+			//}
 
-			if _, err := os.Stat(filePath); err == nil {
-				http.ServeFile(w, r, path.Join(filePath))
-				return
-			}
-
-			fileInfo, err := bindata.AssetInfo(filePath)
+			filePath := strings.TrimPrefix(r.URL.Path, "/")
+			file, err := panel.Assets.Open(filePath)
 			if err != nil {
 				apiLog.Print(err)
 				http.NotFound(w, r)
 				return
 			}
-			fileContent, err := bindata.Asset(filePath)
+
+			fileInfo, err := file.Stat()
+			if err != nil {
+				apiLog.Print(err)
+				http.NotFound(w, r)
+				return
+			}
+			fileContent, err := panel.Assets.ReadFile(filePath)
 			if err != nil {
 				apiLog.Print(err)
 				http.NotFound(w, r)
 				return
 			}
 			w.Header().Add("Content-Length", strconv.Itoa(int(fileInfo.Size())))
-			w.Header().Add("Date", fileInfo.ModTime().Format(time.RFC1123))
+			//w.Header().Add("Date", fileInfo.ModTime().Format(time.RFC1123))
 			w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(fileInfo.Name())))
 
 			_, err = w.Write(fileContent)
@@ -223,7 +230,6 @@ func Run(logger *log.Logger) {
 	api.HandleFunc("/status/ws/main.log", AuthHandler(mainStatus))
 
 	api.Handle("/metrics", promhttp.Handler())
-
 
 	server, err := httpreloader.NewServer(":"+models.Config.APIPort, models.ServerPem, models.ServerKey, api)
 	if err != nil {

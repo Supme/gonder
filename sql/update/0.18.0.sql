@@ -1,1 +1,0 @@
-ALTER TABLE `recipient` ADD COLUMN `amp_open` TINYINT(1) NOT NULL DEFAULT '0' AFTER `web_agent`;

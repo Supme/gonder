@@ -5,7 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mcuadros/go-version"
-	"gonder/bindata"
+	"gonder/sqldata"
 	"strings"
 )
 
@@ -31,7 +31,7 @@ func CheckDb() error {
 	// with version 0.16.0 there was a table of versions
 	_, err := Db.Exec("SELECT 1 FROM `version`")
 	if err != nil {
-		err = dbQueryFrom("sql/update/0.16.0.sql")
+		err = dbQueryFrom("update/0.16.0.sql")
 		if err != nil {
 			return err
 		}
@@ -45,18 +45,18 @@ func CheckDb() error {
 
 	// in the future, here, if necessary, will check the version of the application and the database
 	if version.Compare("0.16.3", dbVersion, ">") {
-		if err = dbQueryFrom("sql/update/0.16.3.sql"); err != nil {
+		if err = dbQueryFrom("update/0.16.3.sql"); err != nil {
 			return fmt.Errorf("update database to version %s: %s", Version, err)
 		}
 	}
 	if version.Compare("0.17.0", dbVersion, ">") {
-		if err = dbQueryFrom("sql/update/0.17.0.sql"); err != nil {
+		if err = dbQueryFrom("update/0.17.0.sql"); err != nil {
 			return fmt.Errorf("update database to version %s: %s", Version, err)
 		}
 	}
 
 	if version.Compare("0.18.0", dbVersion, ">") {
-		if err = dbQueryFrom("sql/update/0.18.0.sql"); err != nil {
+		if err = dbQueryFrom("update/0.18.0.sql"); err != nil {
 			return fmt.Errorf("update database to version %s: %s", Version, err)
 		}
 	}
@@ -84,11 +84,11 @@ func InitDb(withoutConfirm bool) error {
 		}
 	}
 
-	return dbQueryFrom("sql/dump.sql")
+	return dbQueryFrom("dump.sql")
 }
 
 func dbQueryFrom(filename string) error {
-	sqlDump, err := bindata.ReadFileOrAsset(filename)
+	sqlDump, err := sqldata.Dump.ReadFile(filename)
 	if err != nil {
 		return err
 	}

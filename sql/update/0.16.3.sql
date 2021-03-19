@@ -1,1 +1,0 @@
-ALTER TABLE sender ADD bimi_selector VARCHAR(20) DEFAULT '' NOT NULL AFTER utm_url;

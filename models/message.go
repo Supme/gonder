@@ -3,7 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"gonder/bindata"
+	"gonder/templates"
 	"html/template"
 	"log"
 	"os"
@@ -84,7 +84,7 @@ func (m *Message) GetTemplate(fileName string) (*template.Template, error) {
 
 	_, err = os.Stat(filePath)
 	if err != nil {
-		data, err := bindata.Asset(filePath)
+		data, err := templates.Default.ReadFile(path.Join(dirName, fileName))
 		if err != nil {
 			return nil, err
 		}
