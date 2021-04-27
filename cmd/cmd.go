@@ -28,7 +28,7 @@ func Run() {
 	flag.Parse()
 
 	if *showVer {
-		fmt.Printf("Gonder version: v%s\r\n\r\n", models.Version)
+		fmt.Printf("Gonder version: %s (commit: %s date: %s)\r\n\r\n", models.AppVersion, models.AppCommit, models.AppDate)
 		os.Exit(0)
 	}
 

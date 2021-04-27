@@ -125,7 +125,7 @@ func Run(logger *log.Logger) {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Cache-Control", "no-store")
 			err = indexTmpl.Execute(w, map[string]string{
-				"version": models.Version,
+				"version": models.AppVersion,
 				"locale":  models.Config.APIPanelLocale,
 				"root":    models.Config.APIPanelPath,
 			})

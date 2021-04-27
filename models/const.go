@@ -1,8 +1,12 @@
 package models
 
-const (
-	Version = "0.19.0"
+var (
+	AppVersion = "na"
+	AppCommit  = "na"
+	AppDate    = "na"
+)
 
+const (
 	OpenTrace   = "open_trace"
 	WebVersion  = "web_version"
 	Unsubscribe = "unsubscribe"

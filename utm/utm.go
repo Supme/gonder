@@ -55,7 +55,7 @@ func Run(logger *log.Logger) {
 	// ToDo disallow all
 	utm.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, err := w.Write([]byte("# " + models.Version + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
+		_, err := w.Write([]byte("# " + models.AppVersion + "\nUser-agent: *\nDisallow: /data/\nDisallow: /files/\nDisallow: /unsubscribe/\nDisallow: /redirect/\nDisallow: /web/\nDisallow: /open/\n"))
 		if err != nil {
 			log.Println(err)
 			return

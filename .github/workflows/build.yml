@@ -1,0 +1,90 @@
+name: Build
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: linux
+          - arch: arm64
+            os: linux
+          - arch: amd64
+            os: windows
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Get version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+    - name: Build
+      if: startsWith(matrix.os, 'windows') != true
+      run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-s -w -X gonder/models.AppVersion=${{ steps.get_version.outputs.VERSION }} -X gonder/models.AppCommit=`git describe --always` -X gonder/models.AppDate=`date -u +%FT%TZ`" -o ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.os }}_${{ matrix.arch }} ./main.go
+
+    - name: Upload build artifact for ${{ matrix.os }} ${{ matrix.arch }}
+      if: startsWith(matrix.os, 'windows') != true
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.os }}_${{ matrix.arch }}
+        path: ./${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.os }}_${{ matrix.arch }}
+        retention-days: 1
+
+    - name: Windows build
+      if: startsWith(matrix.os, 'windows') == true
+      run: GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-s -w -X gonder/models.AppVersion=${{ steps.get_version.outputs.VERSION }} -X gonder/models.AppCommit=`git describe --always` -X gonder/models.AppDate=`date -u +%FT%TZ`" -o ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.arch }}.exe ./main.go
+
+    - name: Upload build artifact for ${{ matrix.os }} ${{ matrix.arch }}
+      if: startsWith(matrix.os, 'windows') == true
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.arch }}.exe
+        path: ./${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_${{ matrix.arch }}.exe
+        retention-days: 1
+
+  create-release:
+    name: Release
+    needs: [ build ]
+    runs-on: ubuntu-latest
+
+    steps:
+     - uses: actions/checkout@v2
+
+     - name: Get version
+       id: get_version
+       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+     - name: Download linux amd64
+       uses: actions/download-artifact@v2
+       with:
+         name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_linux_amd64
+
+     - name: Download linux arm64
+       uses: actions/download-artifact@v2
+       with:
+         name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_linux_arm64
+
+     - name: Download windows amd64
+       uses: actions/download-artifact@v2
+       with:
+         name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_amd64.exe
+
+     - name: Create release
+       run: |
+         echo "${{ github.event.repository.name }}"
+         gh release create "${{ steps.get_version.outputs.VERSION }}" -t "${{ steps.get_version.outputs.VERSION }}"
+         gh release upload "${{ steps.get_version.outputs.VERSION }}" ${{ github.event.repository.name }}_* --clobber
+         gh release view "${{ steps.get_version.outputs.VERSION }}"
+       env:
+         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

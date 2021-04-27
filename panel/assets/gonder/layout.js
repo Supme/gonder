@@ -10,7 +10,7 @@ $('#layout').w2layout({
 
 w2ui.layout.html('top', $().w2toolbar({
     name: 'toolbar',
-    right : 'v' + version,
+    right : version,
     items: [
         { type: 'radio', id: 'parametersButton', group: '1', text: w2utils.lang('Parameters'), img: 'w2ui-icon-settings' },
         { type: 'radio', id: 'editorButton', group: '1', text: w2utils.lang('Editor'), img: 'w2ui-icon-pencil' },
