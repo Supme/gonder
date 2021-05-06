@@ -84,7 +84,7 @@ var (
     <p>
       Если Вы не желаете получать информацию, пожалуйста, <a href="{{.UnsubscribeUrl}}" style="color: #9e9e9e;" target="_blank"> откажитесь от подписки</a>
     </p>
-  <img src="{{.StatPng}}" border="0" width="10" height="10" alt=""/></body>
+  <img src="{{.StatUrl}}" border="0" width="10" height="10" alt=""/></body>
 </html>
 `
 )
@@ -111,7 +111,7 @@ func init() {
 
 func TestHtmlStringPrepare(t *testing.T) {
 	prepareHTMLTemplate(&tmpl, false)
-	//fmt.Printf("Html template result:\n%s", tmpl)
+	// fmt.Printf("Html template result:\n%s", tmpl)
 	if tmpl != goodTmpl {
 		t.Error("html result string prepare template is not equal")
 	}

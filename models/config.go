@@ -13,6 +13,7 @@ import (
 type config struct {
 	dbString         string
 	dbConnections    int
+	secretString	 string
 	APIPort          string
 	APIPanelPath     string
 	APIPanelLocale   string
@@ -41,6 +42,7 @@ var (
 //  GONDER_MAIN_DEFAULT_PROFILE_ID (int)
 //  GONDER_MAIN_ADMIN_EMAIL (string)
 //  GONDER_MAIN_GONDER_EMAIL (string)
+//  GONDER_MAIN_SECRET_STRING (string)
 //  GONDER_DATABASE_STRING (string)
 //  GONDER_DATABASE_CONNECTIONS (int)
 //  GONDER_MAILER_SEND (bool)
@@ -79,6 +81,7 @@ func (c *config) read(configFile string) error {
 
 	c.AdminEmail = getEnvString("GONDER_MAIN_ADMIN_EMAIL", mainSection.ValueOf("admin_email"))
 	c.GonderEmail = getEnvString("GONDER_MAIN_GONDER_EMAIL", mainSection.ValueOf("gonder_email"))
+	c.secretString = getEnvString("GONDER_MAIN_SECRET_STRING", mainSection.ValueOf("secret_string"))
 
 	databaseSection, err := config.Section("database")
 	if err != nil {

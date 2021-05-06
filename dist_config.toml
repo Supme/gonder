@@ -2,6 +2,7 @@
 default_profile_id = 0
 admin_email = me@supme.ru
 gonder_email = gonder@supme.ru
+secret_string = supersecret
 
 [database]
 #string = dbusername:dbuserpassword@unix(/var/run/mysqld/mysqld.sock)/databasename

@@ -78,5 +78,5 @@ func BenchmarkTranslate(b *testing.B) {
 }
 
 func loadLang() (*languages, error) {
-	return newLang("../panel/assets/w2ui/locale/*.json", "../panel/assets/gonder/locale/*.json")
+	return newLang()
 }

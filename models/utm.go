@@ -2,7 +2,6 @@ package models
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,31 +46,36 @@ func EncodeUTM(cmd, url, data string, params map[string]interface{}) string {
 			Email: params["RecipientEmail"].(string),
 			Data:  data,
 		})
-	return url + "/" + cmd + "/" + base64.URLEncoding.EncodeToString(j)
+	encode, err := Encrypt(j)
+	if err != nil {
+		return fmt.Sprintf("Error encrypt: %s", err)
+	}
+	return url + "/" + cmd + "/" + encode
 }
 
 // DecodeUTM decode utm data string and return Message with the pre-filled id and email
-func DecodeUTM(base64data string) (message Message, data string, err error) {
+func DecodeUTM(base64data string) (Message, string, error) {
 	var param utm
 
-	decode, err := base64.URLEncoding.DecodeString(base64data)
-
+	decode, err := Decrypt(base64data)
 	if err != nil {
-		return message, data, err
-	}
-	err = json.Unmarshal([]byte(decode), &param) // ToDo decode without reflect
-	if err != nil {
-		return message, data, err
+		return Message{}, "", err
 	}
 
-	data = param.Data
+	err = json.Unmarshal(decode, &param)
+	if err != nil {
+		return Message{}, "", err
+	}
+
+	var message Message
+	data := param.Data
 	err = message.New(param.ID)
 	if err != nil {
 		return message, data, err
 	}
 
 	if param.Email != message.RecipientEmail {
-		return message, data, errors.New("Not valid recipient")
+		return message, data, errors.New("not valid recipient")
 	}
 
 	return message, data, nil
