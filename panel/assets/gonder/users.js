@@ -55,7 +55,9 @@ function userEditorPopup(event){
         unit[k] = {id: v.recid, text: v.name}
     });
     w2ui['userEditor'].set('unit', { options: { items: unit } });
-    w2ui['userEditor'].record['unit'] = record.unitid;
+    if (record !== null) {
+        w2ui['userEditor'].record['unit'] = record.unitid;
+    }
 
     var groups = [];
     $.ajax({
