@@ -32,6 +32,17 @@ func (id Recipient) UpdateRecipientStatus(status string) error {
 	return err
 }
 
+type RecipientData struct {
+	Name   string           `json:"name"`
+	Email  string           `json:"email"`
+	Params []RecipientParam `json:"params"`
+}
+
+type RecipientParam struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type RecipientRemovedStatus int
 
 const (

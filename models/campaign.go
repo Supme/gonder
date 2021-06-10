@@ -2,13 +2,18 @@ package models
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/mssola/user_agent"
+	"github.com/tealeg/xlsx/v3"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 type Campaign int
@@ -266,4 +271,298 @@ func (rua *CampaignReportUserAgent) Validate() {
 
 func (id Campaign) ReportUserAgent() (*sqlx.Rows, error) {
 	return Db.Queryx(`SELECT id, email, name, client_agent, web_agent FROM recipient WHERE campaign_id=?`, id)
+}
+
+func (id Campaign) LoadRecipientCsv(file string, progress *uint64) error {
+	atomic.StoreUint64(progress, 0)
+	csvFile, err := os.Open(file)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		err := csvFile.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+	defer func() {
+		err := os.Remove(file)
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+
+	reader := csv.NewReader(csvFile)
+	reader.FieldsPerRecord = -1
+	rawCSVdata, err := reader.ReadAll()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		if err := stRecipient.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
+	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		if err := stParameter.Close(); err != nil {
+			log.Print(err)
+		}
+	}()
+
+	total := uint64(len(rawCSVdata))
+	title := make(map[int]string)
+	for k, v := range rawCSVdata {
+		if k == 0 {
+			for i, t := range v {
+				title[i] = t
+			}
+		} else {
+			var email, name string
+			data := map[string]string{}
+			for i, t := range v {
+				switch i {
+				case 0:
+					email = strings.TrimSpace(t)
+				case 1:
+					name = t
+				default:
+					data[title[i]] = t
+				}
+			}
+
+			res, err := stRecipient.Exec(id, email, name)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			rID, err := res.LastInsertId()
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			for i, t := range data {
+				_, err := stParameter.Exec(rID, i, t)
+				if err != nil {
+					log.Println(err)
+					return err
+				}
+			}
+		}
+
+		atomic.StoreUint64(progress, uint64(k)*100/total)
+
+	}
+
+	return tx.Commit()
+}
+
+func (id Campaign) LoadRecipientXlsx(file string, progress *uint64) error {
+	atomic.StoreUint64(progress, 0)
+	xlsxFile, err := xlsx.OpenFile(file)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		if err := os.Remove(file); err != nil {
+			log.Print(err)
+		}
+	}()
+
+	if xlsxFile.Sheets[0] != nil {
+		var tx *sql.Tx
+		tx, err = Db.Begin()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		defer func() {
+			_ = tx.Rollback()
+		}()
+
+		var stRecipient *sql.Stmt
+		stRecipient, err = tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		defer func() {
+			if err := stRecipient.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
+
+		var stParameter *sql.Stmt
+		stParameter, err = tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		defer func() {
+			if err := stParameter.Close(); err != nil {
+				log.Print(err)
+			}
+		}()
+
+		title := make(map[int]string)
+		total := uint64(xlsxFile.Sheets[0].MaxRow)
+		err := xlsxFile.Sheets[0].ForEachRow(func(r *xlsx.Row) error {
+			k := r.GetCoordinate()
+			if k == 0 {
+				err := r.ForEachCell(func(c *xlsx.Cell) error {
+					i, _ := c.GetCoordinates()
+					title[i] = c.String()
+					fmt.Printf("title col: %d val: %s\r\n", i, c.String())
+					return nil
+				})
+				if err != nil {
+					log.Print(err)
+				}
+			} else {
+				var email, name string
+				data := make(map[string]string)
+				err := r.ForEachCell(func(c *xlsx.Cell) error {
+					i, _ := c.GetCoordinates()
+					t := c.String()
+
+					switch i {
+					case 0:
+						email = strings.TrimSpace(t)
+					case 1:
+						name = t
+					default:
+						data[title[i]] = t
+					}
+					return nil
+				})
+				if err != nil {
+					log.Println(err)
+					return err
+				}
+
+				res, err := stRecipient.Exec(id, email, name)
+				if err != nil {
+					log.Println(err)
+					return err
+				}
+
+				rID, err := res.LastInsertId()
+				if err != nil {
+					log.Println(err)
+					return err
+				}
+
+				for i, t := range data {
+					_, err = stParameter.Exec(rID, i, t)
+					if err != nil {
+						log.Println(err)
+						return err
+					}
+				}
+
+			}
+
+			atomic.StoreUint64(progress, uint64(k)*100/total)
+
+			return nil
+		})
+		if err != nil {
+			log.Print(err)
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func (id Campaign) AddRecipients(recipients []RecipientData) error {
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		err := stRecipient.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer func() {
+		err := stParameter.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+
+	for i := range recipients {
+		res, err := stRecipient.Exec(id, strings.TrimSpace(recipients[i].Email), recipients[i].Name)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		rID, err := res.LastInsertId()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		for _, p := range recipients[i].Params {
+			_, err := stParameter.Exec(rID, p.Key, p.Value)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (id Campaign) DeleteRecipients() error {
+	_, err := Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", id)
+	if err != nil {
+		log.Println(err)
+	}
+	return err
 }

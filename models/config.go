@@ -13,7 +13,7 @@ import (
 type config struct {
 	dbString         string
 	dbConnections    int
-	secretString	 string
+	secretString     string
 	APIPort          string
 	APIPanelPath     string
 	APIPanelLocale   string

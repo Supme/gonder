@@ -14,7 +14,7 @@ import (
 type CryptoAlg string
 
 const (
-	CryptoAlgAES = CryptoAlg("aes_")
+	CryptoAlgAES  = CryptoAlg("aes_")
 	CryptoAlgNone = CryptoAlg("")
 )
 
@@ -42,7 +42,7 @@ func encrypt(alg CryptoAlg, data []byte) (string, error) {
 
 // Decrypt decrypt base64 data to bytes
 func Decrypt(data string) ([]byte, error) {
-	switch  {
+	switch {
 	case strings.HasPrefix(data, string(CryptoAlgAES)):
 		encrypted, err := base64.URLEncoding.DecodeString(strings.TrimPrefix(data, string(CryptoAlgAES)))
 		if err != nil {

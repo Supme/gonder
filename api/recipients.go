@@ -3,21 +3,19 @@ package api
 import (
 	"database/sql"
 	"encoding/base64"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tealeg/xlsx"
 	"gonder/models"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"strconv"
-	"strings"
-	"sync"
+	"sync/atomic"
 )
+
+var progress map[string]*uint64
 
 func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1024*1024*30) // ToDo config variable?
@@ -30,7 +28,7 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := strconv.Atoi(r.FormValue("id"))
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -41,7 +39,7 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	if isAccepted(int64(id)) {
+	if isAccepted(id) {
 		e := models.JSONResponse{}.OkWriter(w, "Cannot add recipients to an accepted campaign.")
 		if e != nil {
 			apiLog.Print(e)
@@ -81,18 +79,20 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 	apiLog.Print(auth.user.Name, " upload file ", r.FormValue("name"))
 
+	if progress == nil {
+		progress = map[string]*uint64{}
+	}
+
 	switch path.Ext(r.FormValue("name")) {
 	case ".csv":
 		go func() {
-			progress.Lock()
-			progress.cnt[file.Name()] = 0
-			progress.Unlock()
-			if err = recipientCsv(int64(id), filename); err != nil {
+			var p uint64
+			progress[filename] = &p
+			if err = models.Campaign(id).LoadRecipientCsv(filename, progress[file.Name()]); err != nil {
 				apiLog.Println(err)
 			}
-			progress.Lock()
-			delete(progress.cnt, filename)
-			progress.Unlock()
+			delete(progress, filename)
+
 		}()
 		e := models.JSONResponse{}.OkWriter(w, filename)
 		if e != nil {
@@ -101,15 +101,13 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	case ".xlsx":
 		go func() {
-			progress.Lock()
-			progress.cnt[file.Name()] = 0
-			progress.Unlock()
-			if err = recipientXlsx(int64(id), filename); err != nil {
+			var p uint64
+			progress[filename] = &p
+			if err = models.Campaign(id).LoadRecipientXlsx(filename, progress[filename]); err != nil {
 				apiLog.Println(err)
 			}
-			progress.Lock()
-			delete(progress.cnt, filename)
-			progress.Unlock()
+			delete(progress, filename)
+
 		}()
 		e := models.JSONResponse{}.OkWriter(w, filename)
 		if e != nil {
@@ -137,30 +135,12 @@ type recipsTable struct {
 	Records []recipTable `json:"records"`
 }
 
-type recips []recip
-
-type recip struct {
-	Name   string       `json:"name"`
-	Email  string       `json:"email"`
-	Params []recipParam `json:"params"`
-}
-
-type recipParam struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
+type recips []models.RecipientData
 
 type recipParams struct {
 	Total   int          `json:"total"`
-	Records []recipParam `json:"records"`
+	Records []models.RecipientParam `json:"records"`
 }
-
-type safeProgress struct {
-	cnt map[string]int
-	sync.RWMutex
-}
-
-var progress = safeProgress{cnt: map[string]int{}}
 
 func recipientsReq(req request) (js []byte, err error) {
 	if req.Recipient == 0 {
@@ -180,27 +160,25 @@ func recipientsReq(req request) (js []byte, err error) {
 			if !req.auth.Right("upload-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden add recipients")
 			}
-			err = addRecipients(req.Campaign, req.Recipients)
+			err = models.Campaign(req.Campaign).AddRecipients(req.Recipients)
 			if err != nil {
 				return js, err
 			}
 
 		case "progress":
 			if req.auth.Right("upload-recipients") {
-				progress.RLock()
-				if val, ok := progress.cnt[req.Name]; ok {
-					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, val))
+				if _, ok := progress[req.Name]; ok {
+					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, atomic.LoadUint64(progress[req.Name])))
 				} else {
 					js = []byte(`{"status": "error", "message": "not found"}`)
 				}
-				progress.RUnlock()
 			}
 
 		case "clear":
 			if !req.auth.Right("delete-recipients") || !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden delete recipients")
 			}
-			err = delRecipients(req.Campaign)
+			err = models.Campaign(req.Campaign).DeleteRecipients()
 			if err != nil {
 				return js, errors.New("Can't delete all recipients")
 			}
@@ -392,68 +370,8 @@ func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
 	return
 }
 
-func addRecipients(campaignID int64, recipients recips) error {
-	tx, err := models.Db.Begin()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		err := stRecipient.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		err := stParameter.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	for r := range recipients {
-		res, err := stRecipient.Exec(campaignID, strings.TrimSpace(recipients[r].Email), recipients[r].Name)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		id, err := res.LastInsertId()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		for _, p := range recipients[r].Params {
-			_, err := stParameter.Exec(id, p.Key, p.Value)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
 func resendCampaign(campaignID int64, auth *Auth) error {
-	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'", campaignID)
+	res, err := models.Db.Exec("UPDATE `recipient` SET `status`=NULL WHERE `campaign_id`=? AND `removed`=0 AND LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)|(remote error)).+'", campaignID)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -477,7 +395,6 @@ func getRecipientCampaign(recipientID int64) (int64, error) {
 }
 
 //ToDo check right errors
-//ToDo add unsubscribe column
 func getRecipients(req request) (recipsTable, error) {
 	var (
 		err                error
@@ -538,9 +455,9 @@ func getRecipients(req request) (recipsTable, error) {
 
 //ToDo check right errors
 func getRecipientParams(recipient int64) (recipParams, error) {
-	var p recipParam
+	var p models.RecipientParam
 	var ps recipParams
-	ps.Records = []recipParam{}
+	ps.Records = []models.RecipientParam{}
 	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {
 		log.Println(err)
@@ -565,231 +482,4 @@ func getRecipientParams(recipient int64) (recipParams, error) {
 		log.Println(err)
 	}
 	return ps, err
-}
-
-func delRecipients(campaignID int64) error {
-	_, err := models.Db.Exec("UPDATE `recipient` SET `removed`=1 WHERE `campaign_id`=? AND `removed`=0", campaignID)
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
-func recipientCsv(campaignID int64, file string) error {
-	title := make(map[int]string)
-	var email, name string
-
-	csvfile, err := os.Open(file)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		err := csvfile.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-	defer func() {
-		err := os.Remove(file)
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	reader := csv.NewReader(csvfile)
-	reader.FieldsPerRecord = -1
-	rawCSVdata, err := reader.ReadAll()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	tx, err := models.Db.Begin()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	stRecipient, err := tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		if err := stRecipient.Close(); err != nil {
-			log.Print(err)
-		}
-	}()
-	stParameter, err := tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		if err := stParameter.Close(); err != nil {
-			log.Print(err)
-		}
-	}()
-
-	total := len(rawCSVdata)
-	for k, v := range rawCSVdata {
-		if k == 0 {
-			for i, t := range v {
-				title[i] = t
-			}
-		} else {
-			email = ""
-			name = ""
-			data := map[string]string{}
-			for i, t := range v {
-				if i == 0 {
-					email = strings.TrimSpace(t)
-				} else if i == 1 {
-					name = t
-				} else {
-					data[title[i]] = t
-				}
-			}
-
-			res, err := stRecipient.Exec(campaignID, email, name)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-			id, err := res.LastInsertId()
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-			for i, t := range data {
-				_, err := stParameter.Exec(id, i, t)
-				if err != nil {
-					log.Println(err)
-					return err
-				}
-			}
-		}
-		progress.Lock()
-		progress.cnt[file] = int(k) * 100 / total
-		progress.Unlock()
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
-func recipientXlsx(campaignID int64, file string) error {
-	title := make(map[int]string)
-
-	var email, name string
-
-	xlFile, err := xlsx.OpenFile(file)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer func() {
-		if err := os.Remove(file); err != nil {
-			log.Print(err)
-		}
-	}()
-
-	if xlFile.Sheets[0] != nil {
-		var tx *sql.Tx
-		tx, err = models.Db.Begin()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		defer func() {
-			_ = tx.Rollback()
-		}()
-
-		var stRecipient *sql.Stmt
-		stRecipient, err = tx.Prepare("INSERT INTO recipient (`campaign_id`, `email`, `name`) VALUES (?, ?, ?)")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		defer func() {
-			if err := stRecipient.Close(); err != nil {
-				log.Print(err)
-			}
-		}()
-
-		var stParameter *sql.Stmt
-		stParameter, err = tx.Prepare("INSERT INTO parameter (`recipient_id`, `key`, `value`) VALUES (?, ?, ?)")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		defer func() {
-			if err := stParameter.Close(); err != nil {
-				log.Print(err)
-			}
-		}()
-
-		total := len(xlFile.Sheets[0].Rows)
-		for k, v := range xlFile.Sheets[0].Rows {
-			if k == 0 {
-				for i, cell := range v.Cells {
-					t := cell.String()
-					title[i] = t
-				}
-			} else {
-				email = ""
-				name = ""
-				data := make(map[string]string)
-				for i, cell := range v.Cells {
-					t := cell.String()
-					if i == 0 {
-						email = strings.TrimSpace(t)
-					} else if i == 1 {
-						name = t
-					} else {
-						data[title[i]] = t
-					}
-				}
-
-				var res sql.Result
-				res, err = stRecipient.Exec(campaignID, email, name)
-				if err != nil {
-					log.Println(err)
-					return err
-				}
-
-				var id int64
-				id, err = res.LastInsertId()
-				if err != nil {
-					log.Println(err)
-					return err
-				}
-				for i, t := range data {
-					_, err = stParameter.Exec(id, i, t)
-					if err != nil {
-						log.Println(err)
-						return err
-					}
-				}
-
-			}
-			progress.Lock()
-			progress.cnt[file] = int(k) * 100 / total
-			progress.Unlock()
-		}
-		err = tx.Commit()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-
-	return nil
 }
