@@ -473,10 +473,7 @@ response:
 {
  "total":2,
  "records":
-   [
-     {"key":"Reference","value":"Bob Sinclair"},
-     {"key":"Gender","value":"Man"}
-   ]
+   {"Reference":"Bob Sinclair", "Gender":"Man"}
 }
 ```     
 
@@ -497,32 +494,20 @@ response:
         "name":"Bob",
         "email":"bob@email.tld",
         "params": 
-         [
-           {
-             "key":"Age",
-             "value":"25"
-           },
-           {
-             "key":"Gender",
-             "value":"male"
-           }
-         ]
+         {
+             "Age":"25",
+             "Gender":"male"
+         }
       },
       {
         "name":"Alice",
         "email":"alice@email.tld",
-        "params": 
-          [
-            {
-              "key":"Age",
-              "value":"21"
-            },
-            {
-              "key":"Gender",
-              "value":"female"
-            }
-          ]
-       }
+        "params":
+        {
+          "Age":"21",
+          "Gender":"female"
+        }
+      }
     ]
 }
 ```
@@ -537,6 +522,28 @@ or error
 
 </details>
 
+
+<details> 
+
+<summary>Delete recipients</summary>
+
+```json
+{
+  "cmd":"delete",
+  "ids":
+    [1,2,30,40]
+}
+```
+response
+```json
+{"status": "success", "message": ""}
+```
+or error
+```json
+{"status": "error", "message": "Something error text"}
+```
+
+</details>
 
 <details>
 

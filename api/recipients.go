@@ -138,8 +138,8 @@ type recipsTable struct {
 type recips []models.RecipientData
 
 type recipParams struct {
-	Total   int          `json:"total"`
-	Records []models.RecipientParam `json:"records"`
+	Total   int               `json:"total"`
+	Records map[string]string `json:"records"`
 }
 
 func recipientsReq(req request) (js []byte, err error) {
@@ -160,7 +160,32 @@ func recipientsReq(req request) (js []byte, err error) {
 			if !req.auth.Right("upload-recipients") && !req.auth.CampaignRight(req.Campaign) {
 				return js, errors.New("Forbidden add recipients")
 			}
+			if isAccepted(req.Campaign) {
+				return js, errors.New( "Cannot add recipients to an accepted campaign.")
+			}
 			err = models.Campaign(req.Campaign).AddRecipients(req.Recipients)
+			if err != nil {
+				return js, err
+			}
+
+		case "delete":
+			if !req.auth.Right("delete-recipients") {
+				return js, errors.New("Forbidden delete recipients")
+			}
+			gs, err := models.RecipientsGroups(req.IDs...)
+			if err != nil {
+				return js, err
+			}
+			fmt.Println("groups:", gs)
+			for _, g := range gs {
+				if !req.auth.CampaignRight(g.IntID()) {
+					return js, errors.New("Forbidden delete recipients from this group")
+				}
+				if isAccepted(int64(g.IntID())) {
+					return js, errors.New( "Cannot delete recipients from accepted campaign.")
+				}
+			}
+			err = models.RecipientsDelete(req.IDs...)
 			if err != nil {
 				return js, err
 			}
@@ -455,9 +480,8 @@ func getRecipients(req request) (recipsTable, error) {
 
 //ToDo check right errors
 func getRecipientParams(recipient int64) (recipParams, error) {
-	var p models.RecipientParam
 	var ps recipParams
-	ps.Records = []models.RecipientParam{}
+	ps.Records = map[string]string{}
 	query, err := models.Db.Query("SELECT `key`, `value` FROM `parameter` WHERE `recipient_id`=?", recipient)
 	if err != nil {
 		log.Println(err)
@@ -470,12 +494,13 @@ func getRecipientParams(recipient int64) (recipParams, error) {
 		}
 	}()
 	for query.Next() {
-		err = query.Scan(&p.Key, &p.Value)
+		var k, v string
+		err = query.Scan(&k, &v)
 		if err != nil {
 			log.Println(err)
 			return recipParams{}, err
 		}
-		ps.Records = append(ps.Records, p)
+		ps.Records[k] = v
 	}
 	err = models.Db.QueryRow("SELECT COUNT(*) FROM `parameter` WHERE `recipient_id`=?", recipient).Scan(&ps.Total)
 	if err != nil {

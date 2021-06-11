@@ -59,6 +59,7 @@ type request struct {
 	Select      bool         `json:"select,omitempty"`
 
 	Recipients recips `json:"recipients,omitempty"`
+	IDs        []int  `json:"ids,omitempty"`
 
 	BimiSelector string `json:"bimiSelector"`
 

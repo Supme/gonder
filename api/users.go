@@ -101,7 +101,7 @@ func users(req request) (js []byte, err error) {
 
 		}
 	} else {
-		return nil, errors.New("access denied")
+		return nil, errors.New("Access denied")
 	}
 
 	return js, err

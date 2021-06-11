@@ -276,8 +276,8 @@ $('#parameterForm').w2form({
         { field: 'campaignStartTime', type: 'time', html: { label: 'Start time', attr: 'size="10" autocomplete="off"'}, options: {format: w2utils.settings.timeFormat} },
         { field: 'campaignEndDate', type: 'date', html: { label: 'End date', attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.dateFormat} },
         { field: 'campaignEndTime', type: 'time', html: { label: 'End time', attr: 'size="10" autocomplete="off"' }, options: {format: w2utils.settings.timeFormat} },
-        { field: 'campaignCompressHTML', type: 'checkbox', html: { label: 'Compress HTML' } },
-        { field: 'campaignSendUnsubscribe', type: 'checkbox', html: { label: 'Send unsubscribe' } },
+        { field: 'campaignCompressHTML', type: 'checkbox', html: { label: w2utils.lang('Compress HTML') } },
+        { field: 'campaignSendUnsubscribe', type: 'checkbox', html: { label: w2utils.lang('Send unsubscribe') } },
     ],
     actions: {
         Save: function () {

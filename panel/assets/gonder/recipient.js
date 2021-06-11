@@ -25,8 +25,8 @@ $('#campaignRecipient').w2grid({
                         dataType: "json"
                     }).done(function(data) {
                         table = '<table>';
-                        $.each(data.records, function (i, val) {
-                           table += '<tr><td>' + val["key"] + '</td><td>' + val["value"] + '</td></tr>';
+                        $.each(data.records, function (key, val) {
+                           table += '<tr><td>' + key + '</td><td>' + val + '</td></tr>';
                         });
                     });
                     return table;
@@ -38,7 +38,7 @@ $('#campaignRecipient').w2grid({
         { field: 'open', text: w2utils.lang('Opened'), sortable: true, size: '65px', resizable: false, render: 'toggle', style: 'text-align: center' },
         { field: 'result', text: w2utils.lang('Result'), sortable: true, size: '100%', resizable: true }
     ],
-    multiSelect: false,
+    multiSelect: true,
     method: 'GET',
     postData: { cmd:"get" },
 
@@ -53,24 +53,116 @@ $('#campaignRecipient').w2grid({
 
     toolbar: {
         items: [
+            {id: 'add', type: 'button', text: w2utils.lang('Add New'), tooltip: w2utils.lang("Add recipient"), icon: 'w2ui-icon-plus'},
+            {id: 'delete', type: 'button', text: w2utils.lang('Delete'), tooltip: w2utils.lang("Delete selected recipients"), icon: 'w2ui-icon-cross'},
             {id: 'csv', type: 'button', text: w2utils.lang('CSV'), tooltip: w2utils.lang("Get this as csv file"), icon: 'w2ui-icon-columns'}
         ],
         onClick: function (event) {
-            if (event.target === "csv") {
-                var url = '/report/file/recipients?' +
-                    'campaign=' + w2ui.campaign.getSelection()[0] + '&' +
-                    'params=' + JSON.stringify({
-                        sort: w2ui['recipient'].sortData,
-                        search: w2ui['recipient'].searchData,
-                        searchLogic: w2ui.recipient.last.logic
-                    });
-                loadLink(url);
+            switch(event.target) {
+                case "csv":
+                    var url = '/report/file/recipients?' +
+                        'campaign=' + w2ui.campaign.getSelection()[0] + '&' +
+                        'params=' + JSON.stringify({
+                            sort: w2ui['recipient'].sortData,
+                            search: w2ui['recipient'].searchData,
+                            searchLogic: w2ui.recipient.last.logic
+                        });
+                    loadLink(url);
+                    break;
+
+                case "add":
+                    addRecipient();
+                    break;
+
+                case "delete":
+                    deleteRecipients();
+                    break;
             }
         }
     }
 
 });
 // --- /Recipients table ---
+
+// --- Delete recipient ---
+function deleteRecipients() {
+    w2confirm(w2utils.lang('Are you sure you want to delete selected records?'))
+        .yes(() => {
+            $.ajax({
+                url: "api/recipients",
+                type: "GET",
+                dataType: "json",
+                data: {"request": JSON.stringify({"cmd": "delete", "ids": w2ui.recipient.getSelection()})}
+            }).done(function(data) {
+                if (data['status'] === 'error') {
+                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                }
+                w2ui['recipient'].reload();
+            });
+        });
+}
+// --- /Delete recipient ---
+
+// --- Add recipient ---
+function addRecipient() {
+    w2popup.open({
+        name: "addRecipientPopup",
+        width   : 400,
+        height  : 480,
+        title   : w2utils.lang("Add recipient"),
+        body    : '<div id="addRecipient" style="width: 100%; height: 100%;"></div>',
+        onOpen  : function (event) {
+            event.onComplete = function () {
+                $('#addRecipient').w2render('addRecipient');
+            }
+        },
+        onClose : function (event) {
+            w2ui.addRecipient.clear();
+        }
+    });
+    $('#addRecipient').w2form({
+        name: 'addRecipient',
+        fields : [
+            { field: 'email', html: { label: 'Email' }, type: 'email' },
+            { field: 'name', html: { label: 'Name' }, type: 'text' },
+            { field: 'params', type: 'map',
+                html: {
+                    label: 'Parameters',
+                    key: {
+                        attr: 'placeholder="key" style="width: 80px"',
+                        text: ' = '
+                    },
+                    value: {
+                        attr: 'placeholder="value" style="width: 100px"',
+                    }
+                }
+            }
+        ],
+        actions: {
+            Reset: function () {
+                this.clear();
+            },
+            Save: function () {
+                if (w2ui.addRecipient.validate().length == 0) {
+                    let rec = this.getCleanRecord();
+                    $.ajax({
+                        url: "api/recipients",
+                        type: "GET",
+                        dataType: "json",
+                        data: {"request": JSON.stringify({"cmd": "add", "campaign": parseInt($('#campaignId').val()), "recipients": [{"email": rec.email, "name": rec.name, "params": rec.params}]})}
+                    }).done(function(data) {
+                        if (data['status'] === 'error') {
+                            w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                        }
+                        w2ui.recipient.reload();
+                    });
+                    w2popup.close();
+                }
+            }
+        }
+    });
+}
+// --- /Add recipient ---
 
 // --- Recipient upload ---
 $('#recipientUploadFile').w2field('file', {max: 1});

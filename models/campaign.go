@@ -547,8 +547,8 @@ func (id Campaign) AddRecipients(recipients []RecipientData) error {
 			log.Println(err)
 			return err
 		}
-		for _, p := range recipients[i].Params {
-			_, err := stParameter.Exec(rID, p.Key, p.Value)
+		for k, v := range recipients[i].Params {
+			_, err := stParameter.Exec(rID, k, v)
 			if err != nil {
 				log.Println(err)
 				return err

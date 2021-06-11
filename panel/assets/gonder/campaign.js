@@ -35,7 +35,7 @@ w2ui['bottom'].html('main', $().w2grid({
                 ],
                 text: function (item) {
                     var el   = this.get('reports:' + item.selected);
-                    return w2utils.lang('Report: ') + el.text;
+                    return w2utils.lang('Report') + ": " + el.text;
                 },
                 selected: 'recipients'
             },
