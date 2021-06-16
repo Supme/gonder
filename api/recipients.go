@@ -161,7 +161,7 @@ func recipientsReq(req request) (js []byte, err error) {
 				return js, errors.New("Forbidden add recipients")
 			}
 			if isAccepted(req.Campaign) {
-				return js, errors.New( "Cannot add recipients to an accepted campaign.")
+				return js, errors.New("Cannot add recipients to an accepted campaign.")
 			}
 			err = models.Campaign(req.Campaign).AddRecipients(req.Recipients)
 			if err != nil {
@@ -182,7 +182,7 @@ func recipientsReq(req request) (js []byte, err error) {
 					return js, errors.New("Forbidden delete recipients from this group")
 				}
 				if isAccepted(int64(g.IntID())) {
-					return js, errors.New( "Cannot delete recipients from accepted campaign.")
+					return js, errors.New("Cannot delete recipients from accepted campaign.")
 				}
 			}
 			err = models.RecipientsDelete(req.IDs...)

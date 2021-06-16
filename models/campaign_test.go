@@ -1,7 +1,6 @@
-package campaign
+package models
 
 import (
-	"gonder/models"
 	"testing"
 )
 
@@ -106,25 +105,28 @@ var (
 //}
 
 func init() {
-	models.Config.UTMDefaultURL = "https://Site.Net"
+	Config.UTMDefaultURL = "https://Site.Net"
 }
 
 func TestHtmlStringPrepare(t *testing.T) {
-	prepareHTMLTemplate(&tmpl, false)
+	res, err := prepareHTMLTemplate(tmpl, false)
+	if err != nil {
+		t.Error(err)
+	}
 	// fmt.Printf("Html template result:\n%s", tmpl)
-	if tmpl != goodTmpl {
+	if res != goodTmpl {
 		t.Error("html result string prepare template is not equal")
 	}
 }
 
 func BenchmarkHtmlStringPrepare(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		prepareHTMLTemplate(&tmpl, false)
+		prepareHTMLTemplate(tmpl, false)
 	}
 }
 
 func BenchmarkHtmlStringPrepareCompress(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		prepareHTMLTemplate(&tmpl, true)
+		prepareHTMLTemplate(tmpl, true)
 	}
 }

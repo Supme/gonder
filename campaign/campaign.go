@@ -1,17 +1,13 @@
 package campaign
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/Supme/smtpSender"
-	"github.com/tdewolff/minify"
-	"gonder/campaign/minifyEmail"
 	"gonder/models"
 	"io"
 	"log"
 	"math/rand"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -23,33 +19,11 @@ import (
 )
 
 type campaign struct {
-	ID              string
-	FromEmail       string
-	FromName        string
-	FromDomain      string
-	BimiSelector    string
-	DkimSelector    string
-	DkimPrivateKey  []byte
-	DkimUse         bool
-	SendUnsubscribe bool
-	ProfileID       int
-	ResendDelay     int
-	ResendCount     int
-	Attachments     []string
-
-	subjectTmplFunc  *template.Template
-	templateHTML     string
-	templateHTMLFunc *template.Template
-	compressHTML     bool
-	templateText     string
-	templateTextFunc *template.Template
-	templateAMP      string
-	templateAMPFunc  *template.Template
-
-	utmURL string
-
-	Stop   chan struct{}
-	Finish chan struct{}
+	Data        *models.CampaignData
+	ResendDelay int
+	ResendCount int
+	Stop        chan struct{}
+	Finish      chan struct{}
 }
 
 var campLog *log.Logger
@@ -58,7 +32,7 @@ var campLog *log.Logger
 func Run(logger *log.Logger) {
 	campLog = logger
 
-	Sending.campaigns = map[string]campaign{}
+	Sending.campaigns = map[string]*campaign{}
 
 	for {
 		for Sending.Count() >= models.Config.MaxCampaingns {
@@ -70,7 +44,7 @@ func Run(logger *log.Logger) {
 			Sending.Stop(camp...)
 		}
 		if id, err := Sending.checkNext(); err == nil {
-			//fmt.Println("check next campaign for send id:", id)
+			fmt.Println("check next campaign for send id:", id)
 			camp, err := getCampaign(id)
 			checkErr(err)
 			Sending.add(camp)
@@ -85,118 +59,34 @@ func Run(logger *log.Logger) {
 	}
 }
 
-func getCampaign(id string) (campaign, error) {
+func getCampaign(id string) (*campaign, error) {
 	var (
-		subject string
-		utmURL  string
+		c   campaign
+		err error
 	)
-	c := campaign{ID: id}
+
+	c.Data, err = models.CampaignGetByStringID(id).GetData()
+	if err != nil {
+		return &c, err
+	}
 	c.Stop = make(chan struct{})
 	c.Finish = make(chan struct{})
 
-	err := models.Db.QueryRow("SELECT t2.`email`,t2.`name`, t2.`utm_url`,t2.`bimi_selector`,t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,`template_amp`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).Scan(
-		&c.FromEmail,
-		&c.FromName,
-		&utmURL,
-		&c.BimiSelector,
-		&c.DkimSelector,
-		&c.DkimPrivateKey,
-		&c.DkimUse,
-		&subject,
-		&c.templateHTML,
-		&c.templateText,
-		&c.templateAMP,
-		&c.compressHTML,
-		&c.ProfileID,
-		&c.SendUnsubscribe,
-	)
+	c.ResendDelay, c.ResendCount, err = models.EmailPool.GetResendParams(c.Data.ProfileID)
 	if err != nil {
-		return c, err
+		return &c, fmt.Errorf("error get params for pool id %d: %s", c.Data.ProfileID, err)
 	}
 
-	c.ResendDelay, c.ResendCount, err = models.EmailPool.GetResendParams(c.ProfileID)
-	if err != nil {
-		return c, fmt.Errorf("error get params for pool id %d: %s", c.ProfileID, err)
-	}
-
-	splitEmail := strings.Split(c.FromEmail, "@")
-	if len(splitEmail) == 2 {
-		c.FromDomain = strings.ToLower(strings.TrimSpace(splitEmail[1]))
-	}
-
-	c.subjectTmplFunc, err = template.New("Subject").Parse(subject)
-	if err != nil {
-		return c, fmt.Errorf("error parse campaign '%s' subject template: %s", c.ID, err)
-	}
-
-	if !models.IsEmptyString(c.templateHTML) {
-		prepareHTMLTemplate(&c.templateHTML, c.compressHTML)
-		c.templateHTMLFunc, err = template.New("HTML").Funcs(
-			template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", c.utmURL, u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateHTML)
-		if err != nil {
-			return c, fmt.Errorf("error parse campaign '%s' HTML template: %s", c.ID, err)
-		}
-	}
-
-	if !models.IsEmptyString(c.templateText) {
-		c.templateTextFunc, err = template.New("Text").Funcs(
-			template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", c.utmURL, u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateText)
-		if err != nil {
-			return c, fmt.Errorf("error parse campaign '%s' text template: %s", c.ID, err)
-		}
-	}
-
-	if !models.IsEmptyString(c.templateAMP) {
-		prepareAMPTemplate(&c.templateAMP)
-		c.templateAMPFunc, err = template.New("AMP").Funcs(
-			template.FuncMap{
-				"RedirectUrl": func(p map[string]interface{}, u string) string {
-					return models.EncodeUTM("redirect", c.utmURL, u, p)
-				},
-				// ToDo more functions (example QRcode generator)
-			}).Parse(c.templateAMP)
-		if err != nil {
-			return c, fmt.Errorf("error parse campaign '%s' AMP template: %s", c.ID, err)
-		}
-	}
-
-	var attachments *sql.Rows
-	attachments, err = models.Db.Query("SELECT `path` FROM attachment WHERE campaign_id=?", c.ID)
-	if err != nil {
-		return c, err
-	}
-	defer attachments.Close()
-
-	c.Attachments = nil
-	for attachments.Next() {
-		var location string
-		err = attachments.Scan(&location)
-		if err != nil {
-			return c, err
-		}
-		c.Attachments = append(c.Attachments, location)
-	}
-
-	return c, nil
+	return &c, nil
 }
 
 func (c *campaign) send() {
-	pipe, err := models.EmailPool.Get(c.ProfileID)
+	pipe, err := models.EmailPool.Get(c.Data.ProfileID)
 	checkErr(err)
 
-	campLog.Printf("Start campaign id %s.", c.ID)
+	campLog.Printf("Start campaign id %s.", c.Data.Campaign.StringID())
 
-	for models.CampaignGetByStringID(c.ID).HasNotSent() {
+	for c.Data.Campaign.HasNotSent() {
 		select {
 		case <-c.Stop:
 			goto Done
@@ -207,12 +97,12 @@ func (c *campaign) send() {
 
 	select {
 	case <-c.Stop:
-		campLog.Printf("Campaign %s stoped", c.ID)
+		campLog.Printf("Campaign %s stoped", c.Data.Campaign.StringID())
 		goto End
 	default:
-		resend := models.CampaignGetByStringID(c.ID).CountResend()
+		resend := c.Data.Campaign.CountResend()
 		if resend > 0 && c.ResendCount > 0 {
-			campLog.Printf("Done stream send campaign id %s but need %d resend.", c.ID, resend)
+			campLog.Printf("Done stream send campaign id %s but need %d resend.", c.Data.Campaign.StringID(), resend)
 		}
 		if resend > 0 {
 			for i := 1; i <= c.ResendCount; i++ {
@@ -220,7 +110,7 @@ func (c *campaign) send() {
 				case <-c.Stop:
 					goto Done
 				default:
-					resend := models.CampaignGetByStringID(c.ID).CountResend()
+					resend := c.Data.Campaign.CountResend()
 					if resend == 0 {
 						goto Finish
 					}
@@ -233,7 +123,7 @@ func (c *campaign) send() {
 						timer.Stop()
 					}
 
-					campLog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.ID)
+					campLog.Printf("Start %s resend by %d email from campaign id %s ", models.Conv1st2nd(i), resend, c.Data.Campaign.StringID())
 					c.resend(pipe)
 				}
 
@@ -241,17 +131,17 @@ func (c *campaign) send() {
 				case <-c.Stop:
 					goto Done
 				default:
-					campLog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.ID)
+					campLog.Printf("Done %s resend campaign id %s", models.Conv1st2nd(i), c.Data.Campaign.StringID())
 				}
 			}
 		}
 	Finish:
-		campLog.Printf("Finish campaign id %s", c.ID)
+		campLog.Printf("Finish campaign id %s", c.Data.Campaign.StringID())
 	}
 Done:
 	select {
 	case <-c.Stop:
-		campLog.Printf("Campaign %s stoped", c.ID)
+		campLog.Printf("Campaign %s stoped", c.Data.Campaign.StringID())
 	default:
 		close(c.Stop)
 	}
@@ -260,7 +150,7 @@ End:
 }
 
 func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
-	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.ID)
+	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND status IS NULL", c.Data.Campaign.StringID())
 	checkErr(err)
 	defer query.Close()
 
@@ -268,7 +158,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			campLog.Printf("Stop signal for campaign %s received", c.ID)
+			campLog.Printf("Stop signal for campaign %s received", c.Data.Campaign.StringID())
 			goto Done
 		default:
 			var rID string
@@ -277,18 +167,18 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			r, err := GetRecipient(rID)
 			checkErr(err)
 
-			if r.unsubscribed() && !c.SendUnsubscribe {
+			if r.unsubscribed() && !c.Data.SendUnsubscribe {
 				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
-				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.ID, r.ID, r.Email)
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, "unsubscribed", "stream").Inc()
+				campLog.Printf("Campaign %s recipient id %s email %s is unsubscribed", c.Data.Campaign.StringID(), r.ID, r.Email)
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.Data.Campaign.StringID(), "unsubscribed", "stream").Inc()
 				continue
 			}
 
 			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
-			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeStream, c.ID, r.ID, r.Email))
+			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeStream, c.Data.Campaign.StringID(), r.ID, r.Email))
 
 			wg.Add(1)
 			if !models.Config.RealSend {
@@ -309,7 +199,7 @@ Done:
 const softBounceWhere = "LOWER(`status`) REGEXP '^((4[0-9]{2})|(dial tcp)|(read tcp)|(proxy)|(eof)).+'"
 
 func (c *campaign) resend(pipe *smtpSender.Pipe) {
-	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND "+softBounceWhere, c.ID)
+	query, err := models.Db.Query("SELECT `id` FROM recipient WHERE campaign_id=? AND removed=0 AND "+softBounceWhere, c.Data.Campaign.StringID())
 	checkErr(err)
 	defer func() {
 		if err := query.Close(); err != nil {
@@ -321,7 +211,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 	for query.Next() {
 		select {
 		case <-c.Stop:
-			campLog.Printf("Stop signal for campaign %s received", c.ID)
+			campLog.Printf("Stop signal for campaign %s received", c.Data.Campaign.StringID())
 			return
 		default:
 			var rID string
@@ -330,20 +220,19 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			r, err := GetRecipient(rID)
 			checkErr(err)
 
-			if r.unsubscribed() && !c.SendUnsubscribe {
+			if r.unsubscribed() && !c.Data.SendUnsubscribe {
 				err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusUnsubscribe)
 				checkErr(err)
 				campLog.Printf("Recipient id %s email %s is unsubscribed", r.ID, r.Email)
-				models.Prometheus.Campaign.SendResult.WithLabelValues(c.ID, "unsubscribed", "resend").Inc()
+				models.Prometheus.Campaign.SendResult.WithLabelValues(c.Data.Campaign.StringID(), "unsubscribed", "resend").Inc()
 				continue
 			}
 
 			wg.Add(1)
-			//_, err = updateRecipientStatus.Exec(models.StatusSending, r.ID)
 			err = models.RecipientGetByStringID(r.ID).UpdateRecipientStatus(models.StatusSending)
 			checkErr(err)
 
-			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeResend, c.ID, r.ID, r.Email))
+			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeResend, c.Data.Campaign.StringID(), r.ID, r.Email))
 
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
@@ -389,50 +278,58 @@ func fakeSend(email smtpSender.Email) error {
 
 func (c campaign) getBuilder(r Recipient) *smtpSender.Builder {
 	bldr := new(smtpSender.Builder)
-	bldr.SetFrom(c.FromName, c.FromEmail)
-	if c.BimiSelector != "" {
-		bldr.AddHeader("BIMI-Selector: v=BIMI1; s=" + c.BimiSelector + ";")
+	bldr.SetFrom(c.Data.Name, c.Data.Email)
+	if c.Data.BimiSelector != "" {
+		bldr.AddHeader("BIMI-Selector: v=BIMI1; s=" + c.Data.BimiSelector + ";")
 	}
 	bldr.SetTo(r.Name, r.Email)
 	bldr.AddHeader(
-		"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.utmURL, "mail", r.Params)+"\nPrecedence: bulk",
-		"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.ID+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
-		"X-Postmaster-Msgtype: campaign"+c.ID,
+		"List-Unsubscribe: "+models.EncodeUTM("unsubscribe", c.Data.UtmURL, "mail", r.Params)+"\nPrecedence: bulk",
+		"Message-ID: <"+strconv.FormatInt(time.Now().Unix(), 10)+c.Data.Campaign.StringID()+"."+r.ID+"@"+"gonder"+">", // ToDo hostname
+		"X-Postmaster-Msgtype: campaign"+c.Data.Campaign.StringID(),
 	)
 	bldr.AddSubjectFunc(c.subjectTemplFunc(r))
 	if err := bldr.AddHTMLFunc(c.htmlTemplFunc(r, false, false)); err != nil {
 		log.Print(err)
 	}
-	if !models.IsEmptyString(c.templateText) {
+	if c.Data.HasTextTemplate() {
 		bldr.AddTextFunc(c.textTemplFunc(r, false))
 	}
-	if !models.IsEmptyString(c.templateAMP) {
+	if c.Data.HasAMPTemplate() {
 		bldr.AddAMPFunc(c.ampTemplFunc(r, false))
 	}
-	if err := bldr.AddAttachment(c.Attachments...); err != nil {
+	if err := bldr.AddAttachment(c.Data.Attachments...); err != nil {
 		log.Print(err)
 	}
-	if c.DkimUse {
-		bldr.SetDKIM(c.FromDomain, c.DkimSelector, c.DkimPrivateKey)
+	if c.Data.DkimUse {
+		bldr.SetDKIM(c.Data.DkimDomain, c.Data.DkimSelector, c.Data.DkimPrivateKey)
 	}
 	return bldr
 }
 
 func (c campaign) HasResend() int {
 	var count int
-	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND removed=0 AND "+softBounceWhere, c.ID).Scan(&count)
+	err := models.Db.QueryRow("SELECT COUNT(`id`) FROM `recipient` WHERE `campaign_id`=? AND removed=0 AND "+softBounceWhere, c.Data.Campaign.IntID()).Scan(&count)
 	checkErr(err)
 	return count
 }
 
 func (c campaign) subjectTemplFunc(r Recipient) func(io.Writer) error {
 	return func(w io.Writer) error {
-		return c.subjectTmplFunc.Execute(w, r.Params)
+		tmpl, err := c.Data.GetSubjectTemplate()
+		if err != nil {
+			return err
+		}
+		return tmpl.Execute(w, r.Params)
 	}
 }
 
 func (c campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Writer) error {
 	return func(w io.Writer) error {
+		tmpl, err := c.Data.GetHTMLTemplate()
+		if err != nil {
+			return err
+		}
 		if preview {
 			if web {
 				r.Params["WebUrl"] = nil
@@ -442,24 +339,21 @@ func (c campaign) htmlTemplFunc(r Recipient, web bool, preview bool) func(io.Wri
 			r.Params["StatUrl"] = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 			r.Params["UnsubscribeUrl"] = "/unsubscribe?recipientId=" + r.ID
 			r.Params["QuestionUrl"] = "/question?recipientId=" + r.ID
-			_, err := c.templateHTMLFunc.Funcs(
+			tmpl = tmpl.Funcs(
 				template.FuncMap{
 					"RedirectUrl": func(p map[string]interface{}, u string) string {
 						url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
 						return strings.TrimSpace(url[len(url)-1])
 					},
 					// ToDo more functions (example QRcode generator)
-				}).Parse(c.templateHTML)
-			if err != nil {
-				log.Print(err)
-			}
+				})
 		} else {
 			if web {
 				r.Params["WebUrl"] = nil
 			}
 		}
 
-		return c.templateHTMLFunc.Execute(w, r.Params)
+		return tmpl.Execute(w, r.Params)
 	}
 }
 
@@ -468,9 +362,13 @@ func (c campaign) textTemplFunc(r Recipient, web bool) func(io.Writer) error {
 		if web {
 			r.Params["WebUrl"] = nil
 		} else {
-			r.Params["WebUrl"] = models.EncodeUTM("web", c.utmURL, "", r.Params)
+			r.Params["WebUrl"] = models.EncodeUTM("web", c.Data.UtmURL, "", r.Params)
 		}
-		return c.templateTextFunc.Execute(w, r.Params)
+		tmpl, err := c.Data.GetTextTemplate()
+		if err != nil {
+			return err
+		}
+		return tmpl.Execute(w, r.Params)
 	}
 }
 
@@ -479,98 +377,10 @@ func (c campaign) ampTemplFunc(r Recipient, web bool) func(io.Writer) error {
 		if web {
 			r.Params["WebUrl"] = nil
 		}
-		return c.templateAMPFunc.Execute(w, r.Params)
-	}
-}
-
-var (
-	reReplaceLink         = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
-	reReplaceRelativeSrc  = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
-	reReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
-)
-
-func prepareHTMLTemplate(htmlTmpl *string, useCompress bool) {
-	var (
-		tmp string
-		err error
-	)
-	if useCompress {
-		m := minify.New()
-		m.Add("email/html", &minifyEmail.Minifier{
-			KeepComments:            true,
-			KeepConditionalComments: true,
-			KeepDefaultAttrVals:     false,
-			KeepDocumentTags:        false,
-			KeepEndTags:             false,
-			KeepWhitespace:          false,
-		})
-
-		tmp, err = m.String("email/html", *htmlTmpl)
+		tmpl, err := c.Data.GetAMPTemplate()
 		if err != nil {
-			campLog.Print(err)
+			return err
 		}
-	} else {
-		tmp = *htmlTmpl
+		return tmpl.Execute(w, r.Params)
 	}
-
-	part := make([]string, 5)
-
-	// add StatUrl if not exist
-	if !strings.Contains(tmp, "{{.StatUrl}}") {
-		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/>"
-		} else {
-			tmp = strings.Replace(tmp, "</body>", "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/></body>", -1)
-		}
-	}
-
-	// make absolute URL
-	tmp = reReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceRelativeSrc.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
-	})
-	tmp = reReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceRelativeHref.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
-	})
-
-	// replace http and https href link to utm redirect
-	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceLink.FindStringSubmatch(str)
-		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
-	})
-
-	*htmlTmpl = tmp
-}
-
-func prepareAMPTemplate(ampTmpl *string) {
-	tmp := *ampTmpl
-	part := make([]string, 5)
-
-	// add AmpStatUrl if not exist
-	if !strings.Contains(tmp, "{{.AmpStatUrl}}") {
-		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img>"
-		} else {
-			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img></body>", -1)
-		}
-	}
-
-	// make absolute URL
-	tmp = reReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceRelativeSrc.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
-	})
-	tmp = reReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceRelativeHref.FindStringSubmatch(str)
-		return part[1] + part[2] + filepath.Join(models.Config.UTMDefaultURL, part[3]) + part[4]
-	})
-
-	// replace http and https href link to utm redirect
-	tmp = reReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
-		part = reReplaceLink.FindStringSubmatch(str)
-		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
-	})
-
-	*ampTmpl = tmp
 }

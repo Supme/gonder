@@ -7,13 +7,18 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/mssola/user_agent"
+	"github.com/tdewolff/minify"
 	"github.com/tealeg/xlsx/v3"
+	"gonder/models/minifyEmail"
 	"log"
 	"net"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"text/template"
 )
 
 type Campaign int
@@ -70,6 +75,244 @@ func (id Campaign) CountResend() int {
 
 func (id Campaign) HasResend() bool {
 	return id.resend() > 0
+}
+
+type CampaignData struct {
+	Campaign Campaign
+
+	Email           string `db:"email"`
+	Name            string `db:"name"`
+	BimiSelector    string `db:"bimi_selector"`
+	DkimDomain      string
+	DkimSelector    string `db:"dkim_selector"`
+	DkimPrivateKey  []byte `db:"dkim_key"`
+	DkimUse         bool   `db:"dkim_use"`
+	SendUnsubscribe bool   `db:"send_unsubscribe"`
+	ProfileID       int    `db:"profile_id"`
+	Attachments     []string
+
+	subject      string `db:"subject"`
+	templateHTML string `db:"template_html"`
+	compressHTML bool   `db:"compress_html"`
+	templateText string `db:"template_text"`
+	templateAMP  string `db:"template_amp"`
+
+	UtmURL string `db:"utm_url"`
+}
+
+func (id Campaign) GetData() (*CampaignData, error) {
+	data := new(CampaignData)
+	data.Campaign = id
+	err := Db.QueryRow(
+		"SELECT t2.`email`,t2.`name`, t2.`utm_url`,t2.`bimi_selector`,t2.`dkim_selector`,t2.`dkim_key`,t2.`dkim_use`,t1.`subject`,t1.`template_html`,`template_text`,`template_amp`,t1.`compress_html`, t1.`profile_id`,t1.`send_unsubscribe` FROM `campaign` t1  INNER JOIN `sender` t2 ON t2.`id`=t1.`sender_id` WHERE t1.`id`=?", id).
+		Scan(
+			&data.Email,
+			&data.Name,
+			&data.UtmURL,
+			&data.BimiSelector,
+			&data.DkimSelector,
+			&data.DkimPrivateKey,
+			&data.DkimUse,
+			&data.subject,
+			&data.templateHTML,
+			&data.templateText,
+			&data.templateAMP,
+			&data.compressHTML,
+			&data.ProfileID,
+			&data.SendUnsubscribe,
+		)
+	if err != nil {
+		return nil, err
+	}
+
+	splitEmail := strings.Split(data.Email, "@")
+	if len(splitEmail) == 2 {
+		data.DkimDomain = strings.ToLower(strings.TrimSpace(splitEmail[1]))
+	}
+
+	if data.HasHTMLTemplate() {
+		data.templateHTML, err = prepareHTMLTemplate(data.templateHTML, data.compressHTML)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if data.HasAMPTemplate() {
+		data.templateAMP, err = prepareAMPTemplate(data.templateAMP)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	rows, err := Db.Query("SELECT `path` FROM `attachment` WHERE `campaign_id`=?", id)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var attach string
+		err = rows.Scan(&attach)
+		if err != nil {
+			return nil, err
+		}
+		data.Attachments = append(data.Attachments, attach)
+	}
+	//fmt.Printf("%+v\r\n", data)
+	return data, nil
+}
+
+var (
+	campaignReReplaceLink         = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)["']\s*?(\[.*?\])?\s*?(\b[hH][tT]{2}[pP][sS]?\b:\/\/\b)(.*?)["']`)
+	campaignReReplaceRelativeSrc  = regexp.MustCompile(`(\s[sS][rR][cC]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
+	campaignReReplaceRelativeHref = regexp.MustCompile(`(\s[hH][rR][eE][fF]\s*?=\s*?)(["'])(\.?\/?files\/.*?)(["'])`)
+)
+
+func prepareHTMLTemplate(htmlTmpl string, useCompress bool) (string, error) {
+	var (
+		tmp string
+		err error
+	)
+	if useCompress {
+		m := minify.New()
+		m.Add("email/html", &minifyEmail.Minifier{
+			KeepComments:            true,
+			KeepConditionalComments: true,
+			KeepDefaultAttrVals:     false,
+			KeepDocumentTags:        false,
+			KeepEndTags:             false,
+			KeepWhitespace:          false,
+		})
+
+		tmp, err = m.String("email/html", htmlTmpl)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		tmp = htmlTmpl
+	}
+
+	part := make([]string, 5)
+
+	// add StatUrl if not exist
+	if !strings.Contains(tmp, "{{.StatUrl}}") {
+		if !strings.Contains(tmp, "</body>") {
+			tmp = tmp + "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/>"
+		} else {
+			tmp = strings.Replace(tmp, "</body>", "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/></body>", -1)
+		}
+	}
+
+	// make absolute URL
+	tmp = campaignReReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceRelativeSrc.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(Config.UTMDefaultURL, part[3]) + part[4]
+	})
+	tmp = campaignReReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceRelativeHref.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(Config.UTMDefaultURL, part[3]) + part[4]
+	})
+
+	// replace http and https href link to utm redirect
+	tmp = campaignReReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceLink.FindStringSubmatch(str)
+		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
+	})
+
+	return tmp, nil
+}
+
+func prepareAMPTemplate(ampTmpl string) (string, error) {
+	tmp := ampTmpl
+	part := make([]string, 5)
+
+	// add AmpStatUrl if not exist
+	if !strings.Contains(tmp, "{{.AmpStatUrl}}") {
+		if !strings.Contains(tmp, "</body>") {
+			tmp = tmp + "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img>"
+		} else {
+			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img></body>", -1)
+		}
+	}
+
+	// make absolute URL
+	tmp = campaignReReplaceRelativeSrc.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceRelativeSrc.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(Config.UTMDefaultURL, part[3]) + part[4]
+	})
+	tmp = campaignReReplaceRelativeHref.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceRelativeHref.FindStringSubmatch(str)
+		return part[1] + part[2] + filepath.Join(Config.UTMDefaultURL, part[3]) + part[4]
+	})
+
+	// replace http and https href link to utm redirect
+	tmp = campaignReReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
+		part = campaignReReplaceLink.FindStringSubmatch(str)
+		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
+	})
+
+	return tmp, nil
+}
+
+func (d CampaignData) getTemplateFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"RedirectUrl": func(p map[string]interface{}, u string) string {
+			url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
+			return strings.TrimSpace(url[len(url)-1])
+		},
+		// ToDo more functions (example QRcode generator)
+	}
+}
+
+func (d CampaignData) GetSubjectTemplate() (*template.Template, error) {
+	tmpl, err := template.New("").Funcs(d.getTemplateFuncMap()).Parse(d.subject)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, err
+}
+
+func (d CampaignData) HasTextTemplate() bool {
+	return !IsEmptyString(d.templateText)
+}
+
+func (d CampaignData) GetTextTemplate() (*template.Template, error) {
+	if IsEmptyString(d.templateText) {
+		return nil, nil
+	}
+	tmpl, err := template.New("").Funcs(d.getTemplateFuncMap()).Parse(d.templateText)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, err
+}
+
+func (d CampaignData) HasHTMLTemplate() bool {
+	return !IsEmptyString(d.templateHTML)
+}
+
+func (d CampaignData) GetHTMLTemplate() (*template.Template, error) {
+	if IsEmptyString(d.templateHTML) {
+		return nil, nil
+	}
+	tmpl, err := template.New("").Funcs(d.getTemplateFuncMap()).Parse(d.templateHTML)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, err
+}
+
+func (d CampaignData) HasAMPTemplate() bool {
+	return !IsEmptyString(d.templateAMP)
+}
+
+func (d CampaignData) GetAMPTemplate() (*template.Template, error) {
+	if IsEmptyString(d.templateAMP) {
+		return nil, nil
+	}
+	tmpl, err := template.New("").Funcs(d.getTemplateFuncMap()).Parse(d.templateAMP)
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, err
 }
 
 type CampaignReportRecipients struct {

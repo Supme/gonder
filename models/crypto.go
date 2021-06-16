@@ -55,6 +55,22 @@ func Decrypt(data string) ([]byte, error) {
 	}
 }
 
+var cryptoRandBlock = map[int][]byte{}
+func getCryptoRandBlock(block []byte) error {
+	if _, ok := cryptoRandBlock[len(block)]; ok {
+		copy(block, cryptoRandBlock[len(block)])
+		return nil
+	}
+	buf := make([]byte, len(block))
+	_, err := io.ReadFull(rand.Reader, buf)
+	if err != nil {
+		return err
+	}
+	cryptoRandBlock[len(block)] = buf
+	copy(block, buf)
+	return nil
+}
+
 func encryptAES(key, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -63,7 +79,8 @@ func encryptAES(key, data []byte) ([]byte, error) {
 	output := make([]byte, aes.BlockSize+len(data))
 	iv := output[:aes.BlockSize]
 	encrypted := output[aes.BlockSize:]
-	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+	err = getCryptoRandBlock(iv)
+	if err != nil {
 		return nil, err
 	}
 	stream := cipher.NewCFBEncrypter(block, iv)

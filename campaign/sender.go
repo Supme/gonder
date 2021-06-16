@@ -39,15 +39,15 @@ func GetResultFunc(wg *sync.WaitGroup, sendType SendType, campaignID, recipientI
 }
 
 type sending struct {
-	campaigns map[string]campaign
+	campaigns map[string]*campaign
 	mu        sync.RWMutex
 }
 
 var Sending sending
 
-func (s *sending) add(c campaign) {
+func (s *sending) add(c *campaign) {
 	s.mu.Lock()
-	s.campaigns[c.ID] = c
+	s.campaigns[c.Data.Campaign.StringID()] = c
 	s.mu.Unlock()
 }
 
