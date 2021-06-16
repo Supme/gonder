@@ -15,8 +15,38 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+type Progress struct {
+	s map[string]int
+	sync.RWMutex
+}
+
+func (p *Progress) Set(key string, val int) {
+	p.Lock()
+	defer p.Unlock()
+	if p.s == nil {
+		p.s = map[string]int{}
+	}
+	p.s[key] = val
+}
+
+func (p *Progress) Get(key string) *int {
+	p.RLock()
+	defer p.RUnlock()
+	if v, ok := p.s[key]; ok {
+		return &v
+	}
+	return nil
+}
+
+func (p *Progress) Delete(key string) {
+	p.Lock()
+	defer p.Unlock()
+	delete(p.s, key)
+}
 
 func GetIP(r *http.Request) string {
 	if ipProxy := r.Header.Get("X-FORWARDED-FOR"); len(ipProxy) > 0 {

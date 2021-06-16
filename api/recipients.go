@@ -12,10 +12,9 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"sync/atomic"
 )
 
-var progress map[string]*uint64
+var progress models.Progress
 
 func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1024*1024*30) // ToDo config variable?
@@ -79,19 +78,13 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 	apiLog.Print(auth.user.Name, " upload file ", r.FormValue("name"))
 
-	if progress == nil {
-		progress = map[string]*uint64{}
-	}
-
 	switch path.Ext(r.FormValue("name")) {
 	case ".csv":
 		go func() {
-			var p uint64
-			progress[filename] = &p
-			if err = models.Campaign(id).LoadRecipientCsv(filename, progress[file.Name()]); err != nil {
+			if err = models.Campaign(id).LoadRecipientCsv(filename, &progress); err != nil {
 				apiLog.Println(err)
 			}
-			delete(progress, filename)
+			progress.Delete(filename)
 
 		}()
 		e := models.JSONResponse{}.OkWriter(w, filename)
@@ -101,12 +94,10 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	case ".xlsx":
 		go func() {
-			var p uint64
-			progress[filename] = &p
-			if err = models.Campaign(id).LoadRecipientXlsx(filename, progress[filename]); err != nil {
+			if err = models.Campaign(id).LoadRecipientXlsx(filename, &progress); err != nil {
 				apiLog.Println(err)
 			}
-			delete(progress, filename)
+			progress.Delete(filename)
 
 		}()
 		e := models.JSONResponse{}.OkWriter(w, filename)
@@ -192,8 +183,8 @@ func recipientsReq(req request) (js []byte, err error) {
 
 		case "progress":
 			if req.auth.Right("upload-recipients") {
-				if _, ok := progress[req.Name]; ok {
-					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, atomic.LoadUint64(progress[req.Name])))
+				if p := progress.Get(req.Name); p != nil {
+					js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, *p))
 				} else {
 					js = []byte(`{"status": "error", "message": "not found"}`)
 				}

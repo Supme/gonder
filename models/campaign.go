@@ -17,7 +17,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"text/template"
 )
 
@@ -516,8 +515,8 @@ func (id Campaign) ReportUserAgent() (*sqlx.Rows, error) {
 	return Db.Queryx(`SELECT id, email, name, client_agent, web_agent FROM recipient WHERE campaign_id=?`, id)
 }
 
-func (id Campaign) LoadRecipientCsv(file string, progress *uint64) error {
-	atomic.StoreUint64(progress, 0)
+func (id Campaign) LoadRecipientCsv(file string, progress *Progress) error {
+	progress.Set(file, 0)
 	csvFile, err := os.Open(file)
 	if err != nil {
 		log.Println(err)
@@ -574,7 +573,7 @@ func (id Campaign) LoadRecipientCsv(file string, progress *uint64) error {
 		}
 	}()
 
-	total := uint64(len(rawCSVdata))
+	total := len(rawCSVdata)
 	title := make(map[int]string)
 	for k, v := range rawCSVdata {
 		if k == 0 {
@@ -614,15 +613,15 @@ func (id Campaign) LoadRecipientCsv(file string, progress *uint64) error {
 			}
 		}
 
-		atomic.StoreUint64(progress, uint64(k)*100/total)
+		progress.Set(file, k*100/total)
 
 	}
 
 	return tx.Commit()
 }
 
-func (id Campaign) LoadRecipientXlsx(file string, progress *uint64) error {
-	atomic.StoreUint64(progress, 0)
+func (id Campaign) LoadRecipientXlsx(file string, progress *Progress) error {
+	progress.Set(file, 0)
 	xlsxFile, err := xlsx.OpenFile(file)
 	if err != nil {
 		log.Println(err)
@@ -670,7 +669,7 @@ func (id Campaign) LoadRecipientXlsx(file string, progress *uint64) error {
 		}()
 
 		title := make(map[int]string)
-		total := uint64(xlsxFile.Sheets[0].MaxRow)
+		total := xlsxFile.Sheets[0].MaxRow
 		err := xlsxFile.Sheets[0].ForEachRow(func(r *xlsx.Row) error {
 			k := r.GetCoordinate()
 			if k == 0 {
@@ -727,7 +726,7 @@ func (id Campaign) LoadRecipientXlsx(file string, progress *uint64) error {
 
 			}
 
-			atomic.StoreUint64(progress, uint64(k)*100/total)
+			progress.Set(file, k*100/total)
 
 			return nil
 		})

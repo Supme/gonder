@@ -41,7 +41,6 @@ import (
 )
 
 var (
-	//user   Auth
 	apiLog *log.Logger
 	min    *minify.M
 	lang   *languages
