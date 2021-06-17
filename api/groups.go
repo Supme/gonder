@@ -58,7 +58,7 @@ func groups(req request) (js []byte, err error) {
 
 	case "add":
 		if req.auth.Right("add-groups") {
-			g, err = addGroup()
+			g, err = addGroup(req.Name)
 			if err != nil {
 				return js, err
 			}
@@ -75,9 +75,12 @@ func groups(req request) (js []byte, err error) {
 	return js, errors.New("Command not found")
 }
 
-func addGroup() (grp, error) {
+func addGroup(name string) (grp, error) {
 	g := grp{}
-	g.Name = "New group"
+	if name == "" {
+		name = "New group"
+	}
+	g.Name = name
 	row, err := models.Db.Exec("INSERT INTO `group`(`name`) VALUES (?)", g.Name)
 	if err != nil {
 		log.Println(err)

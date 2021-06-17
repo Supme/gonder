@@ -25,7 +25,7 @@ func campaigns(req request) (js []byte, err error) {
 	switch req.Cmd {
 
 	case "get":
-		if req.auth.Right("get-campaigns") {
+		if req.auth.Right("get-campaigns")  && req.auth.CampaignRight(req.ID) {
 			cs, err = getCampaigns(req)
 			if err != nil {
 				return js, err
@@ -39,7 +39,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if req.auth.Right("save-campaigns") {
+		if req.auth.Right("save-campaigns") && req.auth.CampaignRight(req.ID) {
 			err = saveCampaigns(req.Changes, req.auth)
 			if err != nil {
 				return js, err
@@ -57,9 +57,9 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "add":
-		if req.auth.Right("add-campaigns") {
+		if req.auth.Right("add-campaigns") && req.auth.CampaignRight(req.ID) {
 			var c camp
-			c, err = addCampaign(req.ID)
+			c, err = addCampaign(req.ID, req.Name)
 			if err != nil {
 				return js, err
 			}
@@ -72,7 +72,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "clone":
-		if req.auth.Right("add-campaigns") {
+		if req.auth.Right("add-campaigns")  && req.auth.CampaignRight(req.ID) {
 			var c camp
 			c, err := cloneCampaign(req.ID)
 			if err != nil {
@@ -152,9 +152,12 @@ func cloneCampaign(campaignID int64) (camp, error) {
 	return c, nil
 }
 
-func addCampaign(groupID int64) (camp, error) {
+func addCampaign(groupID int64, name string) (camp, error) {
 	c := camp{}
-	c.Name = "New campaign"
+	if name == "" {
+		name = "New campaign"
+	}
+	c.Name = name
 	t := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	row, err := models.Db.Exec("INSERT INTO `campaign` (`group_id`,`profile_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`) VALUES (?,?,?,'','','','',?,?)", groupID, models.Config.DefaultProfileID, c.Name, t, t)
 	if err != nil {

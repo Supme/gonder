@@ -9,12 +9,11 @@ w2ui['bottom'].html('main', $().w2grid({
         footer: true,
         toolbarDelete: false,
         toolbarAdd: true,
-        toolbarSave: true,
         toolbarSearch: true
     },
     columns: [
         { field: 'recid', text: w2utils.lang('Id'), size: '50px', sortable: true, attr: "align=right" },
-        { field: 'name', text: w2utils.lang('Name'), size: '100%', sortable: true, editable: { type: 'text' } }
+        { field: 'name', text: w2utils.lang('Name'), size: '100%', sortable: true }
     ],
     multiSelect: false,
     sortData: [{ field: 'recid', direction: 'DESC' }],
@@ -23,7 +22,7 @@ w2ui['bottom'].html('main', $().w2grid({
     postData: { cmd:"get" },
     toolbar: {
         items: [
-            {type: 'break'},
+            {id: 'rename', type: 'button', text: w2utils.lang('Rename'), icon: 'w2ui-icon-pencil'},
             {id: 'clone', type: 'button', text: w2utils.lang('Clone'), icon: 'w2ui-icon-columns'},
             {type: 'break'},
             {id: 'reports', type: 'menu-radio', icon: 'w2ui-icon-info', items: [
@@ -34,7 +33,7 @@ w2ui['bottom'].html('main', $().w2grid({
                     { id: 'useragent', text: w2utils.lang('User agent')}
                 ],
                 text: function (item) {
-                    var el   = this.get('reports:' + item.selected);
+                    let el   = this.get('reports:' + item.selected);
                     return w2utils.lang('Report') + ": " + el.text;
                 },
                 selected: 'recipients'
@@ -43,25 +42,87 @@ w2ui['bottom'].html('main', $().w2grid({
         ],
 
         onClick: function (event) {
-            if (event.target === 'download') {
-                var campaignId = w2ui.campaign.getSelection();
-                if (campaignId.length === 0) {
-                    w2alert(w2utils.lang('Select campaign for download this report.'));
-                    return;
-                }
-                loadLink('/report/campaign?id='+ w2ui.campaign.getSelection()[0] + '&type=' + this.get('reports').selected +'&format=csv');
-                return
-            }
+            switch (event.target) {
+                case 'download':
+                    if (w2ui['campaign'].getSelection()[0] === undefined) {
+                        w2alert(w2utils.lang('Select campaign for download this report.'));
+                        return;
+                    }
+                    loadLink('/report/campaign?id=' + w2ui['campaign'].getSelection()[0] + '&type=' + this.get('reports').selected + '&format=csv');
+                    break;
 
-            if (event.target === 'clone')
-            {
-                cloneCampaign(parseInt(w2ui['campaign'].getSelection()[0]));
+                case 'clone':
+                    if (w2ui['campaign'].getSelection()[0] === undefined) {
+                        w2alert(w2utils.lang('Select campaign for clone.'));
+                        return;
+                    }
+                    w2confirm(w2utils.lang('Are you sure you want to clone a campaign?'), function (btn) {
+                        if (btn === 'Yes') {
+                            $.ajax({
+                                type: "GET",
+                                //async: false,
+                                dataType: 'json',
+                                data: {"request": JSON.stringify({"cmd": "clone", "id": parseInt(w2ui['campaign'].getSelection()[0])})},
+                                url: '/api/campaigns'
+                            }).done(function(data) {
+                                if (data['status'] === 'error') {
+                                    w2alert(w2utils.lang(data["message"]));
+                                } else {
+                                    id = data["recid"];
+                                    name = data["name"];
+                                    w2ui.campaign.add({recid: id, name: name}, true);
+                                    w2ui['campaign'].select(id);
+                                }
+                            });
+                        }
+                    });
+                    break;
+
+                case "rename":
+                    if (w2ui['campaign'].getSelection()[0] === undefined) {
+                        w2alert(w2utils.lang('Select campaign for rename.'));
+                        return;
+                    }
+                    let cID = parseInt(w2ui['campaign'].getSelection()[0]);
+                    w2prompt({
+                        label: w2utils.lang('Name'),
+                        value: w2ui['campaign'].get(cID).name,
+                        title: w2utils.lang('Rename campaign'),
+                        ok_text: w2utils.lang('Ok'),
+                        cancel_text: w2utils.lang('Cancel'),
+                    }).ok((name) => {
+                        w2ui['campaign'].set(cID, { w2ui: { changes: { name: name } } });
+                        w2ui['campaign'].postData["cmd"] = "save";
+                        w2ui['campaign'].save();
+                    });
+                    break;
             }
         }
     },
 
     onAdd: function () {
-        addCampaign(parseInt(w2ui['group'].getSelection()[0]));
+        w2prompt({
+            label: w2utils.lang('Name'),
+            title: w2utils.lang('Add campaign'),
+            ok_text: w2utils.lang('Ok'),
+            cancel_text: w2utils.lang('Cancel'),
+        }).ok((name) => {
+            console.log("add campaign name "+name)
+            let gID = parseInt(w2ui['group'].getSelection()[0]);
+            $.ajax({
+                type: "GET",
+                dataType: 'json',
+                data: {"request": JSON.stringify({"cmd": "add", "id": gID, "name": name})},
+                url: '/api/campaigns'
+            }).done(function(data) {
+                if (data['status'] === 'error') {
+                    w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+                } else {
+                    w2ui['campaign'].add({recid: data["recid"], name: data["name"]},true);
+                    w2ui['campaign'].select(data["recid"]);
+                }
+            });
+        });
     },
 
     onSelect: function (event) {
@@ -75,58 +136,32 @@ w2ui['bottom'].html('main', $().w2grid({
 }));
 // --- /Campaign table ---
 
-function cloneCampaign(campaignId) {
-    if (isNaN(campaignId)) {
-        console.log("Clone not selected campaign");
-        w2alert(w2utils.lang('Select campaign for clone.'));
-    } else {
-        w2confirm(w2utils.lang('Are you sure you want to clone a campaign?'), function (btn) {
-            if (btn === 'Yes') {
-                var id, name;
-                $.ajax({
-                    type: "GET",
-                    //async: false,
-                    dataType: 'json',
-                    data: {"request": JSON.stringify({"cmd": "clone", "id": campaignId})},
-                    url: '/api/campaigns'
-                }).done(function(data) {
-                    if (data['status'] === 'error') {
-                        w2alert(w2utils.lang(data["message"]));
-                    } else {
-                        id = data["recid"];
-                        name = data["name"];
-                        w2ui.campaign.add({recid: id, name: name}, true);
-                        w2ui.campaign.editField(id, 1);
-                    }
-                });
-            }
-        });
-    }
-}
-
-function addCampaign(groupId) {
-    if (isNaN(groupId)) {
-        w2alert(w2utils.lang('Select group.'));
-    } else {
-        var id, name;
-        $.ajax({
-            type: "GET",
-            //async: false,
-            dataType: 'json',
-            data: {"request": JSON.stringify({"cmd": "add", "id": groupId})},
-            url: '/api/campaigns'
-        }).done(function(data) {
-            if (data['status'] === 'error') {
-                w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
-            } else {
-                id = data["recid"];
-                name = data["name"];
-                w2ui.campaign.add({recid: id, name: name}, true);
-                w2ui.campaign.editField(id, 1);
-            }
-        });
-    }
-}
+// function cloneCampaign(campaignId) {
+// }
+//
+// function addCampaign(groupId) {
+//     if (isNaN(groupId)) {
+//         w2alert(w2utils.lang('Select group.'));
+//     } else {
+//         var id, name;
+//         $.ajax({
+//             type: "GET",
+//             //async: false,
+//             dataType: 'json',
+//             data: {"request": JSON.stringify({"cmd": "add", "id": groupId})},
+//             url: '/api/campaigns'
+//         }).done(function(data) {
+//             if (data['status'] === 'error') {
+//                 w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
+//             } else {
+//                 id = data["recid"];
+//                 name = data["name"];
+//                 w2ui.campaign.add({recid: id, name: name}, true);
+//                 w2ui.campaign.editField(id, 1);
+//             }
+//         });
+//     }
+// }
 
 // --- Get campaign data ---
 function getCampaign(recid, name) {

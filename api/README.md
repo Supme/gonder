@@ -82,7 +82,8 @@ response:
 
 ```json
 {
- "cmd":"add"
+ "cmd":"add",
+  "name": "You name"
 }
 ```
 
@@ -186,7 +187,8 @@ response:
 
 ```json
 {
- "cmd":"add"
+ "cmd":"add",
+  "name": "You name"
 }
 ```
 
