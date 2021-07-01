@@ -56,6 +56,7 @@ func Decrypt(data string) ([]byte, error) {
 }
 
 var cryptoRandBlock = map[int][]byte{}
+
 func getCryptoRandBlock(block []byte) error {
 	if _, ok := cryptoRandBlock[len(block)]; ok {
 		copy(block, cryptoRandBlock[len(block)])
