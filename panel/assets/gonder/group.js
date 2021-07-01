@@ -21,7 +21,7 @@ w2ui['bottom'].html('left', $().w2grid({
     postData: { cmd:"get" },
 
     onSelect: function (event) {
-        w2ui['campaign'].postData["id"] = parseInt(event.recid);
+        w2ui['campaign'].postData["id"] = parseInt(event.recid, 10);
         w2ui['campaign'].reload();
     },
 
@@ -73,7 +73,7 @@ w2ui['bottom'].html('left', $().w2grid({
                     w2alert(w2utils.lang('Select group for rename.'));
                     return;
                 }
-                let gID = parseInt(w2ui['group'].getSelection()[0]);
+                let gID = parseInt(w2ui['group'].getSelection()[0], 10);
                 w2prompt({
                     label: w2utils.lang('Name'),
                     value: w2ui['group'].get(gID).name,
@@ -104,7 +104,7 @@ w2ui['bottom'].html('left', $().w2grid({
                 if (w2ui['group'].getSelection()[0] === undefined) {
                     w2alert(w2utils.lang('Select group.'));
                 } else {
-                    w2ui['senderGrid'].postData["id"] = parseInt(w2ui['group'].getSelection()[0]);
+                    w2ui['senderGrid'].postData["id"] = parseInt(w2ui['group'].getSelection()[0], 10);
                     w2popup.open({
                         title   : w2utils.lang('Sender list editor'),
                         width   : 900,

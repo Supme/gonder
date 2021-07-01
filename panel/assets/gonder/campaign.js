@@ -20,6 +20,7 @@ w2ui['bottom'].html('main', $().w2grid({
     url: '/api/campaigns',
     method: 'GET',
     postData: { cmd:"get" },
+    autoLoad: false,
     toolbar: {
         items: [
             {id: 'rename', type: 'button', text: w2utils.lang('Rename'), icon: 'w2ui-icon-pencil'},
@@ -62,7 +63,7 @@ w2ui['bottom'].html('main', $().w2grid({
                                 type: "GET",
                                 //async: false,
                                 dataType: 'json',
-                                data: {"request": JSON.stringify({"cmd": "clone", "id": parseInt(w2ui['campaign'].getSelection()[0])})},
+                                data: {"request": JSON.stringify({"cmd": "clone", "id": parseInt(w2ui['campaign'].getSelection()[0], 10)})},
                                 url: '/api/campaigns'
                             }).done(function(data) {
                                 if (data['status'] === 'error') {
@@ -83,7 +84,7 @@ w2ui['bottom'].html('main', $().w2grid({
                         w2alert(w2utils.lang('Select campaign for rename.'));
                         return;
                     }
-                    let cID = parseInt(w2ui['campaign'].getSelection()[0]);
+                    let cID = parseInt(w2ui['campaign'].getSelection()[0], 10);
                     w2prompt({
                         label: w2utils.lang('Name'),
                         value: w2ui['campaign'].get(cID).name,
@@ -108,7 +109,7 @@ w2ui['bottom'].html('main', $().w2grid({
             cancel_text: w2utils.lang('Cancel'),
         }).ok((name) => {
             console.log("add campaign name "+name)
-            let gID = parseInt(w2ui['group'].getSelection()[0]);
+            let gID = parseInt(w2ui['group'].getSelection()[0], 10);
             $.ajax({
                 type: "GET",
                 dataType: 'json',
@@ -189,7 +190,7 @@ function getCampaign(recid, name) {
     cmHTML.setValue(campaignData.templateHTML);
     cmAMP.setValue(campaignData.templateAMP);
 
-    w2ui['recipient'].postData["campaign"] = parseInt(recid);
+    w2ui['recipient'].postData["campaign"] = parseInt(recid, 10);
     w2ui.layout.unlock('main');
 
     w2ui['toolbar'].click('parametersButton');
@@ -218,7 +219,7 @@ function getCampaignData(campaignId) {
         async: false,
         url: '/api/campaign',
         dataType: 'json',
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(campaignId)})}
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(campaignId, 10)})}
     }).done(function(data) {
         campaignData.subject = data["subject"];
         campaignData.profileID = data["profileId"];
@@ -253,7 +254,7 @@ function getCampaignData(campaignId) {
         async: false,
         url: '/api/senderlist',
         dataType: "json",
-        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0])})}
+        data: {"request": JSON.stringify({"cmd": "get", "id": parseInt(w2ui['group'].getSelection()[0], 10)})}
     }).done(function(data) {
         campaignData.senders = data;
         campaignData.senders.forEach(function(v) {
@@ -288,7 +289,7 @@ function saveCampaign() {
                 data: {"request": JSON.stringify(
                         {
                             "cmd": "save",
-                            "id": parseInt($('#campaignId').val()),
+                            "id": parseInt($('#campaignId').val(), 10),
                             "content": {
                                 "profileId": $('#campaignProfileId').data('selected').id,
                                 "name": $('#campaignName').val(),
