@@ -20,7 +20,6 @@ w2ui['bottom'].html('main', $().w2grid({
     url: '/api/campaigns',
     method: 'GET',
     postData: { cmd:"get" },
-    autoLoad: false,
     toolbar: {
         items: [
             {id: 'rename', type: 'button', text: w2utils.lang('Rename'), icon: 'w2ui-icon-pencil'},
