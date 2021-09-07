@@ -1,9 +1,9 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/go-sql-driver/mysql"
 	"gonder/models"
 	"log"
 	"time"
@@ -39,7 +39,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "save":
-		if req.auth.Right("save-campaigns") && req.auth.CampaignRight(req.ID) {
+		if req.auth.Right("save-campaigns") {
 			err = saveCampaigns(req.Changes, req.auth)
 			if err != nil {
 				return js, err
@@ -57,7 +57,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "add":
-		if req.auth.Right("add-campaigns") && req.auth.CampaignRight(req.ID) {
+		if req.auth.Right("add-campaigns") {
 			var c camp
 			c, err = addCampaign(req.ID, req.Name)
 			if err != nil {
@@ -72,7 +72,7 @@ func campaigns(req request) (js []byte, err error) {
 		}
 
 	case "clone":
-		if req.auth.Right("add-campaigns") && req.auth.CampaignRight(req.ID) {
+		if req.auth.Right("add-campaigns") {
 			var c camp
 			c, err := cloneCampaign(req.ID)
 			if err != nil {
@@ -100,7 +100,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 	}
 	var (
 		groupID    int64
-		start, end sql.NullTime
+		start, end mysql.NullTime
 	)
 	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
 

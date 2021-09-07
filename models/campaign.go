@@ -213,9 +213,8 @@ func prepareHTMLTemplate(htmlTmpl string, useCompress bool) (string, error) {
 	// replace http and https href link to utm redirect
 	tmp = campaignReReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
 		part = campaignReReplaceLink.FindStringSubmatch(str)
-		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
+		return part[1] + `"{{RedirectUrl . "` + strings.TrimPrefix(part[2]+" "+part[3]+part[4], " ") + `"}}"`
 	})
-
 	return tmp, nil
 }
 
@@ -245,7 +244,7 @@ func prepareAMPTemplate(ampTmpl string) (string, error) {
 	// replace http and https href link to utm redirect
 	tmp = campaignReReplaceLink.ReplaceAllStringFunc(tmp, func(str string) string {
 		part = campaignReReplaceLink.FindStringSubmatch(str)
-		return part[1] + `"{{RedirectUrl . "` + part[2] + " " + part[3] + part[4] + `"}}"`
+		return part[1] + `"{{RedirectUrl . "` + strings.TrimPrefix(part[2]+" "+part[3]+part[4], " ") + `"}}"`
 	})
 
 	return tmp, nil
@@ -254,8 +253,7 @@ func prepareAMPTemplate(ampTmpl string) (string, error) {
 func (d CampaignData) getTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"RedirectUrl": func(p map[string]interface{}, u string) string {
-			url := regexp.MustCompile(`\s*?(\[.*?\])\s*?`).Split(u, 2)
-			return strings.TrimSpace(url[len(url)-1])
+			return EncodeUTM("redirect", d.UtmURL, u, p)
 		},
 		// ToDo more functions (example QRcode generator)
 	}
