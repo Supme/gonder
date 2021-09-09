@@ -4,8 +4,80 @@ import (
 	"testing"
 )
 
+func TestPrepareHtmlTemplate(t *testing.T) {
+	Config.UTMDefaultURL = "https://Site.Net"
+	tmpl := []struct{src, must string}{
+		{
+			src:  `<a target="_blank" hRef=" https://Site.com/">`,
+			must: `<a target="_blank" hRef="{{RedirectUrl . "https://Site.com/"}}">` + StatHTMLImgTag,
+		},
+		{
+			src:  `<a target="_blank" hRef="{{RedirectUrl . "https://Site.com/"}}">`,
+			must: `<a target="_blank" hRef="{{RedirectUrl . "https://Site.com/"}}">` + StatHTMLImgTag,
+		},
+		{
+			src:  `<a target="_blank" hRef="[Url Label] https://Site.com/">`,
+			must: `<a target="_blank" hRef="{{RedirectUrl . "[Url Label] https://Site.com/"}}">` + StatHTMLImgTag,
+		},
+		{
+			src:  `<a href="./files/Марк Саммерфильд Программирование на языке Go. Разработка приложений XXI века (2013).pdf">очень полезный файл который нужно прочитать откорки до корки</a>`,
+			must: `<a href="https:/Site.Net/files/Марк Саммерфильд Программирование на языке Go. Разработка приложений XXI века (2013).pdf">очень полезный файл который нужно прочитать откорки до корки</a>` + StatHTMLImgTag,
+		},
+		{
+			src:  `<a href="/files/Марк Саммерфильд Программирование на языке Go. Разработка приложений XXI века (2013).pdf">очень полезный файл который нужно прочитать откорки до корки</a>`,
+			must: `<a href="https:/Site.Net/files/Марк Саммерфильд Программирование на языке Go. Разработка приложений XXI века (2013).pdf">очень полезный файл который нужно прочитать откорки до корки</a>` + StatHTMLImgTag,
+		},
+		{
+			src:  `<html><body></body></html>`,
+			must: `<html><body>` + StatHTMLImgTag + `</body></html>`,
+		},
+		{
+			src:  `Hello!`,
+			must: `Hello!` + StatHTMLImgTag,
+		},
+	}
+
+	for _, tmp := range tmpl {
+			res, err := prepareHTMLTemplate(tmp.src, false)
+			if err != nil {
+				t.Errorf("prepare html: %s", err)
+			}
+			if res != tmp.must {
+				t.Errorf("prepared html src: '%s' result: '%s', but need: '%s'", tmp.src, res, tmp.must)
+			}
+	}
+}
+
+func TestPrepareAmpTemplate(t *testing.T) {
+	Config.UTMDefaultURL = "https://Site.Net"
+	tmpl := []struct{src, must string}{
+		{
+			src:  `<a target="_blank" hRef="https://Site.com/">`,
+			must: `<a target="_blank" hRef="{{RedirectUrl . "https://Site.com/"}}">` + StatAMPImgTag,
+		},
+		{
+			src:  `<html><body></body></html>`,
+			must: `<html><body>` + StatAMPImgTag + `</body></html>`,
+		},
+		{
+			src:  `Hello!`,
+			must: `Hello!` + StatAMPImgTag,
+		},
+	}
+
+	for _, tmp := range tmpl {
+			res, err := prepareAMPTemplate(tmp.src)
+			if err != nil {
+				t.Errorf("prepare amp: %s", err)
+			}
+			if res != tmp.must {
+				t.Errorf("prepared amp src: '%s' result: '%s', but need: '%s'", tmp.src, res, tmp.must)
+			}
+	}
+}
+
 var (
-	tmpl = `
+	srcTmpl = `
 <!DOCTYPE html>
 <html>
 <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -46,7 +118,7 @@ var (
 </html>
 `
 
-	goodTmpl = `
+	mustTmpl = `
 <!DOCTYPE html>
 <html>
 <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -88,45 +160,26 @@ var (
 `
 )
 
-//var r = Recipient{
-//	ID:         "test",
-//	CampaignID: "testCampaign",
-//	Email:      "test@site.tld",
-//	Name:       "Вася",
-//	Params: map[string]interface{}{
-//		"Sex": "male",
-//		"Age": 32,
-//	},
-//}
-//
-//var c = campaign{
-//	ID:           "testCampaign",
-//	templateHTML: tmpl,
-//}
-
-func init() {
-	Config.UTMDefaultURL = "https://Site.Net"
-}
-
 func TestHtmlStringPrepare(t *testing.T) {
-	res, err := prepareHTMLTemplate(tmpl, false)
+	Config.UTMDefaultURL = "https://Site.Net"
+	res, err := prepareHTMLTemplate(srcTmpl, false)
 	if err != nil {
 		t.Error(err)
 	}
-	// fmt.Printf("Html template result:\n%s", tmpl)
-	if res != goodTmpl {
+	// fmt.Printf("Html template result:\n%s", srcTmpl)
+	if res != mustTmpl {
 		t.Error("html result string prepare template is not equal")
 	}
 }
 
 func BenchmarkHtmlStringPrepare(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		_, _ = prepareHTMLTemplate(tmpl, false)
+		_, _ = prepareHTMLTemplate(srcTmpl, false)
 	}
 }
 
 func BenchmarkHtmlStringPrepareCompress(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		_, _ = prepareHTMLTemplate(tmpl, true)
+		_, _ = prepareHTMLTemplate(srcTmpl, true)
 	}
 }

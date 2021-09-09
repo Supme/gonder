@@ -194,9 +194,9 @@ func prepareHTMLTemplate(htmlTmpl string, useCompress bool) (string, error) {
 	// add StatUrl if not exist
 	if !strings.Contains(tmp, "{{.StatUrl}}") {
 		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/>"
+			tmp = tmp + StatHTMLImgTag
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<img src=\"{{.StatUrl}}\" border=\"0\" width=\"10\" height=\"10\" alt=\"\"/></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", StatHTMLImgTag + "</body>", -1)
 		}
 	}
 
@@ -225,9 +225,9 @@ func prepareAMPTemplate(ampTmpl string) (string, error) {
 	// add AmpStatUrl if not exist
 	if !strings.Contains(tmp, "{{.AmpStatUrl}}") {
 		if !strings.Contains(tmp, "</body>") {
-			tmp = tmp + "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img>"
+			tmp = tmp + StatAMPImgTag
 		} else {
-			tmp = strings.Replace(tmp, "</body>", "<amp-img src=\"{{.AmpStatUrl}}\" width=\"10\" height=\"10\" layout=\"fixed\"></amp-img></body>", -1)
+			tmp = strings.Replace(tmp, "</body>", StatAMPImgTag + "</body>", -1)
 		}
 	}
 
