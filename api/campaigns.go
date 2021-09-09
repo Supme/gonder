@@ -1,9 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/go-sql-driver/mysql"
 	"gonder/models"
 	"log"
 	"time"
@@ -100,7 +100,7 @@ func cloneCampaign(campaignID int64) (camp, error) {
 	}
 	var (
 		groupID    int64
-		start, end mysql.NullTime
+		start, end sql.NullTime
 	)
 	query := models.Db.QueryRow("SELECT `group_id`,`profile_id`,`sender_id`,`name`,`subject`,`template_html`,`template_text`,`template_amp`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe` FROM `campaign` WHERE `id`=?", campaignID)
 

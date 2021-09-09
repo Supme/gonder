@@ -11,7 +11,7 @@ import (
 )
 
 func campaignStatus(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.Right("get-log-campaign") {
 		logHandler(w, r, filepath.Join(models.LogDir, models.CampaignLog+".log"))
 	} else {
@@ -21,7 +21,7 @@ func campaignStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiStatus(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.Right("get-log-api") {
 		logHandler(w, r, filepath.Join(models.LogDir, models.APILog+".log"))
 	} else {
@@ -31,7 +31,7 @@ func apiStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func utmStatus(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.Right("get-log-utm") {
 		logHandler(w, r, filepath.Join(models.LogDir, models.UTMLog+".log"))
 	} else {
@@ -41,7 +41,7 @@ func utmStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func mainStatus(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.Right("get-log-main") {
 		logHandler(w, r, filepath.Join(models.LogDir, models.MainLog+".log"))
 	} else {

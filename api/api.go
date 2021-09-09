@@ -279,7 +279,7 @@ func apiRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	req.auth = r.Context().Value("Auth").(*Auth)
+	req.auth = r.Context().Value(ContextAuth).(*Auth)
 
 	switch r.URL.Path {
 	case "/api/users":

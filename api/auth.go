@@ -13,6 +13,12 @@ type Auth struct {
 	user *models.User
 }
 
+type ContextKey int
+
+const (
+	ContextAuth ContextKey = iota
+)
+
 func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -43,7 +49,7 @@ func AuthHandler(fn http.HandlerFunc) http.HandlerFunc {
 		ip := models.GetIP(r)
 		apiLog.Printf("host: %s user: '%s' %s %s", ip, auth.user.Name, r.Method, uri)
 		models.Prometheus.Api.UserRequest.WithLabelValues(ip).Inc()
-		ctx := context.WithValue(r.Context(), "Auth", auth)
+		ctx := context.WithValue(r.Context(), ContextAuth, auth)
 		fn(w, r.WithContext(ctx))
 	}
 }

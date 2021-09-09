@@ -121,12 +121,12 @@ func TestHtmlStringPrepare(t *testing.T) {
 
 func BenchmarkHtmlStringPrepare(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		prepareHTMLTemplate(tmpl, false)
+		_, _ = prepareHTMLTemplate(tmpl, false)
 	}
 }
 
 func BenchmarkHtmlStringPrepareCompress(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		prepareHTMLTemplate(tmpl, true)
+		_, _ = prepareHTMLTemplate(tmpl, true)
 	}
 }

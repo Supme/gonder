@@ -33,7 +33,7 @@ func RecipientUploadHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	auth := r.Context().Value("Auth").(*Auth)
+	auth := r.Context().Value(ContextAuth).(*Auth)
 	if !auth.Right("upload-recipients") || !auth.CampaignRight(id) {
 		w.WriteHeader(http.StatusForbidden)
 		return

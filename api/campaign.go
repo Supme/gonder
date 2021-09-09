@@ -1,9 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/go-sql-driver/mysql"
 	campSender "gonder/campaign"
 	"gonder/models"
 	"html/template"
@@ -16,7 +16,7 @@ func campaign(req request) (js []byte, err error) {
 	switch req.Cmd {
 	case "get":
 		if req.auth.Right("get-campaign") && req.auth.CampaignRight(req.ID) {
-			var start, end mysql.NullTime
+			var start, end sql.NullTime
 			err = models.Db.QueryRow("SELECT `id`, `name`,`profile_id`,`subject`,`sender_id`,`start_time`,`end_time`,`compress_html`,`send_unsubscribe`,`template_html`,`template_text`,`template_amp`,`accepted` FROM campaign WHERE id=?", req.ID).Scan(
 				&req.Content.ID,
 				&req.Content.Name,

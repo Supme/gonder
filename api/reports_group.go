@@ -20,7 +20,7 @@ func reportsGroupHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if !user.GroupRight(id) {
 		w.WriteHeader(http.StatusForbidden)
 		return

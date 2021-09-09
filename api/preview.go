@@ -10,7 +10,7 @@ import (
 )
 
 func getMailPreview(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.Right("get-recipients") {
 		recipient, err := campSender.GetRecipient(r.FormValue("id"))
 		if err != nil {
@@ -39,7 +39,7 @@ func getMailPreview(w http.ResponseWriter, r *http.Request) {
 
 // ToDo fix get right template then move unsubscribe template from models
 func getUnsubscribePreview(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	err := r.ParseForm()
 	if err != nil {
 		apiLog.Println(err)

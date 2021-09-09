@@ -21,7 +21,7 @@ func reportsCampaignHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if !user.CampaignRight(id) {
 		w.WriteHeader(http.StatusForbidden)
 		return

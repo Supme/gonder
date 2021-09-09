@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	campSender "gonder/campaign"
 	"gonder/models"
 	"log"
@@ -21,7 +20,7 @@ func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
 		Data        map[string]string `json:"data"`
 	}
 
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.CampaignRight(r.FormValue("campaign")) {
 		var result []resultUnit
 
@@ -45,7 +44,7 @@ func reportQuestionSummary(w http.ResponseWriter, r *http.Request) {
 			var (
 				res        resultUnit
 				questionID int64
-				at         mysql.NullTime
+				at         sql.NullTime
 			)
 			err = query.Scan(&questionID, &res.RecipientID, &res.Email, &at)
 			if err != nil {
@@ -118,7 +117,7 @@ func reportSummary(w http.ResponseWriter, r *http.Request) {
 	if len(r.Form["campaign"]) > 0 {
 		campaignID = r.Form["campaign"][0]
 	}
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if user.CampaignRight(campaignID) {
 		reports := make(map[string]interface{})
 		reports["Campaign"], err = _reportCampaignInfo(campaignID)
@@ -158,7 +157,7 @@ func reportClickCount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0]) {
 		var url string
 		var count int
@@ -201,7 +200,7 @@ func reportRecipientsList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0]) && user.Right("get-recipient-parameters") {
 		type rcptLineType struct {
 			Id     int64  `json:"id"`
@@ -223,7 +222,7 @@ func reportRecipientsList(w http.ResponseWriter, r *http.Request) {
 		var rcpts []rcptLineType
 		for query.Next() {
 			var rcpt rcptLineType
-			var date mysql.NullTime
+			var date sql.NullTime
 			err = query.Scan(&rcpt.Id, &rcpt.Email, &rcpt.Name, &date, &rcpt.Open, &rcpt.Status)
 			if err != nil {
 				log.Print(err)
@@ -277,7 +276,7 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if err == nil && user.CampaignRight(campaign) && user.Right("get-recipient-parameters") {
 		type clickType struct {
 			URL  string `json:"url"`
@@ -299,7 +298,7 @@ func reportRecipientClicks(w http.ResponseWriter, r *http.Request) {
 		var clicks []clickType
 		for query.Next() {
 			var click clickType
-			var date mysql.NullTime
+			var date sql.NullTime
 			err = query.Scan(&click.URL, &date)
 			if err != nil {
 				log.Print(err)
@@ -333,7 +332,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.Context().Value("Auth").(*Auth)
+	user := r.Context().Value(ContextAuth).(*Auth)
 	if (r.Form["group"] != nil && user.GroupRight(r.Form["group"][0])) || (r.Form["campaign"] != nil && user.CampaignRight(r.Form["campaign"][0])) {
 		type U struct {
 			Email string            `json:"email"`
@@ -342,7 +341,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 		}
 		var (
 			queryString, param string
-			timestamp          mysql.NullTime
+			timestamp          sql.NullTime
 			id                 int64
 			res                []U
 		)
@@ -419,7 +418,7 @@ func reportUnsubscribed(w http.ResponseWriter, r *http.Request) {
 // Campaign info
 func _reportCampaignInfo(campaignID string) (map[string]interface{}, error) {
 	var name string
-	var timestamp mysql.NullTime
+	var timestamp sql.NullTime
 	res := make(map[string]interface{})
 	err := models.Db.QueryRow("SELECT `name`, `start_time` FROM `campaign` WHERE `id`=?", campaignID).Scan(&name, &timestamp)
 	if err != nil {

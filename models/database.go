@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mcuadros/go-version"
 	"gonder/sqldata"
@@ -10,8 +10,12 @@ import (
 )
 
 func ConnectDb() error {
-	var err error
-	Db, err = sqlx.Open("mysql", Config.dbString)
+	dsn, err := mysql.ParseDSN(Config.dbString)
+	if err != nil {
+		return fmt.Errorf("parse database DSN error: %s", err)
+	}
+	dsn.ParseTime = true
+	Db, err = sqlx.Open("mysql", dsn.FormatDSN())
 	if err != nil {
 		return fmt.Errorf("open database error: %s", err)
 	}
