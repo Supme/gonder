@@ -7,9 +7,10 @@ var (
 )
 
 const (
-	OpenTrace   = "open_trace"
-	WebVersion  = "web_version"
-	Unsubscribe = "unsubscribe"
+	OpenTrace       = "open_trace"
+	WebVersion      = "web_version"
+	UnsubscribeForm = "unsubscribe_form"
+	Unsubscribe     = "unsubscribe"
 
 	StatusUnavaibleRecentTime = "Unavaible recent time"
 	StatusUnsubscribe         = "Unsubscribe"
@@ -20,5 +21,5 @@ const (
 	MainLog                   = "gonder_main"
 
 	StatHTMLImgTag = `<img src="{{.StatUrl}}" border="0" width="10" height="10" alt=""/>`
-	StatAMPImgTag = `<amp-img src="{{.AmpStatUrl}}" width="10" height="10" layout="fixed"></amp-img>`
+	StatAMPImgTag  = `<amp-img src="{{.AmpStatUrl}}" width="10" height="10" layout="fixed"></amp-img>`
 )

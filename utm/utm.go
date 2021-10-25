@@ -120,6 +120,10 @@ func Run(logger *log.Logger) {
 				return
 			}
 			if data == "web" {
+				_, err = models.Db.Exec("INSERT INTO jumping (campaign_id, recipient_id, url) VALUES (?, ?, ?)", message.CampaignID, message.RecipientID, models.UnsubscribeForm)
+				if err != nil {
+					log.Print(err)
+				}
 				if t, err := message.GetTemplate("accept.html"); err != nil {
 					log.Println(err)
 					http.Error(w, "", http.StatusInternalServerError)
