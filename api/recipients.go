@@ -213,7 +213,7 @@ func recipientsReq(req request) (js []byte, err error) {
 				return js, errors.New("Forbidden delete recipients")
 			}
 			var cnt int64
-			cnt, err = deduplicateRecipient(req.Campaign)
+			cnt, err = models.Campaign(req.Campaign).DeduplicateRecipient()
 			if err != nil {
 				apiLog.Println(err)
 				return js, errors.New("Can't deduplicate recipients")
@@ -225,7 +225,7 @@ func recipientsReq(req request) (js []byte, err error) {
 				return js, errors.New("Forbidden mark unavaible recipients")
 			}
 			var cnt int64
-			cnt, err = markUnavaibleRecentTime(req.Campaign)
+			cnt, err = models.Campaign(req.Campaign).MarkUnavaibleRecentTime(30)
 			if err != nil {
 				apiLog.Println(err)
 				return js, errors.New("Can't mark unavaible recipients")
@@ -263,71 +263,7 @@ func recipientsReq(req request) (js []byte, err error) {
 	return js, err
 }
 
-// Remove later unavaible status like:
-//  invalid mailbox
-//  no such user
-//  does not exist
-//  unknown user
-//  user unknown
-//  user not found
-//  bad destination mailbox
-//  mailbox unavailable
-// ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
-// ToDo optimize this
-func markUnavaibleRecentTime(campaignID int64) (cnt int64, err error) {
-	p, err := models.Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, models.StatusUnavaibleRecentTime))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer p.Close()
-
-	q, err := models.Db.Query(`
-SELECT id FROM recipient WHERE email IN
- (SELECT rs.email FROM recipient as rs WHERE
-    date>(NOW() - INTERVAL 30 DAY)
-   AND
-   (rs.status LIKE "%invalid mailbox%" OR
-    rs.status LIKE "%no such user%" OR
-    rs.status LIKE "%does not exist%" OR
-    rs.status LIKE "%unknown user%" OR
-    rs.status LIKE "%user unknown%" OR
-    rs.status LIKE "%user not found%" OR
-    rs.status LIKE "%bad destination mailbox%" OR
-    rs.status LIKE "%mailbox unavailable%" OR
-    rs.status="Ok")
-  GROUP BY rs.email
-  HAVING SUM(rs.status!="Ok")>0 AND SUM(rs.status="Ok")=0)
-AND removed=0
-AND status IS NULL
-AND campaign_id=?`, campaignID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer q.Close()
-
-	cnt = 0
-	for q.Next() {
-		var id int64
-		err = q.Scan(&id)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// ToDo check q.NextResultSet() and batch update
-		_, err = p.Exec(id)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		cnt++
-	}
-
-	return
-}
-
-func deduplicateRecipient(campaignID int64) (cnt int64, err error) {
+func deduplicateRecipientOld(campaignID int64) (cnt int64, err error) {
 	q, err := models.Db.Query(`
 	SELECT r1.id FROM recipient as r1
 		JOIN (

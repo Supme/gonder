@@ -196,7 +196,7 @@ func prepareHTMLTemplate(htmlTmpl string, useCompress bool) (string, error) {
 		if !strings.Contains(tmp, "</body>") {
 			tmp = tmp + StatHTMLImgTag
 		} else {
-			tmp = strings.Replace(tmp, "</body>", StatHTMLImgTag + "</body>", -1)
+			tmp = strings.Replace(tmp, "</body>", StatHTMLImgTag+"</body>", -1)
 		}
 	}
 
@@ -227,7 +227,7 @@ func prepareAMPTemplate(ampTmpl string) (string, error) {
 		if !strings.Contains(tmp, "</body>") {
 			tmp = tmp + StatAMPImgTag
 		} else {
-			tmp = strings.Replace(tmp, "</body>", StatAMPImgTag + "</body>", -1)
+			tmp = strings.Replace(tmp, "</body>", StatAMPImgTag+"</body>", -1)
 		}
 	}
 
@@ -805,4 +805,135 @@ func (id Campaign) DeleteRecipients() error {
 		log.Println(err)
 	}
 	return err
+}
+
+// MarkUnavaibleRecentTime Remove later unavaible status (default 30 if days < 0) like:
+//  invalid mailbox
+//  no such user
+//  does not exist
+//  unknown user
+//  user unknown
+//  user not found
+//  bad destination mailbox
+//  mailbox unavailable
+//  recipient denied
+// ToDo add %rejected%inactive% ???
+// ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
+// ToDo optimize this
+func (id Campaign) MarkUnavaibleRecentTime(days int) (cnt int64, err error) {
+	p, err := Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, StatusUnavaibleRecentTime))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer p.Close()
+
+	// default 30 days
+	if days < 0 {
+		days = 30
+	}
+
+	q, err := Db.Query(`
+SELECT id FROM recipient WHERE email IN
+ (SELECT rs.email FROM recipient as rs WHERE
+    date>(NOW() - INTERVAL ? DAY)
+   AND
+   (rs.status LIKE '%invalid mailbox%' OR
+    rs.status LIKE '%no such user%' OR
+    rs.status LIKE '%does not exist%' OR
+    rs.status LIKE '%unknown user%' OR
+    rs.status LIKE '%user unknown%' OR
+    rs.status LIKE '%user not found%' OR
+    rs.status LIKE '%bad destination mailbox%' OR
+    rs.status LIKE '%mailbox unavailable%' OR
+    rs.status LIKE '%recipient denied%' OR 
+    rs.status='Ok')
+  GROUP BY rs.email
+  HAVING SUM(rs.status!='Ok')>0 AND SUM(rs.status='Ok')=0)
+AND removed=0
+AND status IS NULL
+AND campaign_id=?`, days, id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer q.Close()
+
+	cnt = 0
+	for q.Next() {
+		var i int64
+		err = q.Scan(&i)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		// ToDo check q.NextResultSet() and batch update
+		_, err = p.Exec(i)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		cnt++
+	}
+
+	return
+}
+
+func (id Campaign) DeduplicateRecipient() (cnt int64, err error) {
+	q, err := Db.Query(`
+	SELECT r1.id FROM recipient as r1
+		JOIN (
+			SELECT MIN(id) AS id, email FROM recipient WHERE
+             	campaign_id=? AND removed=0 AND status IS NULL
+             	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
+		)
+	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
+	`, id, id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	tx, err := Db.Begin()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer func() {
+		err := dupl.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+
+	cnt = 0
+	for q.Next() {
+		var i int64
+		err = q.Scan(&i)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		_, err = dupl.Exec(i)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		cnt = cnt + 1
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+	}
+	return
 }
