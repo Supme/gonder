@@ -807,7 +807,7 @@ func (id Campaign) DeleteRecipients() error {
 	return err
 }
 
-// MarkUnavaibleRecentTime Remove later unavaible status (default 30 if days < 0) like:
+// MarkUnavailableRecentTime Remove later unavailable status (default 30 if days < 0, maximum 90) like:
 //  invalid mailbox
 //  no such user
 //  does not exist
@@ -820,8 +820,8 @@ func (id Campaign) DeleteRecipients() error {
 // ToDo add %rejected%inactive% ???
 // ToDo ALTER TABLE `recipient` ADD FULLTEXT(`status`); ??? why this slowly ???
 // ToDo optimize this
-func (id Campaign) MarkUnavaibleRecentTime(days int) (cnt int64, err error) {
-	p, err := Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, StatusUnavaibleRecentTime))
+func (id Campaign) MarkUnavailableRecentTime(days int) (cnt int64, err error) {
+	p, err := Db.Prepare(fmt.Sprintf(`UPDATE recipient SET status="%s" WHERE id=?`, StatusUnavailableRecentTime))
 	if err != nil {
 		log.Println(err)
 		return
@@ -829,8 +829,12 @@ func (id Campaign) MarkUnavaibleRecentTime(days int) (cnt int64, err error) {
 	defer p.Close()
 
 	// default 30 days
-	if days < 0 {
+	if days <= 0 {
 		days = 30
+	}
+	// maximum 90
+	if days > 90 {
+		days = 90
 	}
 
 	q, err := Db.Query(`

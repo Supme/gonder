@@ -622,12 +622,13 @@ response standard json success with message as count removed recipients or stand
 
 <details> 
 
-<summary>Mark unavaible latest 30 days recipients email (by latest smtp response) list</summary>
+<summary>Mark unavailable latest [1 >= interval <= 90] days recipients email (by latest smtp response) list</summary>
 
 ```json
 {
-  "cmd":"unavaible",
-  "campaign":22
+  "cmd":"unavailable",
+  "campaign":22,
+  "interval": 30
 }
 ```
 response standard json success with message as count marked recipients or standard error json

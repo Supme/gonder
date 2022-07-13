@@ -67,6 +67,8 @@ type request struct {
 	DkimKey      string `json:"dkimKey"`
 	DkimUse      int8   `json:"dkimUse"`
 
+	Interval int `json:"interval"`
+
 	Record struct {
 		// Save/Add user
 		ID              int64  `json:"id,omitempty"`

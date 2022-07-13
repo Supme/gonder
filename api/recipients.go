@@ -220,15 +220,15 @@ func recipientsReq(req request) (js []byte, err error) {
 			}
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
-		case "unavaible":
+		case "unavailable":
 			if !req.auth.Right("delete-recipients") && !req.auth.CampaignRight(req.Campaign) {
-				return js, errors.New("Forbidden mark unavaible recipients")
+				return js, errors.New("Forbidden mark unavailable recipients")
 			}
 			var cnt int64
-			cnt, err = models.Campaign(req.Campaign).MarkUnavaibleRecentTime(30)
+			cnt, err = models.Campaign(req.Campaign).MarkUnavailableRecentTime(req.Interval)
 			if err != nil {
 				apiLog.Println(err)
-				return js, errors.New("Can't mark unavaible recipients")
+				return js, errors.New("Can't mark unavailable recipients")
 			}
 			js = []byte(fmt.Sprintf(`{"status": "success", "message": %d}`, cnt))
 
@@ -261,65 +261,6 @@ func recipientsReq(req request) (js []byte, err error) {
 		}
 	}
 	return js, err
-}
-
-func deduplicateRecipientOld(campaignID int64) (cnt int64, err error) {
-	q, err := models.Db.Query(`
-	SELECT r1.id FROM recipient as r1
-		JOIN (
-			SELECT MIN(id) AS id, email FROM recipient WHERE
-             	campaign_id=? AND removed=0 AND status IS NULL
-             	GROUP BY email HAVING COUNT(*)>1) as r2 ON (r1.email=r2.email AND r1.id!=r2.id
-		)
-	WHERE r1.campaign_id=? AND removed=0 AND status IS NULL;
-	`, campaignID, campaignID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	tx, err := models.Db.Begin()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	dupl, err := tx.Prepare("UPDATE `recipient` SET `removed`=2 WHERE id=?")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer func() {
-		err := dupl.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	cnt = 0
-	for q.Next() {
-		var id int64
-		err = q.Scan(&id)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		_, err = dupl.Exec(id)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		cnt = cnt + 1
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Println(err)
-	}
-	return
 }
 
 func resendCampaign(campaignID int64, auth *Auth) error {

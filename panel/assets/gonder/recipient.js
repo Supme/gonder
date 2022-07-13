@@ -310,24 +310,24 @@ $('#recipientDeduplicate').click(
 );
 // --- Recipient deduplicate ---
 
-// --- Recipient unavaible ---
-$("#recipientUnavaible").html(w2utils.lang('Mark unavaible'));
-$('#recipientUnavaible').click(
+// --- Recipient unavailable ---
+$("#recipientUnavailable").html(w2utils.lang('Mark unavailable'));
+$('#recipientUnavailable').click(
     function () {
-        w2confirm(w2utils.lang('Mark unavaible recent time recipients') + '?', function (btn) {
+        w2confirm(w2utils.lang('Mark unavailable recent time recipients') + '?', function (btn) {
             if (btn === 'Yes') {
-                w2ui.layout.lock('main', w2utils.lang('Marking unavaible...'), true);
+                w2ui.layout.lock('main', w2utils.lang('Marking unavailable...'), true);
                 $.ajax({
                     url: "api/recipients",
                     type: "GET",
-                    data: {"request": JSON.stringify({"cmd": "unavaible", "campaign": parseInt($('#campaignId').val())}),
+                    data: {"request": JSON.stringify({"cmd": "unavailable", "campaign": parseInt($('#campaignId').val()), "interval": parseInt($('#recipientUnavailableDay').val())}),
                         dataType: "json"
                     }
                 }).done(function(data) {
                     if (data['status'] !== 'success') {
                         w2alert(w2utils.lang(data["message"]), w2utils.lang('Error'));
                     } else {
-                        w2alert(data["message"] + " " + w2utils.lang("marked as unavaible"));
+                        w2alert(data["message"] + " " + w2utils.lang("marked as unavailable"));
                     }
                     w2ui['recipient'].reload();
                     w2ui.layout.unlock('main');
@@ -337,4 +337,4 @@ $('#recipientUnavaible').click(
 
     }
 );
-// --- Recipient unavaible ---
+// --- Recipient unavailable ---
