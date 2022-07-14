@@ -38,7 +38,7 @@ var (
 	ServerKey string
 )
 
-// ReadConfig read config file redefine variables from environment, if exist, check and connect to database and create email pool
+// ReadConfig read config file redefine variables from environment, if existed, check and connect to database and create email pool
 // use env variables for redefine variables from config:
 //  GONDER_MAIN_DEFAULT_PROFILE_ID (int)
 //  GONDER_MAIN_ADMIN_EMAIL (string)
