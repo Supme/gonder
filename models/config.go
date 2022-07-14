@@ -25,6 +25,7 @@ type config struct {
 	UTMPort          string
 	MaxCampaingns    int
 	RealSend         bool
+	DontUseTLS       bool
 	DNScache         bool
 	DefaultProfileID int
 }
@@ -46,6 +47,7 @@ var (
 //  GONDER_DATABASE_STRING (string)
 //  GONDER_DATABASE_CONNECTIONS (int)
 //  GONDER_MAILER_SEND (bool)
+//  GONDER_MAILER_DONT_USE_TLS (bool)
 //  GONDER_MAILER_DNS_CACHE (bool)
 //  GONDER_MAILER_MAX_CAMPAIGNS (int)
 //  GONDER_UTM_DEFAULT_URL (string)
@@ -100,6 +102,10 @@ func (c *config) read(configFile string) error {
 	c.RealSend, err = getEnvBool("GONDER_MAILER_SEND", mailerSection.ValueOf("send"))
 	if err != nil {
 		return fmt.Errorf("error parse config file value send: %s", err)
+	}
+	c.DontUseTLS, err = getEnvBool("GONDER_MAILER_DONT_USE_TLS", mailerSection.ValueOf("dont_use_tls"))
+	if err != nil {
+		return fmt.Errorf("error parse config file value dont_use_tls: %s", err)
 	}
 	c.DNScache, err = getEnvBool("GONDER_MAILER_DNS_CACHE", mailerSection.ValueOf("dns_cache"))
 	if err != nil {

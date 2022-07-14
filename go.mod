@@ -4,7 +4,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/Supme/httpreloader v0.0.1
-	github.com/Supme/smtpSender v0.1.1
+	github.com/Supme/smtpSender v0.1.2
 	github.com/alyu/configparser v0.0.0-20180327070247-c505e6011694
 	github.com/boombuler/barcode v1.0.1
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

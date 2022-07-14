@@ -179,6 +179,7 @@ func (c *campaign) streamSend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeStream, c.Data.Campaign.StringID(), r.ID, r.Email))
+			email.DontUseTLS = models.Config.DontUseTLS
 
 			wg.Add(1)
 			if !models.Config.RealSend {
@@ -233,7 +234,8 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 			checkErr(err)
 
 			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeResend, c.Data.Campaign.StringID(), r.ID, r.Email))
-
+			email.DontUseTLS = models.Config.DontUseTLS
+			
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
 			} else {

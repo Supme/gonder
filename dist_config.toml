@@ -12,6 +12,7 @@ connections = 25
 [mailer]
 send = false
 max_campaigns = 10
+dont_use_tls = false
 dns_cache = true
 
 [utm]
