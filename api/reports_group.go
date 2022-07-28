@@ -92,8 +92,8 @@ func (rc reportsGroup) campaignsCSV(c *models.Group) error {
 			strconv.Itoa(r.ID),
 			r.Name,
 			r.Subject,
-			r.Start,
-			r.End,
+			models.StrTimeRFC3339ToReportCSV(r.Start),
+			models.StrTimeRFC3339ToReportCSV(r.End),
 		})
 		if err != nil {
 			return err
@@ -145,7 +145,7 @@ func (rc reportsGroup) unsubscribedCSV(c *models.Group) error {
 		err = csvWriter.Write([]string{
 			strconv.Itoa(r.CampaignID),
 			r.Email,
-			r.At,
+			models.StrTimeRFC3339ToReportCSV(r.At),
 			string(r.DataValid),
 		})
 		if err != nil {

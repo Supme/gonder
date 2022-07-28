@@ -119,7 +119,7 @@ func (rc reportsCampaign) questionCSV(c *models.Campaign) error {
 		err = csvWriter.Write([]string{
 			strconv.Itoa(r.ID),
 			r.Email,
-			r.At,
+			models.StrTimeRFC3339ToReportCSV(r.At),
 			string(r.DataValid),
 		})
 		if err != nil {
@@ -170,7 +170,7 @@ func (rc reportsCampaign) unsubscribedCSV(c *models.Campaign) error {
 		r.Validate()
 		err = csvWriter.Write([]string{
 			r.Email,
-			r.At,
+			models.StrTimeRFC3339ToReportCSV(r.At),
 			string(r.DataValid),
 		})
 		if err != nil {
@@ -223,7 +223,7 @@ func (rc reportsCampaign) recipientsCSV(c *models.Campaign) error {
 			strconv.Itoa(r.ID),
 			r.Email,
 			r.Name,
-			r.At,
+			models.StrTimeRFC3339ToReportCSV(r.At),
 			r.StatusValid,
 			strconv.FormatBool(r.Open),
 			string(r.DataValid),
@@ -277,7 +277,7 @@ func (rc reportsCampaign) clicksCSV(c *models.Campaign) error {
 		err = csvWriter.Write([]string{
 			strconv.Itoa(clx.ID),
 			clx.Email,
-			clx.At,
+			models.StrTimeRFC3339ToReportCSV(clx.At),
 			clx.URL,
 		})
 		if err != nil {

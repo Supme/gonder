@@ -196,3 +196,11 @@ func GetStatusCodeFromSendResult(res error) string {
 func IsEmptyString(s string) bool {
 	return strings.TrimSpace(s) == ""
 }
+
+func StrTimeRFC3339ToReportCSV(s string) string {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return "error parse time"
+	}
+	return t.Format(ReportCSVDateFormat)
+}
