@@ -12,11 +12,11 @@ require (
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/mssola/user_agent v0.5.3
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible
 	github.com/tealeg/xlsx/v3 v3.2.0
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
