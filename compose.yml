@@ -1,0 +1,61 @@
+services:
+  gonder:
+    build: .
+    hostname: gonder
+    ports:
+      - '8080:8080'
+      - '7777:7777'
+    environment:
+      #GONDER_MAIN_DEFAULT_PROFILE_ID (int)
+      #GONDER_MAIN_ADMIN_EMAIL (string)
+      #GONDER_MAIN_GONDER_EMAIL (string)
+      #GONDER_MAIN_SECRET_STRING (string)
+      GONDER_DATABASE_STRING: gonder:gonder@tcp(db:3306)/gonder
+      #GONDER_DATABASE_CONNECTIONS (int)
+      GONDER_MAILER_SEND: false
+      #GONDER_MAILER_DONT_USE_TLS (bool)
+      #GONDER_MAILER_DNS_CACHE (bool)
+      #GONDER_MAILER_MAX_CAMPAIGNS (int)
+      #GONDER_UTM_DEFAULT_URL (string)
+      #GONDER_UTM_TEMPLATES_DIR (string)
+      #GONDER_UTM_FILES_DIR (string)
+      #GONDER_UTM_PORT (int)
+      #GONDER_API_PORT (int)
+      #GONDER_API_PANEL_PATH (string)
+      #GONDER_API_PANEL_LOCALE (string)
+    volumes:
+      - app_files:/app/files
+      - app_log:/app/log 
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb
+    hostname: db
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: gonder
+      MARIADB_USER: gonder
+      MARIADB_PASSWORD: gonder
+      MARIADB_DATABASE: gonder
+    ports:
+      - 3306:3306
+    volumes:
+      - ./sqldata/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      start_period: 10s
+      start_interval: 10s
+      interval: 1m
+      timeout: 5s
+      retries: 3
+
+volumes:
+  app_files:
+  app_log:
+  db_data:
+
+networks:
+  gonder:
