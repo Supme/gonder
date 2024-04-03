@@ -6,7 +6,7 @@ RUN --mount=type=cache,target="/tmp/.cache/go-build" GOCACHE=/tmp/.cache/go-buil
 RUN cd /app/cert && \
     openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:4096 -keyout server.key -out server.pem -subj "/C=RU/ST=Moscow/L=Moscow/O=Supme/OU=Gonder/CN=gonder.supme.ru"
 
-FROM ubuntu:22.04 as production
+FROM alpine:3.18 as production
 LABEL maintainer="Supme <supme@gmail.com>"
 WORKDIR /app
 COPY --from=builder /app/start /app/
