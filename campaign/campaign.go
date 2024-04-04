@@ -235,7 +235,7 @@ func (c *campaign) resend(pipe *smtpSender.Pipe) {
 
 			email := c.getBuilder(r).Email(r.ID, GetResultFunc(wg, SendTypeResend, c.Data.Campaign.StringID(), r.ID, r.Email))
 			email.DontUseTLS = models.Config.DontUseTLS
-			
+
 			if !models.Config.RealSend {
 				err = fakeSend(*email)
 			} else {
@@ -262,11 +262,11 @@ func fakeSend(email smtpSender.Email) error {
 		wait := time.Duration(rand.Int()/10000000000) * time.Nanosecond
 		time.Sleep(wait)
 		if rand.Intn(4) == 0 {
-			res = errors.New("421 Test send")
-			models.Prometheus.Campaign.SendResult.WithLabelValues("", "421", "test").Inc()
+			res = errors.New("421 Fake send")
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", "421", "fake").Inc()
 		} else {
-			res = errors.New("Ok Test send")
-			models.Prometheus.Campaign.SendResult.WithLabelValues("", "250", "test").Inc()
+			res = errors.New("Ok Fake send")
+			models.Prometheus.Campaign.SendResult.WithLabelValues("", "250", "fake").Inc()
 		}
 		atomic.AddInt64(&fakeStream, -1)
 		email.ResultFunc(smtpSender.Result{
