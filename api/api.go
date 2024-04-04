@@ -4,10 +4,10 @@
 // Copyright Supme 2016
 // License http://opensource.org/licenses/MIT MIT License
 //
-//  THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
-//  ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-//  IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
-//  PURPOSE.
+//	THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF
+//	ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+//	IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+//	PURPOSE.
 //
 // Please see the LICENSE file for more information.
 package api
@@ -212,7 +212,7 @@ func Run(logger *log.Logger) {
 		}
 	})
 
-	api.HandleFunc("/{{.StatUrl}}", func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/%7B%7B.StatUrl%7D%7D", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/gif")
 		blank, _ := base64.StdEncoding.DecodeString("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
 		_, err = w.Write(blank)
