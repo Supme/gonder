@@ -155,7 +155,7 @@ function setAcceptSend(accept) {
 }
 
 function switchToParameters() {
-    $('#parameterTemplatePreview').html(cmHTML.getValue())
+    document.getElementById("parameterTemplatePreview").srcdoc = cmHTML.getValue();
     $('#template').hide();
     $('#recipient').hide();
     $('#profile').hide();

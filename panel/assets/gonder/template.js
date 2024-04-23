@@ -86,7 +86,7 @@ function templateShowPreview() {
     $("#campaignTemplateHelpContainer").hide();
     $("#campaignTemplateTextContainer").hide();
     $("#campaignTemplateAMPContainer").hide();
-    $('#campaignTemplatePreview').html(cmHTML.getValue());
+    document.getElementById("campaignTemplatePreview").srcdoc = cmHTML.getValue();
     $("#campaignTemplatePreviewContainer").show();
 }
 
