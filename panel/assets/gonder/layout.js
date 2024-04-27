@@ -105,7 +105,7 @@ function switchAcceptSend() {
             '<br>' +
             '<div>' +
             ' <div style="float: left; width: 420px">' +
-            '  <div style="position: absolute; border: 1px solid #333; width: 420px; height: 300px; overflow-y: scroll;">' + campaignData.templateHTML + '</div>' +
+            '  <iframe id="acceptTemplatePreview" style="position: absolute; border: 1px solid #333; width: 420px; height: 300px; overflow-y: scroll;"></iframe>' +
             ' </div>' +
             ' <div style="float: right;width: 360px;">' +
             '  <div style="position: absolute; border: 1px solid #333; width: 360px; height: 300px; overflow-y: scroll; background-color: #fff"><pre>' + campaignData.templateText + '</pre></div>' +
@@ -120,7 +120,8 @@ function switchAcceptSend() {
         showMax: false,
         showClose: false,
         keyboard: false
-    })
+    });
+    document.getElementById("acceptTemplatePreview").srcdoc = cmHTML.getValue();
 }
 
 function changeAcceptSend(change) {
