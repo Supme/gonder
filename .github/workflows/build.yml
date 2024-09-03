@@ -80,17 +80,17 @@ jobs:
        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
      - name: Download linux amd64
-       uses: actions/download-artifact@v2
+       uses: actions/download-artifact@v4.1.7
        with:
          name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_linux_amd64
 
      - name: Download linux arm64
-       uses: actions/download-artifact@v2
+       uses: actions/download-artifact@v4.1.7
        with:
          name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_linux_arm64
 
      - name: Download windows amd64
-       uses: actions/download-artifact@v2
+       uses: actions/download-artifact@v4.1.7
        with:
          name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.VERSION }}_amd64.exe
 
