@@ -16,7 +16,7 @@ require (
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible
 	github.com/tealeg/xlsx/v3 v3.3.5
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.37.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -39,11 +39,11 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/shabbyrobe/xmlwriter v0.0.0-20230525083848-85336ec334fa // indirect
 	github.com/tdewolff/test v1.0.10 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
 
-go 1.24.0
+go 1.25.0
