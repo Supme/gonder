@@ -7,7 +7,7 @@ require (
 	github.com/alyu/configparser v0.0.0-20191103060215-744e9a66e7bc
 	github.com/boombuler/barcode v1.0.1
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/gravitational/tail v1.0.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
